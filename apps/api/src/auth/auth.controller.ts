@@ -74,8 +74,9 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @Get('me')
     async getProfile(@Req() req: any) {
-        this.logger.log(`Buscando perfil para user ID: ${req.user.id}`);
-        return this.authService.getLatestProfile(req.user.id);
+        const profile = await this.authService.getLatestProfile(req.user.id);
+        this.logger.log(`Buscando perfil para user ID: ${req.user.id}. Email no DB: ${profile?.email ?? 'NÃO ENCONTRADO NO BANCO'}. Email no Token: ${req.user.email}`);
+        return profile;
     }
 
     @UseGuards(JwtAuthGuard)

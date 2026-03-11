@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { DRIZZLE } from '../database/database.provider';
 import * as schema from '@mdc/database';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
 @Injectable()

@@ -84,7 +84,7 @@ export class AbacatePayProvider implements IPaymentProvider {
         const payload = {
             frequency: 'ONE_TIME',
             methods: ['PIX'],
-            externalId: userId, // ID de referência principal (userId)
+            // externalId: userId, // REMOVIDO para testar se o AbacatePay pára de usar dados antigos do cliente
             products: [
                 {
                     externalId: `plan_${plan}`,
@@ -97,16 +97,19 @@ export class AbacatePayProvider implements IPaymentProvider {
             completionUrl: `${frontendUrl}/payment-success`,
             customer: customer ? {
                 name: customer.name || 'Cliente Mohamed',
-                email: customer.email,
-                cellphone: customer.cellphone || '', // Usar dado real do cadastro
-                taxId: customer.taxId || '', // Usar CPF real do cadastro
+                email: customer.email, // fabingames13@gmail.com
+                cellphone: customer.cellphone || '',
+                taxId: customer.taxId || '',
             } : undefined,
             metadata: {
-                userId,
+                userId, // Identificador ÚNICO via metadata para o Webhook me achar
                 plan,
             },
             coupons: coupons || [],
         };
+
+        console.log(`[AbacatePay] Criando checkout para usuario: ${userId}, Email: ${customer?.email}, Plano: ${plan}`);
+        console.log(`[AbacatePay] Payload Enviado:`, JSON.stringify(payload, null, 2));
 
         try {
             const response = await axios.post(`${this.baseUrl}/billing/create`, payload, {
@@ -115,6 +118,20 @@ export class AbacatePayProvider implements IPaymentProvider {
             return { url: response.data.data.url as string };
         } catch (error) {
             this.handleError('Erro ao criar cobrança', error);
+        }
+    }
+
+    async getBilling(id: string) {
+        try {
+            const response = await axios.get(`${this.baseUrl}/billing/list`, {
+                headers: this.headers,
+            });
+            // O AbacatePay não possui endpoint direto /get?id= para billing aparentemente, 
+            // vamos filtrar na listagem ou tentar um chute no endpoint se documentado
+            const billings = response.data.data as any[];
+            return billings.find(b => b.id === id);
+        } catch (error) {
+            this.handleError('Erro ao buscar detalhes da cobrança', error);
         }
     }
 
@@ -306,10 +323,46 @@ export class AbacatePayProvider implements IPaymentProvider {
             const customer = billing?.customer;
 
             // Tenta extrair o userId de várias fontes possíveis no payload
+            console.log(`[AbacatePay] Debug - billing keys: ${Object.keys(billing || {}).join(', ')}`);
+            console.log(`[AbacatePay] Debug - data keys: ${Object.keys(data || {}).join(', ')}`);
+
             let userId = billing?.externalId ||
                 billing?.metadata?.userId ||
                 data.metadata?.userId ||
-                data.externalId;
+                data.externalId ||
+                billing?.customer?.externalId ||
+                billing?.customer?.metadata?.userId;
+
+            // Se ainda não temos o userId, tenta buscar a cobrança completa via API
+            if (!userId && billing?.id) {
+                console.log(`[AbacatePay] userId ausente no webhook. Buscando cobrança completa para ID: ${billing.id}`);
+                try {
+                    const fullBilling = await this.getBilling(billing.id);
+                    if (fullBilling) {
+                        userId = fullBilling.externalId || fullBilling.metadata?.userId;
+                        if (userId) console.log(`[AbacatePay] userId recuperado via API billing.list: ${userId}`);
+                    }
+                } catch (err) {
+                    console.error('[AbacatePay] Falha ao buscar cobrança completa:', err.message);
+                }
+            }
+
+            if (!userId) {
+                // Tenta procurar qualquer campo que pareça um UUID
+                const searchUUID = (obj: any): string | null => {
+                    if (!obj || typeof obj !== 'object') return null;
+                    for (const key in obj) {
+                        if (typeof obj[key] === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(obj[key])) {
+                            return obj[key];
+                        }
+                        const res = searchUUID(obj[key]);
+                        if (res) return res;
+                    }
+                    return null;
+                };
+                userId = searchUUID(data);
+                if (userId) console.log(`[AbacatePay] userId extraído via Regex UUID: ${userId}`);
+            }
 
             if (!userId) {
                 const searchEmail = (obj: any): string | null => {
@@ -333,13 +386,15 @@ export class AbacatePayProvider implements IPaymentProvider {
                 data.metadata?.plan ||
                 'premium';
 
-            console.log(`[AbacatePay] Pagamento confirmado! Identificador: ${userId}, plan: ${plan}`);
+            console.log(`[AbacatePay] Pagamento confirmado! Identificador (userId/email): ${userId}, plan: ${plan}`);
+            console.log(`[AbacatePay] Payload Completo para Debug:`, JSON.stringify(data, null, 2));
 
             this.logToFile({
                 msg: 'Extraction results',
                 extractedUserId: userId,
                 extractedPlan: plan,
-                receivedEmail: customer?.email
+                receivedEmail: customer?.email,
+                fullData: data
             });
 
             return {

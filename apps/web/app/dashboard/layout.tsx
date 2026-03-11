@@ -32,25 +32,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         // BLOQUEIO: Se não tem plano pago ativo, vai para a página de precificação
         if (!isLoading && isAuthenticated && user?.role === 'user') {
-            // Exceção importante: não redirecionar se o usuário estiver na página de sucesso do pagamento
-            // ou qualquer outra rota de transição necessária.
-            if (pathname === '/dashboard/payment-success') {
-                return;
-            }
-
             const isStarter = user?.subscription?.plan === 'starter';
             const hasPaidPlan = user?.subscription?.plan === 'premium' || user?.subscription?.plan === 'lifetime';
-            const isActive = user?.subscription?.status === 'active'; // ou status que defina 'pago'
+            const isActive = user?.subscription?.status === 'active' || user?.subscription?.status === 'trial';
             const rideCount = user?.subscription?.rideCount || 0;
 
-            // Bloqueia se:
-            // 1. Não é plano pago e atingiu o limite (Starter com 20+ corridas)
-            // 2. Não tem plano ativo algum (status não é active/trial)
             const reachedLimit = isStarter && rideCount >= 20;
 
-            if (reachedLimit || (!hasPaidPlan && !isStarter) || (!isActive && user?.subscription?.status !== 'trial')) {
-                console.log('[AccessGate] Redirecionando para /pricing - Plano:', user?.subscription?.plan, 'Rides:', rideCount);
-                router.push("/pricing");
+            // Bloqueia se:
+            // 1. Atingiu o limite do Starter
+            // 2. Não tem plano algum e não é Starter
+            // 3. Status não é active/trial
+            const shouldBlock = reachedLimit || (!hasPaidPlan && !isStarter) || !isActive;
+
+            if (shouldBlock && pathname.startsWith('/dashboard') && pathname !== '/dashboard/payment-success') {
+                console.log('[AccessGate] Bloqueando acesso - Redirecionando para /pricing', { plan: user?.subscription?.plan, rideCount, status: user?.subscription?.status });
+                router.push("/pricing?reason=limit_reached");
             }
         }
     }, [isLoading, isAuthenticated, user, router, pathname]);

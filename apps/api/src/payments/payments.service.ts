@@ -40,14 +40,25 @@ export class PaymentsService {
     }
 
     async getPlans() {
-        const plans = await this.db.select().from(schema.pricingPlans);
-        return plans.map(plan => ({
-            ...plan,
-            features: typeof plan.features === 'string' ? JSON.parse(plan.features) : plan.features,
-        }));
+        try {
+            const plans = await this.db.select().from(schema.pricingPlans);
+            return plans.map(plan => {
+                let features = [];
+                try {
+                    features = typeof plan.features === 'string' ? JSON.parse(plan.features) : (plan.features || []);
+                } catch (e) {
+                    console.error(`[PaymentsService] Erro ao parsear features do plano ${plan.id}:`, e.message);
+                }
+                return {
+                    ...plan,
+                    features: Array.isArray(features) ? features : [],
+                };
+            });
+        } catch (error) {
+            console.error('[PaymentsService] Erro ao buscar planos:', error.message);
+            throw new Error('Falha ao carregar planos de pagamento');
+        }
     }
-
-
 
     async handleWebhook(signature: string, payload: Buffer) {
         const result = await this.provider.handleWebhook(signature, payload);
@@ -62,7 +73,7 @@ export class PaymentsService {
                     console.log(`[Webhook] Resolvendo e-mail ${userId} para o ID ${user.id}`);
                     userId = user.id;
                 } else {
-                    console.error(`[Webhook] Nenhum usuário encontrado para o e-mail: ${userId}`);
+                    console.error(`[Webhook ERROR] Pagamento recebido, mas NENHUM usuário encontrado com o e-mail: ${userId}. Verifique se o e-mail do AbacatePay coincide com o do cadastro.`);
                     return { received: true };
                 }
             }

@@ -189,9 +189,16 @@ export class RidesService {
     }
 
     async delete(userId: string, id: string) {
-        return this.db
+        const result = await this.db
             .delete(schema.rides)
-            .where(and(eq(schema.rides.id, id), eq(schema.rides.userId, userId)));
+            .where(and(eq(schema.rides.id, id), eq(schema.rides.userId, userId)))
+            .returning();
+
+        if (result.length > 0) {
+            await this.subscriptionsService.decrementRideCount(userId);
+        }
+
+        return result[0];
     }
 
     async findByClient(userId: string, clientId: string, limit?: number, offset?: number) {

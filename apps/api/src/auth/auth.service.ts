@@ -34,6 +34,14 @@ export class AuthService {
             ? await this.subscriptionsService.findByUserId(user.id)
             : null;
 
+        const realRideCount = user.role !== 'admin'
+            ? await this.db
+                .select({ count: sql<number>`count(*)` })
+                .from(schema.rides)
+                .where(eq(schema.rides.userId, user.id))
+                .then(res => Number(res[0]?.count || 0))
+            : 0;
+
         const now = new Date();
         const isExpired = subscription?.validUntil ? new Date(subscription.validUntil) < now : false;
 
@@ -49,11 +57,13 @@ export class AuthService {
                 plan: subscription.plan,
                 status: isExpired ? 'expired' : subscription.status,
                 validUntil: subscription.validUntil,
-                rideCount: subscription.rideCount || 0,
+                rideCount: realRideCount,
             } : null
         };
         const accessToken = this.jwtService.sign(payload);
         const refreshToken = await this.refreshTokenService.create(user.id);
+
+        console.log(`[AuthService] Login realizado com sucesso para: ${user.email}. RideCount: ${realRideCount}`);
 
         return {
             access_token: accessToken,
@@ -82,6 +92,14 @@ export class AuthService {
             ? await this.subscriptionsService.findByUserId(user.id)
             : null;
 
+        const realRideCount = user.role !== 'admin'
+            ? await this.db
+                .select({ count: sql<number>`count(*)` })
+                .from(schema.rides)
+                .where(eq(schema.rides.userId, user.id))
+                .then(res => Number(res[0]?.count || 0))
+            : 0;
+
         const now = new Date();
         const isExpired = subscription?.validUntil ? new Date(subscription.validUntil) < now : false;
 
@@ -97,12 +115,14 @@ export class AuthService {
                 plan: subscription.plan,
                 status: isExpired ? 'expired' : subscription.status,
                 validUntil: subscription.validUntil,
-                rideCount: subscription.rideCount || 0,
+                rideCount: realRideCount,
             } : null
         };
 
         const accessToken = this.jwtService.sign(payload);
         const newRefreshToken = await this.refreshTokenService.create(user.id);
+
+        console.log(`[AuthService] Refresh realizado com sucesso para: ${user.email}. RideCount: ${realRideCount}`);
 
         // Rotação: revogar o token antigo imediatamente após o uso
         await this.refreshTokenService.revoke(oldToken);

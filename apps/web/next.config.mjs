@@ -15,6 +15,10 @@ const nextConfig = {
         source: '/api/:path*',
         destination: `${apiUrl}/:path*`,
       },
+      {
+        source: '/payments/webhook',
+        destination: `${apiUrl}/payments/webhook`,
+      },
     ];
   },
 }

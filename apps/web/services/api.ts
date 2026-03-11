@@ -1,9 +1,7 @@
 import axios from "axios";
 
 export const api = axios.create({
-    baseURL: (typeof window !== 'undefined' && (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'))
-        ? "/api"
-        : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"),
+    baseURL: typeof window !== 'undefined' ? "/api" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"),
     withCredentials: true,
 });
 

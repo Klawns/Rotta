@@ -14,7 +14,7 @@ export default function PaymentSuccessPage() {
 
     useEffect(() => {
         let attempts = 0;
-        const maxAttempts = 5;
+        const maxAttempts = 30; // 30 tentativas * 2s = 60s
 
         const checkPayment = async () => {
             try {

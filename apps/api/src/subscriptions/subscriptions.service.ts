@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { DRIZZLE } from '../database/database.provider';
 import * as schema from '@mdc/database';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -29,6 +29,17 @@ export class SubscriptionsService {
                 updatedAt: new Date(),
             } as any)
             .where(eq(schema.subscriptions.userId, userId))
+            .returning();
+    }
+
+    async decrementRideCount(userId: string) {
+        return this.db
+            .update(schema.subscriptions)
+            .set({
+                rideCount: sql`${schema.subscriptions.rideCount} - 1`,
+                updatedAt: new Date(),
+            } as any)
+            .where(and(eq(schema.subscriptions.userId, userId), sql`${schema.subscriptions.rideCount} > 0`))
             .returning();
     }
 

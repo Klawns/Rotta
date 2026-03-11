@@ -10,9 +10,24 @@ import { useRouter } from "next/navigation";
 export default function PricingGatePage() {
     const { user, logout } = useAuth();
     const router = useRouter();
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const reason = searchParams?.get('reason');
+    const isLimitReached = reason === 'limit_reached';
 
     return (
         <div className="min-h-screen bg-[#020617] text-white flex flex-col items-center justify-center p-6 lg:p-24 relative overflow-hidden">
+            {isLimitReached && (
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="fixed top-8 z-50 bg-red-500/10 border border-red-500/30 px-6 py-3 rounded-2xl backdrop-blur-md flex items-center gap-3 shadow-2xl shadow-red-500/10"
+                >
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <p className="text-red-400 text-sm font-bold">
+                        Limite de 20 corridas atingido! Faça o upgrade para continuar usando o MDC.
+                    </p>
+                </motion.div>
+            )}
             {/* Background elements */}
             <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-lime-600/10 to-transparent pointer-events-none" />
             <div className="absolute -top-24 -left-24 w-96 h-96 bg-lime-600/5 rounded-full blur-3xl pointer-events-none" />
@@ -49,11 +64,19 @@ export default function PricingGatePage() {
 
                     <div className="flex flex-col sm:flex-row items-center gap-6">
                         <button
-                            onClick={() => router.back()}
+                            onClick={() => {
+                                const rideCount = user?.subscription?.rideCount || 0;
+                                const isBlocked = user?.subscription?.plan === 'starter' && rideCount >= 20;
+                                if (isBlocked) {
+                                    router.push("/");
+                                } else {
+                                    router.push("/dashboard");
+                                }
+                            }}
                             className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium group"
                         >
                             <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                            Voltar ao Dashboard
+                            {user?.subscription?.plan === 'starter' && (user?.subscription?.rideCount || 0) >= 20 ? 'Voltar para Início' : 'Voltar ao Dashboard'}
                         </button>
 
                         <button
