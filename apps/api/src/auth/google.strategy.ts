@@ -8,7 +8,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     constructor(private configService: ConfigService) {
         const clientID = configService.get<string>('GOOGLE_CLIENT_ID') || 'placeholder';
         const clientSecret = configService.get<string>('GOOGLE_CLIENT_SECRET') || 'placeholder';
-        const callbackURL = configService.get<string>('GOOGLE_CALLBACK_URL') || 'http://localhost:3000/auth/google/callback';
+        const callbackURL = configService.get<string>('GOOGLE_CALLBACK_URL');
+
+        if (!callbackURL && process.env.NODE_ENV === 'production') {
+            throw new Error('GOOGLE_CALLBACK_URL must be defined in production');
+        }
 
         super({
             clientID,

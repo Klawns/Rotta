@@ -7,10 +7,30 @@ import type { LoginDto, RegisterDto, ChangePasswordDto, ProfileDto } from './dto
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { AuthGuard } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService) { }
+    constructor(
+        private authService: AuthService,
+        private configService: ConfigService
+    ) { }
+
+    private getCookieOptions() {
+        const isProduction = process.env.NODE_ENV === 'production' ||
+            this.configService.get('FRONTEND_URL')?.includes('up.railway.app');
+
+        return {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax' as any,
+            path: '/',
+        };
+    }
+
+    private getFrontendUrl() {
+        return this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    }
 
     @Get('google')
     @UseGuards(GoogleAuthGuard)
@@ -20,15 +40,7 @@ export class AuthController {
     @UseGuards(AuthGuard('google'))
     async googleAuthRedirect(@Req() req: any, @Res() res: Response) {
         const tokens = await this.authService.validateGoogleUser(req.user);
-
-        const isProduction = process.env.NODE_ENV === 'production';
-        const isSecure = isProduction || req.get('x-forwarded-proto') === 'https';
-
-        const cookieOptions = {
-            httpOnly: true,
-            secure: isSecure,
-            sameSite: isSecure ? 'none' : 'lax' as any,
-        };
+        const cookieOptions = this.getCookieOptions();
 
         res.cookie('refresh_token', tokens.refresh_token, {
             ...cookieOptions,
@@ -40,18 +52,17 @@ export class AuthController {
             maxAge: 15 * 60 * 1000,
         });
 
-        // Lógica de Redirecionamento Inteligente (Checkout vs Dashboard)
         const selectedPlan = req.cookies['selected_plan'] || 'starter';
         res.clearCookie('selected_plan');
 
         const subscription = await this.authService.getUserSubscription(tokens.user.id);
+        const frontendUrl = this.getFrontendUrl();
 
-        // Se escolheu um plano pago e ainda não tem (ou é starter)
         if (['premium', 'lifetime'].includes(selectedPlan) && (!subscription || subscription.plan === 'starter')) {
-            return res.redirect(`${process.env.FRONTEND_URL}/checkout?plan=${selectedPlan}`);
+            return res.redirect(`${frontendUrl}/checkout?plan=${selectedPlan}`);
         }
 
-        return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+        return res.redirect(`${frontendUrl}/dashboard`);
     }
 
     @UseGuards(JwtAuthGuard)
@@ -72,17 +83,8 @@ export class AuthController {
     @UsePipes(new ZodValidationPipe(profileSchema))
     async updateProfile(@Req() req: any, @Body() body: ProfileDto, @Res({ passthrough: true }) res: Response) {
         const tokens = await this.authService.updateProfile(req.user.id, body);
+        const cookieOptions = this.getCookieOptions();
 
-        const isProduction = process.env.NODE_ENV === 'production';
-        const isSecure = isProduction || req.get('x-forwarded-proto') === 'https';
-
-        const cookieOptions = {
-            httpOnly: true,
-            secure: isSecure,
-            sameSite: isSecure ? 'none' : 'lax' as any,
-        };
-
-        // Atualizar cookies com novos tokens (que agora contêm taxId/cellphone atualizados)
         res.cookie('refresh_token', tokens.refresh_token, {
             ...cookieOptions,
             maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -107,32 +109,21 @@ export class AuthController {
             throw new UnauthorizedException('Credenciais inválidas');
         }
 
-        // Restrição: login tradicional (email/senha) apenas para administradores
         if (user.role !== 'admin') {
             throw new UnauthorizedException('Acesso restrito para administradores por este meio. Por favor, utilize o Login com Google.');
         }
 
         const tokens = await this.authService.login(user);
+        const cookieOptions = this.getCookieOptions();
 
-        const isProduction = process.env.NODE_ENV === 'production';
-        const isSecure = isProduction || req.get('x-forwarded-proto') === 'https';
-
-        const cookieOptions = {
-            httpOnly: true,
-            secure: isSecure,
-            sameSite: isSecure ? 'none' : 'lax' as any,
-        };
-
-        // Configurar refresh token em cookie seguro (Admin)
         res.cookie('admin_refresh_token', tokens.refresh_token, {
             ...cookieOptions,
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
-        // Configurar access token em cookie seguro (Admin)
         res.cookie('admin_access_token', tokens.access_token, {
             ...cookieOptions,
-            maxAge: 15 * 60 * 1000, // 15 minutos
+            maxAge: 15 * 60 * 1000,
         });
 
         return {
@@ -144,15 +135,7 @@ export class AuthController {
     @UsePipes(new ZodValidationPipe(registerSchema))
     async register(@Req() req: Request, @Body() body: RegisterDto, @Res({ passthrough: true }) res: Response) {
         const tokens = await this.authService.register(body);
-
-        const isProduction = process.env.NODE_ENV === 'production';
-        const isSecure = isProduction || req.get('x-forwarded-proto') === 'https';
-
-        const cookieOptions = {
-            httpOnly: true,
-            secure: isSecure,
-            sameSite: isSecure ? 'none' : 'lax' as any,
-        };
+        const cookieOptions = this.getCookieOptions();
 
         res.cookie('refresh_token', tokens.refresh_token, {
             ...cookieOptions,
@@ -181,23 +164,13 @@ export class AuthController {
             throw new UnauthorizedException();
         }
         const tokens = await this.authService.refresh(token);
+        const cookieOptions = this.getCookieOptions();
 
-        const isProduction = process.env.NODE_ENV === 'production';
-        const isSecure = isProduction || req.get('x-forwarded-proto') === 'https';
-
-        const cookieOptions = {
-            httpOnly: true,
-            secure: isSecure,
-            sameSite: isSecure ? 'none' : 'lax' as any,
-        };
-
-        // Rotação: Atualizar o novo refresh token
         res.cookie(refreshTokenName, tokens.refresh_token, {
             ...cookieOptions,
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
-        // Renovar access token
         res.cookie(accessTokenName, tokens.access_token, {
             ...cookieOptions,
             maxAge: 15 * 60 * 1000,
@@ -209,7 +182,6 @@ export class AuthController {
     @Post('logout')
     @HttpCode(HttpStatus.NO_CONTENT)
     async logout(@Res({ passthrough: true }) res: Response) {
-        // Limpa todos os possíveis tokens
         res.clearCookie('refresh_token');
         res.clearCookie('access_token');
         res.clearCookie('admin_refresh_token');

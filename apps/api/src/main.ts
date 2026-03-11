@@ -8,8 +8,13 @@ async function bootstrap() {
   // Habilita confiança no proxy (essencial para Railway/Render/Vercel lerem HTTPS e IPs corretamente)
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
+  const frontendUrl = process.env.FRONTEND_URL;
+  if (!frontendUrl && process.env.NODE_ENV === 'production') {
+    throw new Error('FRONTEND_URL must be defined');
+  }
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: frontendUrl ?? 'http://localhost:3000',
     credentials: true,
   });
 
