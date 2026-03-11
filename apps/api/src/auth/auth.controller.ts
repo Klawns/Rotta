@@ -189,8 +189,21 @@ export class AuthController {
 
     @Post('logout')
     @HttpCode(HttpStatus.NO_CONTENT)
-    async logout(@Res({ passthrough: true }) res: Response) {
+    async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
         const cookieOptions = this.getCookieOptions();
+
+        // Pega os tokens antes de limpar, pra podermos invalidar no Redis
+        const refreshToken = req.cookies['refresh_token'];
+        const adminRefreshToken = req.cookies['admin_refresh_token'];
+
+        if (refreshToken) {
+            await this.authService.logout(refreshToken);
+        }
+
+        if (adminRefreshToken) {
+            await this.authService.logout(adminRefreshToken);
+        }
+
         res.clearCookie('refresh_token', cookieOptions);
         res.clearCookie('access_token', cookieOptions);
         res.clearCookie('admin_refresh_token', cookieOptions);

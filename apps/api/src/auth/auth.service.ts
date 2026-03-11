@@ -8,6 +8,8 @@ import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { DRIZZLE } from '../database/database.provider';
 import * as schema from '@mdc/database';
 import { eq, sql } from 'drizzle-orm';
+import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
+import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +20,8 @@ export class AuthService {
         private subscriptionsService: SubscriptionsService,
         @Inject(DRIZZLE)
         private db: LibSQLDatabase<typeof schema>,
+        @Inject(CACHE_PROVIDER)
+        private cache: ICacheProvider,
     ) { }
 
     async validateUser(email: string, pass: string): Promise<any> {
@@ -174,12 +178,14 @@ export class AuthService {
 
     async updateProfile(userId: string, data: any) {
         await this.usersService.update(userId, data);
+        await this.cache.del(`profile:${userId}`); // Invalida o cache
         const user = await this.usersService.findById(userId);
         return this.login(user);
     }
 
     async tutorialSeen(userId: string) {
         await this.usersService.update(userId, { hasSeenTutorial: true });
+        await this.cache.del(`profile:${userId}`); // Invalida o cache do perfil 
         return { success: true };
     }
 
@@ -195,7 +201,23 @@ export class AuthService {
         return { message: 'Senha alterada com sucesso' };
     }
 
+    async logout(refreshToken: string) {
+        if (refreshToken) {
+            await this.refreshTokenService.revoke(refreshToken);
+        }
+        return { message: 'Logout realizado' };
+    }
+
     async getLatestProfile(userId: string) {
+        const cacheKey = `profile:${userId}`;
+
+        // 1. Tenta carregar do Redis
+        const cachedProfile = await this.cache.get<any>(cacheKey);
+        if (cachedProfile) {
+            return cachedProfile;
+        }
+
+        // 2. Busca do Banco (Turso)
         const user = await this.usersService.findById(userId);
         if (!user) return null;
 
@@ -214,7 +236,7 @@ export class AuthService {
         const now = new Date();
         const isExpired = subscription?.validUntil ? new Date(subscription.validUntil) < now : false;
 
-        return {
+        const finalProfile = {
             id: user.id,
             email: user.email,
             name: user.name,
@@ -229,5 +251,10 @@ export class AuthService {
                 rideCount: realRideCount,
             } : null
         };
+
+        // 3. Guarda e expira naturalmente em 10 minutos (Dá espaço para não quebrar a sincronização)
+        await this.cache.set(cacheKey, finalProfile, 600);
+
+        return finalProfile;
     }
 }

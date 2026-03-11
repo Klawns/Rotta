@@ -1,8 +1,13 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
+import { CacheModule } from './cache/cache.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ClientsModule } from './clients/clients.module';
@@ -19,7 +24,36 @@ import { DebugController } from './debug/debug.controller';
       isGlobal: true,
       envFilePath: ['.env', 'apps/api/.env'],
     }),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const redisUrl = config.get<string>('REDIS_URL');
+        return {
+          throttlers: [{
+            ttl: 60000,
+            limit: 100, // Limite global generoso inicial: 100 req por min / ip
+          }],
+          // Se REDIS_URL existir usa o redis distribuído. Se não (local dev) cai na memoria
+          storage: redisUrl ? new ThrottlerStorageRedisService(redisUrl) : undefined,
+        };
+      }
+    }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('REDIS_URL');
+        if (redisUrl) {
+          return {
+            connection: { url: redisUrl }
+          };
+        }
+        return {
+          connection: { host: 'localhost', port: 6379 }
+        }
+      },
+    }),
     DatabaseModule,
+    CacheModule,
     UsersModule,
     AuthModule,
     ClientsModule,
@@ -30,6 +64,12 @@ import { DebugController } from './debug/debug.controller';
     SettingsModule,
   ],
   controllers: [AppController, DebugController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard, // Ativa a proteção em todas as rotas
+    }
+  ],
 })
 export class AppModule { }

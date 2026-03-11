@@ -1,61 +1,45 @@
 import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
-import type { LibSQLDatabase } from 'drizzle-orm/libsql';
-import { DRIZZLE } from '../../database/database.provider';
-import * as schema from '@mdc/database';
-import { eq, and, gt, lte } from 'drizzle-orm';
+import { CACHE_PROVIDER } from '../../cache/interfaces/cache-provider.interface';
+import type { ICacheProvider } from '../../cache/interfaces/cache-provider.interface';
 import { randomUUID } from 'crypto';
 
 @Injectable()
 export class RefreshTokenService {
+    // Definimos 7 dias de validade em segundos
+    private readonly TTL_SECONDS = 7 * 24 * 60 * 60;
+
     constructor(
-        @Inject(DRIZZLE)
-        private db: LibSQLDatabase<typeof schema>,
+        @Inject(CACHE_PROVIDER)
+        private cache: ICacheProvider,
     ) { }
 
-    async create(userId: string) {
+    async create(userId: string): Promise<string> {
         const token = randomUUID();
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7); // 7 dias de validade
 
-        await this.db.insert(schema.refreshTokens).values({
-            id: randomUUID(),
-            token,
-            userId,
-            expiresAt,
-        });
+        // Salvamos o token no Redis com a chave 'refresh_token:<token>'
+        // O valor associado é o ID do usuário
+        await this.cache.set(`refresh_token:${token}`, userId, this.TTL_SECONDS);
 
         return token;
     }
 
-    async validate(token: string) {
-        const results = await this.db
-            .select()
-            .from(schema.refreshTokens)
-            .where(
-                and(
-                    eq(schema.refreshTokens.token, token),
-                    gt(schema.refreshTokens.expiresAt, new Date())
-                )
-            )
-            .limit(1);
+    async validate(token: string): Promise<{ userId: string }> {
+        const userId = await this.cache.get<string>(`refresh_token:${token}`);
 
-        const refreshToken = results[0];
-        if (!refreshToken) {
-            throw new UnauthorizedException('Refresh token inválido ou expirado');
+        if (!userId) {
+            throw new UnauthorizedException('Refresh token inválido, revogado ou expirado');
         }
 
-        return refreshToken;
+        return { userId };
     }
 
-    async revoke(token: string) {
-        await this.db
-            .delete(schema.refreshTokens)
-            .where(eq(schema.refreshTokens.token, token));
+    async revoke(token: string): Promise<void> {
+        await this.cache.del(`refresh_token:${token}`);
     }
 
-    async cleanupExpiredTokens() {
-        return this.db
-            .delete(schema.refreshTokens)
-            .where(lte(schema.refreshTokens.expiresAt, new Date()));
+    // Com o Redis, o TTL nativo já apaga da memória, então o robô manual de limpeza não é mais necessário
+    async cleanupExpiredTokens(): Promise<void> {
+        // Obsoleto: Mantido vazio para caso seja chamado retroativamente em algum CronJob antigo.
+        return Promise.resolve();
     }
 }
