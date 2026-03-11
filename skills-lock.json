@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "skills": {
+    "api-security-best-practices": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "ce16d10df486a28a3ba894d646de3243fc2bf9990f563fc7a9b074fd720e24d5"
+    },
+    "clean-code": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "computedHash": "723e4955a7f12526cc4a182f085e41495bcbb8fae232e491e82e10926597624b"
+    },
+    "nestjs-expert": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "db72897ee0ae63aebce4a4e23cc5f81f919137907052127f0169bc379d6194b1"
+    },
+    "nextjs-best-practices": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "8f5b6b588c638139854181f80a241c16575810a3bd45b0983e55078b6aed347a"
+    },
+    "refactor:nestjs": {
+      "source": "snakeo/claude-debug-and-refactor-skills-plugin",
+      "sourceType": "github",
+      "computedHash": "7394b070e2aa821659aab228168a6a7a3b1dea76b1ff9b6a9bdfccb5fa9fa3a7"
+    },
+    "refactor:nextjs": {
+      "source": "snakeo/claude-debug-and-refactor-skills-plugin",
+      "sourceType": "github",
+      "computedHash": "5113e4d68b0c3aacf82a1008eaa12a2c0ce934800cfee664f78868e5e7d16afe"
+    },
+    "sql-query-optimizer": {
+      "source": "patricio0312rev/skills",
+      "sourceType": "github",
+      "computedHash": "0a1592b3644f7ce6aa592c2ff7e59336e8a77e4f5812b3090e7f119033b98baa"
+    },
+    "task-planning": {
+      "source": "supercent-io/skills-template",
+      "sourceType": "github",
+      "computedHash": "1459a31d3c87df7fd601a99479363a7f66da1cd2089f08405a7d4854d0da3a93"
+    }
+  }
+}

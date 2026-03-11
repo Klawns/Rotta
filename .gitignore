@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+**/node_modules/
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+**/dist/
+.next/
+**/.next/
+out/
+build/
+*.tsbuildinfo
+.turbo/
+**/.turbo/
+
+# Environment Variables
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+.env*.local
+
+# Secrets and sensitive files
+*.pem
+*.key
+credentials.json
+.vscode/
+.idea/
+
+# System
+.DS_Store
+Thumbs.db
+
+# v0 runtime files
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts

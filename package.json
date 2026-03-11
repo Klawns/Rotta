@@ -1,0 +1,22 @@
+{
+    "name": "mdc-monorepo",
+    "private": true,
+    "engines": {
+        "node": ">=20"
+    },
+    "packageManager": "pnpm@10.30.3",
+    "scripts": {
+        "build": "turbo build",
+        "dev": "turbo dev",
+        "lint": "turbo lint",
+        "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    },
+    "devDependencies": {
+        "prettier": "latest",
+        "turbo": "latest"
+    },
+    "dependencies": {
+        "ts-node": "^10.9.2",
+        "tsx": "^4.21.0"
+    }
+}

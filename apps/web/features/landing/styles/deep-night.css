@@ -1,0 +1,41 @@
+:root {
+  --deep-bg: #050505;
+  --deep-card: rgba(15, 15, 20, 0.7);
+  --deep-accent: #3b82f6;
+  --deep-accent-glow: rgba(59, 130, 246, 0.3);
+  --deep-violet: #8b5cf6;
+  --deep-text-primary: #f8fafc;
+  --deep-text-secondary: #94a3b8;
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+.deep-night-bg {
+  background-color: var(--deep-bg);
+  background-image: 
+    radial-gradient(circle at 50% -20%, rgba(59, 130, 246, 0.15), transparent 70%),
+    radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1), transparent 50%);
+  color: var(--deep-text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.glass-card {
+  background: var(--deep-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+}
+
+.glow-text {
+  text-shadow: 0 0 20px var(--deep-accent-glow);
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
