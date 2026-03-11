@@ -55,27 +55,42 @@ export class SubscriptionsService {
         }
 
         if (existing.length > 0) {
-            return this.db
-                .update(schema.subscriptions)
-                .set({
+            console.log(`[Subscription] Atualizando plano existente para o usuário ${userId}`);
+            try {
+                const updated = await this.db
+                    .update(schema.subscriptions)
+                    .set({
+                        plan,
+                        status: 'active',
+                        validUntil,
+                    } as any)
+                    .where(eq(schema.subscriptions.userId, userId))
+                    .returning();
+                console.log(`[Subscription] Plano atualizado com sucesso:`, updated[0]);
+                return updated;
+            } catch (error) {
+                console.error(`[Subscription] Erro ao atualizar plano para o usuário ${userId}:`, error);
+                throw error;
+            }
+        }
+
+        console.log(`[Subscription] Criando novo plano para o usuário ${userId}`);
+        try {
+            const inserted = await this.db
+                .insert(schema.subscriptions)
+                .values({
+                    id: randomUUID(),
+                    userId,
                     plan,
                     status: 'active',
                     validUntil,
-                    updatedAt: new Date(),
                 } as any)
-                .where(eq(schema.subscriptions.userId, userId))
                 .returning();
+            console.log(`[Subscription] Novo plano criado com sucesso:`, inserted[0]);
+            return inserted;
+        } catch (error) {
+            console.error(`[Subscription] Erro ao criar novo plano para o usuário ${userId}:`, error);
+            throw error;
         }
-
-        return this.db
-            .insert(schema.subscriptions)
-            .values({
-                id: randomUUID(),
-                userId,
-                plan,
-                status: 'active',
-                validUntil,
-            } as any)
-            .returning();
     }
 }
