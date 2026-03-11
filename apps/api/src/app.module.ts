@@ -29,27 +29,46 @@ import { DebugController } from './debug/debug.controller';
       useFactory: (config: ConfigService) => {
         const redisUrl = config.get<string>('REDIS_URL');
         return {
-          throttlers: [{
-            ttl: 60000,
-            limit: 100, // Limite global generoso inicial: 100 req por min / ip
-          }],
+          throttlers: [
+            {
+              ttl: 60000,
+              limit: 100, // Limite global generoso inicial: 100 req por min / ip
+            },
+          ],
           // Se REDIS_URL existir usa o redis distribuído. Se não (local dev) cai na memoria
-          storage: redisUrl ? new ThrottlerStorageRedisService(redisUrl) : undefined,
+          storage: redisUrl
+            ? new ThrottlerStorageRedisService(redisUrl)
+            : undefined,
         };
-      }
+      },
     }),
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
         if (redisUrl) {
-          return {
-            connection: { url: redisUrl }
-          };
+          try {
+            const url = new URL(redisUrl);
+            return {
+              connection: {
+                host: url.hostname,
+                port: parseInt(url.port, 10),
+                username: url.username || undefined,
+                password: url.password || undefined,
+                tls: url.protocol === 'rediss:' ? {} : undefined,
+              },
+            };
+          } catch (e) {
+            console.error('Falha ao fazer parse do REDIS_URL no BullMQ', e);
+          }
         }
         return {
-          connection: { host: 'localhost', port: 6379 }
-        }
+          connection: {
+            host: configService.get<string>('REDISHOST') || 'localhost',
+            port: configService.get<number>('REDISPORT') || 6379,
+            password: configService.get<string>('REDISPASSWORD'),
+          },
+        };
       },
     }),
     DatabaseModule,
@@ -69,7 +88,7 @@ import { DebugController } from './debug/debug.controller';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard, // Ativa a proteção em todas as rotas
-    }
+    },
   ],
 })
-export class AppModule { }
+export class AppModule {}

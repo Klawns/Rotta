@@ -1,27 +1,32 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
-import { DRIZZLE } from '../database/database.provider';
+import { IUsersRepository } from './interfaces/users-repository.interface';
 
 describe('UsersService', () => {
   let service: UsersService;
-  let dbMock: any;
+  let repoMock: any;
 
   beforeEach(async () => {
-    dbMock = {
-      select: jest.fn().mockReturnThis(),
-      from: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnThis(),
-      values: jest.fn().mockReturnThis(),
-      returning: jest.fn().mockResolvedValue([{ id: '1', email: 'test@example.com' }]),
+    repoMock = {
+      findById: jest
+        .fn()
+        .mockResolvedValue({ id: '1', email: 'test@example.com' }),
+      findByEmail: jest
+        .fn()
+        .mockResolvedValue({ id: '1', email: 'test@example.com' }),
+      create: jest
+        .fn()
+        .mockResolvedValue({ id: '1', email: 'test@example.com' }),
+      update: jest.fn().mockResolvedValue(undefined),
+      delete: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         {
-          provide: DRIZZLE,
-          useValue: dbMock,
+          provide: IUsersRepository,
+          useValue: repoMock,
         },
       ],
     }).compile();
@@ -34,9 +39,13 @@ describe('UsersService', () => {
   });
 
   it('should create a user', async () => {
-    const userData = { email: 'test@example.com', name: 'Test', password: 'hash' };
+    const userData = {
+      email: 'test@example.com',
+      name: 'Test',
+      password: 'hash',
+    };
     const result = await service.create(userData);
     expect(result).toEqual({ id: '1', email: 'test@example.com' });
-    expect(dbMock.insert).toHaveBeenCalled();
+    expect(repoMock.create).toHaveBeenCalled();
   });
 });

@@ -6,6 +6,7 @@ import { Plus, Search, User, Bike, ChevronRight, X, Calendar, Trash2 } from "luc
 import { api } from "@/services/api";
 import { formatCurrency, cn } from "@/lib/utils";
 import { RideModal } from "@/components/ride-modal";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Client {
     id: string;
@@ -33,6 +34,7 @@ export default function ClientsPage() {
     const [isAddingClient, setIsAddingClient] = useState(false);
     const [isRideModalOpen, setIsRideModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const { user } = useAuth();
 
     // Client List Pagination
     const [clientPage, setClientPage] = useState(1);
@@ -45,8 +47,12 @@ export default function ClientsPage() {
     const rideLimit = 5;
 
     useEffect(() => {
-        fetchClients();
-    }, [clientPage, search]);
+        if (user) {
+            fetchClients();
+        } else {
+            setIsLoading(false);
+        }
+    }, [clientPage, search, user]);
 
     useEffect(() => {
         if (selectedClient) {

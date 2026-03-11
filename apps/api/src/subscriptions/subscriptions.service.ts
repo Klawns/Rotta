@@ -1,107 +1,36 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { LibSQLDatabase } from 'drizzle-orm/libsql';
-import { DRIZZLE } from '../database/database.provider';
-import * as schema from '@mdc/database';
-import { eq, sql, and } from 'drizzle-orm';
-import { randomUUID } from 'crypto';
+import { ISubscriptionsRepository } from './interfaces/subscriptions-repository.interface';
 
 @Injectable()
 export class SubscriptionsService {
-    constructor(
-        @Inject(DRIZZLE)
-        private db: LibSQLDatabase<typeof schema>,
-    ) { }
+  constructor(
+    @Inject(ISubscriptionsRepository)
+    private readonly subscriptionsRepository: ISubscriptionsRepository,
+  ) { }
 
-    async findByUserId(userId: string) {
-        const results = await this.db
-            .select()
-            .from(schema.subscriptions)
-            .where(eq(schema.subscriptions.userId, userId))
-            .limit(1);
-        return results[0];
-    }
+  async findByUserId(userId: string) {
+    return this.subscriptionsRepository.findByUserId(userId);
+  }
 
-    async incrementRideCount(userId: string) {
-        return this.db
-            .update(schema.subscriptions)
-            .set({
-                rideCount: sql`${schema.subscriptions.rideCount} + 1`,
-                updatedAt: new Date(),
-            } as any)
-            .where(eq(schema.subscriptions.userId, userId))
-            .returning();
-    }
+  async incrementRideCount(userId: string) {
+    return this.subscriptionsRepository.incrementRideCount(userId);
+  }
 
-    async decrementRideCount(userId: string) {
-        return this.db
-            .update(schema.subscriptions)
-            .set({
-                rideCount: sql`${schema.subscriptions.rideCount} - 1`,
-                updatedAt: new Date(),
-            } as any)
-            .where(and(eq(schema.subscriptions.userId, userId), sql`${schema.subscriptions.rideCount} > 0`))
-            .returning();
-    }
+  async decrementRideCount(userId: string) {
+    return this.subscriptionsRepository.decrementRideCount(userId);
+  }
 
-    async updateOrCreate(userId: string, plan: 'starter' | 'premium' | 'lifetime') {
-        console.log(`[Subscription] Iniciando atualização de plano. User: ${userId}, Plan: ${plan}`);
-        const existing = await this.db
-            .select()
-            .from(schema.subscriptions)
-            .where(eq(schema.subscriptions.userId, userId))
-            .limit(1);
+  async updateOrCreate(
+    userId: string,
+    plan: 'starter' | 'premium' | 'lifetime',
+  ) {
+    return this.subscriptionsRepository.updateOrCreate(userId, plan);
+  }
 
-        let validUntil: Date | null = null;
-
-        if (plan === 'premium') {
-            const now = new Date();
-            const currentValidUntil = existing[0]?.validUntil;
-
-            // Se já tiver uma data de validade futura, soma +30 dias nela.
-            // Senha, soma +30 dias a partir de agora.
-            const baseDate = (currentValidUntil && currentValidUntil > now) ? currentValidUntil : now;
-            validUntil = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-        } else if (plan === 'lifetime') {
-            validUntil = null;
-        }
-
-        if (existing.length > 0) {
-            console.log(`[Subscription] Atualizando plano existente para o usuário ${userId}`);
-            try {
-                const updated = await this.db
-                    .update(schema.subscriptions)
-                    .set({
-                        plan,
-                        status: 'active',
-                        validUntil,
-                    } as any)
-                    .where(eq(schema.subscriptions.userId, userId))
-                    .returning();
-                console.log(`[Subscription] Plano atualizado com sucesso:`, updated[0]);
-                return updated;
-            } catch (error) {
-                console.error(`[Subscription] Erro ao atualizar plano para o usuário ${userId}:`, error);
-                throw error;
-            }
-        }
-
-        console.log(`[Subscription] Criando novo plano para o usuário ${userId}`);
-        try {
-            const inserted = await this.db
-                .insert(schema.subscriptions)
-                .values({
-                    id: randomUUID(),
-                    userId,
-                    plan,
-                    status: 'active',
-                    validUntil,
-                } as any)
-                .returning();
-            console.log(`[Subscription] Novo plano criado com sucesso:`, inserted[0]);
-            return inserted;
-        } catch (error) {
-            console.error(`[Subscription] Erro ao criar novo plano para o usuário ${userId}:`, error);
-            throw error;
-        }
-    }
+  async overridePlan(
+    userId: string,
+    plan: 'starter' | 'premium' | 'lifetime',
+  ) {
+    return this.subscriptionsRepository.overridePlan(userId, plan);
+  }
 }

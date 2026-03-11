@@ -1,18 +1,22 @@
-import { PipeTransform, ArgumentMetadata, BadRequestException } from '@nestjs/common';
+import {
+  PipeTransform,
+  ArgumentMetadata,
+  BadRequestException,
+} from '@nestjs/common';
 import { ZodSchema } from 'zod';
 
 export class ZodValidationPipe implements PipeTransform {
-    constructor(private schema: ZodSchema) { }
+  constructor(private schema: ZodSchema) {}
 
-    transform(value: unknown, metadata: ArgumentMetadata) {
-        try {
-            const parsedValue = this.schema.parse(value);
-            return parsedValue;
-        } catch (error) {
-            throw new BadRequestException('Falha na validação', {
-                cause: error,
-                description: 'Dados de entrada inválidos',
-            });
-        }
+  transform(value: unknown, metadata: ArgumentMetadata) {
+    try {
+      const parsedValue = this.schema.parse(value);
+      return parsedValue;
+    } catch (error) {
+      throw new BadRequestException('Falha na validação', {
+        cause: error,
+        description: 'Dados de entrada inválidos',
+      });
     }
+  }
 }

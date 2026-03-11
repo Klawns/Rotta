@@ -156,6 +156,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <Link
                                 key={item.label}
                                 href={item.href}
+                                onClick={() => setIsSidebarOpen(false)}
                                 className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 transition-all group active:scale-95"
                             >
                                 <item.icon size={22} className={item.color} />
@@ -169,6 +170,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         {user?.subscription?.plan === 'starter' && user?.subscription?.status === 'active' && isSidebarOpen && (
                             <Link
                                 href="/pricing"
+                                onClick={() => setIsSidebarOpen(false)}
                                 className="mx-4 mt-6 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-lime-500 text-black font-black text-xs uppercase tracking-widest hover:bg-lime-400 transition-all shadow-lg shadow-lime-500/20 active:scale-95 group"
                             >
                                 <Sparkles size={14} className="group-hover:rotate-12 transition-transform" />
@@ -180,7 +182,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl mt-4">
                                 <p className="text-[10px] uppercase font-bold text-red-400 mb-1">Acesso Bloqueado</p>
                                 <p className="text-xs text-slate-400 leading-tight">Sua assinatura expirou. Renove para continuar.</p>
-                                <Link href="/checkout?plan=premium" className="text-xs text-white font-bold mt-2 inline-block hover:underline">Renovar agora →</Link>
+                                <Link href="/checkout?plan=premium" onClick={() => setIsSidebarOpen(false)} className="text-xs text-white font-bold mt-2 inline-block hover:underline">Renovar agora →</Link>
                             </div>
                         )}
                     </nav>

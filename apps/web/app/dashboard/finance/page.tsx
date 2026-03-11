@@ -9,6 +9,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -45,6 +53,10 @@ export default function FinancePage() {
     const [viewStats, setViewStats] = useState<Stats | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    const [isPixModalOpen, setIsPixModalOpen] = useState(false);
+    const [pixKey, setPixKey] = useState("");
+    const [statsToExport, setStatsToExport] = useState<{ period: any, stats: Stats | null } | null>(null);
+
     const periods = [
         { id: 'today', label: 'Hoje', color: 'bg-blue-500', text: 'text-blue-400', border: 'border-blue-500/20' },
         { id: 'week', label: 'Semana', color: 'bg-emerald-500', text: 'text-emerald-400', border: 'border-emerald-500/20' },
@@ -55,9 +67,10 @@ export default function FinancePage() {
     const currentPeriod = periods.find(p => p.id === selectedPeriod) || periods[0];
 
     useEffect(() => {
+        if (!user) return;
         if (selectedPeriod === 'custom' && (!startDate || !endDate)) return;
         loadData();
-    }, [selectedClientId, selectedPeriod, startDate, endDate]);
+    }, [selectedClientId, selectedPeriod, startDate, endDate, user]);
 
     const loadData = async () => {
         setIsLoading(true);
@@ -86,10 +99,21 @@ export default function FinancePage() {
     const handleExportPDF = (period: 'today' | 'week' | 'month' | 'year' | 'custom', stats: Stats | null) => {
         if (!stats || !stats.rides.length) return;
 
-        PDFService.generateReport(stats.rides, {
-            period,
-            userName: user?.name || "Motorista"
+        setStatsToExport({ period, stats });
+        setIsPixModalOpen(true);
+    };
+
+    const confirmExport = (includePix: boolean) => {
+        if (!statsToExport) return;
+
+        PDFService.generateReport(statsToExport.stats!.rides, {
+            period: statsToExport.period,
+            userName: user?.name || "Motorista",
+            pixKey: includePix && pixKey.trim() !== "" ? pixKey : undefined
         });
+
+        setIsPixModalOpen(false);
+        setStatsToExport(null);
     };
 
     if (isLoading) {
@@ -240,45 +264,41 @@ export default function FinancePage() {
                 </motion.div>
             </div>
 
-            <section className="glass-card p-8 lg:p-12 rounded-[3rem] border border-white/5 bg-slate-900/40 relative overflow-hidden hidden md:block">
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                    <div>
-                        <h2 className="text-3xl font-bold text-white mb-4">Relatórios Profissionais</h2>
-                        <p className="text-slate-400 text-lg leading-relaxed max-w-md">
-                            Gere documentos detalhados para sua contabilidade ou controle pessoal. Nossos PDFs incluem ID de transação, data, local e resumo de faturamento.
-                        </p>
-                        <div className="flex flex-wrap gap-4 mt-8">
-                            <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-full border border-white/5">
-                                <CheckCircle2 size={16} className="text-emerald-400" />
-                                <span className="text-xs font-bold text-slate-300">Layout Premium</span>
-                            </div>
-                            <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-full border border-white/5">
-                                <CheckCircle2 size={16} className="text-emerald-400" />
-                                <span className="text-xs font-bold text-slate-300">Métricas Reais</span>
-                            </div>
-                        </div>
+            <Dialog open={isPixModalOpen} onOpenChange={setIsPixModalOpen}>
+                <DialogContent className="bg-slate-900 border-white/10 text-white sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Adicionar Chave PIX?</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Você pode adicionar sua chave PIX no cabeçalho do PDF para facilitar o pagamento do cliente. (Opcional)
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Input
+                            placeholder="Sua Chave PIX (ex: telefone, email, CPF)..."
+                            value={pixKey}
+                            onChange={(e) => setPixKey(e.target.value)}
+                            className="h-12 bg-slate-950/50 border-white/5 rounded-xl text-white font-bold"
+                        />
                     </div>
-                    <div className="relative group">
-                        <div className="absolute inset-0 bg-blue-500/20 blur-[100px] rounded-full group-hover:bg-blue-500/30 transition-all"></div>
-                        <div className="relative bg-slate-950/50 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                                <div className="h-3 w-3 rounded-full bg-amber-500"></div>
-                                <div className="h-3 w-3 rounded-full bg-emerald-500"></div>
-                            </div>
-                            <div className="space-y-4">
-                                <div className="h-4 bg-white/10 rounded-full w-3/4"></div>
-                                <div className="h-4 bg-white/5 rounded-full w-1/2"></div>
-                                <div className="grid grid-cols-2 gap-4 mt-8">
-                                    <div className="h-20 bg-white/5 rounded-2xl border border-white/5"></div>
-                                    <div className="h-20 bg-white/5 rounded-2xl border border-white/5"></div>
-                                </div>
-                                <div className="h-32 bg-white/5 rounded-2xl border border-white/5 mt-4"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+                    <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-0 mt-2">
+                        <Button
+                            variant="ghost"
+                            onClick={() => confirmExport(false)}
+                            className="text-slate-400 hover:text-white hover:bg-white/5 h-12 w-full sm:w-auto"
+                        >
+                            Não Quero
+                        </Button>
+                        <Button
+                            onClick={() => confirmExport(true)}
+                            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12 w-full sm:w-auto rounded-xl"
+                            disabled={!pixKey.trim()}
+                        >
+                            <Download size={18} className="mr-2" />
+                            Gerar com PIX
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

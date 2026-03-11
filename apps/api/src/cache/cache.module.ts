@@ -4,12 +4,12 @@ import { RedisCacheProvider } from './providers/redis.provider';
 
 @Global() // Deixa o provedor acessível em qualquer módulo (Payments, Auth, etc)
 @Module({
-    providers: [
-        {
-            provide: CACHE_PROVIDER,
-            useClass: RedisCacheProvider,
-        },
-    ],
-    exports: [CACHE_PROVIDER],
+  providers: [
+    {
+      provide: CACHE_PROVIDER,
+      useClass: RedisCacheProvider,
+    },
+  ],
+  exports: [CACHE_PROVIDER],
 })
-export class CacheModule { }
+export class CacheModule {}

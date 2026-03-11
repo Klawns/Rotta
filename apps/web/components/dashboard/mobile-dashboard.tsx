@@ -96,8 +96,10 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
     const [isUpdating, setIsUpdating] = useState(false);
 
     useEffect(() => {
-        loadData();
-    }, []);
+        if (user) {
+            loadData();
+        }
+    }, [user]);
 
     useEffect(() => {
         loadHistory();

@@ -15,12 +15,19 @@ async function bootstrap() {
   }
 
   app.enableCors({
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      const allowed = [frontendUrl, 'http://localhost:3000'].map(u => u?.replace(/\/$/, ''));
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      const allowed = [frontendUrl, 'http://localhost:3000'].map((u) =>
+        u?.replace(/\/$/, ''),
+      );
       if (!origin || allowed.includes(origin.replace(/\/$/, ''))) {
         callback(null, true);
       } else {
-        console.error(`[CORS] Bloqueado: ${origin}. Permitidos: ${allowed.join(', ')}`);
+        console.error(
+          `[CORS] Bloqueado: ${origin}. Permitidos: ${allowed.join(', ')}`,
+        );
         callback(new Error('Not allowed by CORS'));
       }
     },
@@ -32,8 +39,12 @@ async function bootstrap() {
   // Middleware de diagnóstico para o Railway
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (process.env.NODE_ENV === 'production') {
-      const hasAccessToken = !!(req.cookies['access_token'] || req.cookies['admin_access_token']);
-      console.log(`[Request] ${req.method} ${req.url} - Origin: ${req.get('origin')} - Has Cookies: ${hasAccessToken}`);
+      const hasAccessToken = !!(
+        req.cookies['access_token'] || req.cookies['admin_access_token']
+      );
+      console.log(
+        `[Request] ${req.method} ${req.url} - Origin: ${req.get('origin')} - Has Cookies: ${hasAccessToken}`,
+      );
     }
     next();
   });

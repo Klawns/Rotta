@@ -6,6 +6,7 @@ import { Bike, Search, Plus, Filter, Calendar, ChevronRight, X, Clock, User, Sta
 import { api } from "@/services/api";
 import { formatCurrency, cn } from "@/lib/utils";
 import { RideModal } from "@/components/ride-modal";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Ride {
     id: string;
@@ -39,6 +40,7 @@ export default function RidesPage() {
     const [isRideModalOpen, setIsRideModalOpen] = useState(false);
     const [selectedQuickClient, setSelectedQuickClient] = useState<{ id: string, name: string } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const { user } = useAuth();
 
     // Pagination & Filters State
     const [page, setPage] = useState(1);
@@ -52,8 +54,12 @@ export default function RidesPage() {
     const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
     useEffect(() => {
-        fetchData();
-    }, [page, statusFilter, paymentFilter, clientFilter, startDate, endDate, search]);
+        if (user) {
+            fetchData();
+        } else {
+            setIsLoading(false);
+        }
+    }, [page, statusFilter, paymentFilter, clientFilter, startDate, endDate, search, user]);
 
     const fetchData = async () => {
         setIsLoading(true);

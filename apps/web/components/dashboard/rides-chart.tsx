@@ -10,15 +10,16 @@ import {
     YAxis,
     CartesianGrid
 } from "recharts";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { format, parseISO, subDays, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface RidesChartProps {
     rides: any[];
+    className?: string;
 }
 
-export function RidesChart({ rides }: RidesChartProps) {
+export function RidesChart({ rides, className }: RidesChartProps) {
     const chartData = useMemo(() => {
         // Obter os últimos 7 dias
         const last7Days = Array.from({ length: 7 }).map((_, i) => {
@@ -46,10 +47,10 @@ export function RidesChart({ rides }: RidesChartProps) {
         chartData.reduce((acc, curr) => acc + curr.value, 0)
         , [chartData]);
 
-    if (!rides.length) return null;
+    // if (!rides.length) return null;
 
     return (
-        <div className="bg-slate-900/40 rounded-3xl border border-white/5 p-6 space-y-4">
+        <div className={cn("bg-slate-900/40 rounded-3xl border border-white/5 p-6 space-y-4 flex flex-col", className)}>
             <div className="flex items-center justify-between px-2">
                 <div>
                     <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Desempenho (7 dias)</h3>
@@ -58,7 +59,7 @@ export function RidesChart({ rides }: RidesChartProps) {
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
             </div>
 
-            <div className="h-[280px] w-full mt-4">
+            <div className="h-[280px] w-full mt-4 lg:flex-1 lg:h-auto">
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData}>
                         <defs>

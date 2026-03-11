@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Bike, Users, Wallet, ChevronRight, Calendar } from "lucide-react";
+import { Bike, Users, Wallet, ChevronRight, Calendar, ChevronLeft } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,8 @@ export default function DashboardPage() {
     const [monthRides, setMonthRides] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
+    const [activitiesPage, setActivitiesPage] = useState(1);
+    const itemsPerPage = 4;
 
     useEffect(() => {
         const checkMobile = () => {
@@ -56,8 +58,10 @@ export default function DashboardPage() {
     }, [searchParams, toast]);
 
     useEffect(() => {
-        fetchStats();
-    }, [period]);
+        if (user) {
+            fetchStats();
+        }
+    }, [period, user]);
 
     const fetchStats = async () => {
         try {
@@ -165,89 +169,114 @@ export default function DashboardPage() {
             </div>
 
             {/* Main Sections */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                {/* Column 1: Recent Activities & Quick Access */}
-                <div className="space-y-8">
-                    {/* Recent Activities */}
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="glass-card p-8 rounded-3xl border border-white/5 bg-slate-900/40"
-                    >
-                        <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-xl font-bold text-white">Atividades Recentes</h2>
-                            <Link href="/dashboard/rides" className="text-sm text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1">
-                                Ver histórico <ChevronRight size={16} />
-                            </Link>
-                        </div>
+            {/* Main Sections */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+                {/* 1. Recent Activities */}
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="glass-card p-8 rounded-3xl border border-white/5 bg-slate-900/40 h-full flex flex-col"
+                >
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-xl font-bold text-white">Atividades Recentes</h2>
+                        <Link href="/dashboard/rides" className="text-sm text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1">
+                            Ver histórico <ChevronRight size={16} />
+                        </Link>
+                    </div>
 
-                        <div className="space-y-6">
-                            {isLoading ? (
-                                [1, 2, 3].map(i => <div key={i} className="h-16 bg-white/5 animate-pulse rounded-2xl" />)
-                            ) : stats.rides.length === 0 ? (
-                                <p className="text-slate-500 text-center py-10 text-sm italic">Nenhuma atividade registrada no período.</p>
-                            ) : (
-                                stats.rides.slice(0, 5).map((ride: any) => (
-                                    <div key={ride.id} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5 group">
-                                        <div className={cn("p-3 rounded-xl", period === 'today' ? "bg-blue-500/10 text-blue-400" : "bg-orange-500/10 text-orange-400")}>
-                                            <Calendar size={20} />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 className="font-semibold text-white">ID: {ride.id?.split("-")[0] || "---"}</h4>
-                                            <p className="text-xs text-slate-500 mt-0.5">{new Date(ride.createdAt).toLocaleString()}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-bold text-white">{formatCurrency(ride.value)}</p>
-                                            <span className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full text-center block w-fit ml-auto">OK</span>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </motion.div>
-
-                    {/* Quick Access */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="glass-card p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40"
-                    >
-                        <h2 className="text-xl font-bold text-white mb-6">Acesso Rápido</h2>
-                        <div className="grid grid-cols-2 gap-4">
-                            <Link href="/dashboard/clients" className="p-6 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all text-left group">
-                                <Users className="text-emerald-400 mb-2 group-hover:scale-110 transition-transform" />
-                                <span className="block font-semibold">Novo Cliente</span>
-                            </Link>
-                            <Link href="/dashboard/rides" className="p-6 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all text-left group">
-                                <Bike className="text-blue-400 mb-2 group-hover:scale-110 transition-transform" />
-                                <span className="block font-semibold">Registrar Corrida</span>
-                            </Link>
-                        </div>
-                    </motion.div>
-                </div>
-
-                {/* Column 2: Chart & Financial Reports */}
-                <div className="space-y-8">
-                    <RidesChart rides={monthRides} />
-
-                    <Link href="/dashboard/finance" className="block outline-none">
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="glass-card p-8 rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-blue-600/20 to-violet-600/20 relative overflow-hidden group hover:from-blue-600/30 transition-all cursor-pointer"
-                        >
-                            <div className="relative z-10">
-                                <h2 className="text-2xl font-bold text-white">Relatórios Financeiros</h2>
-                                <p className="text-slate-300 mt-2 max-w-[80%]">Analise suas métricas detalhadas e exporte relatórios em PDF.</p>
-                                <div className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 font-bold rounded-xl group-hover:scale-105 transition-all">
-                                    Acessar agora
+                    <div className="space-y-6 flex-1 flex flex-col">
+                        {isLoading ? (
+                            [1, 2, 3, 4].map(i => <div key={i} className="h-16 bg-white/5 animate-pulse rounded-2xl" />)
+                        ) : stats.rides.length === 0 ? (
+                            <p className="text-slate-500 text-center py-10 text-sm italic">Nenhuma atividade registrada no período.</p>
+                        ) : (
+                            <>
+                                <div className="space-y-6">
+                                    {stats.rides
+                                        .slice((activitiesPage - 1) * itemsPerPage, activitiesPage * itemsPerPage)
+                                        .map((ride: any) => (
+                                            <div key={ride.id} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5 group">
+                                                <div className={cn("p-3 rounded-xl", period === 'today' ? "bg-blue-500/10 text-blue-400" : "bg-orange-500/10 text-orange-400")}>
+                                                    <Calendar size={20} />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h4 className="font-semibold text-white">ID: {ride.id?.split("-")[0] || "---"}</h4>
+                                                    <p className="text-xs text-slate-500 mt-0.5">{new Date(ride.createdAt).toLocaleString()}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-bold text-white">{formatCurrency(ride.value)}</p>
+                                                    <span className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full text-center block w-fit ml-auto">OK</span>
+                                                </div>
+                                            </div>
+                                        ))}
                                 </div>
+
+                                {stats.rides.length > itemsPerPage && (
+                                    <div className="flex items-center justify-center gap-4 pt-4 mt-auto border-t border-white/5">
+                                        <button
+                                            disabled={activitiesPage === 1}
+                                            onClick={() => setActivitiesPage(p => p - 1)}
+                                            className="p-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            <ChevronLeft size={18} />
+                                        </button>
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                            Página {activitiesPage} de {Math.ceil(stats.rides.length / itemsPerPage)}
+                                        </span>
+                                        <button
+                                            disabled={activitiesPage * itemsPerPage >= stats.rides.length}
+                                            onClick={() => setActivitiesPage(p => p + 1)}
+                                            className="p-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            <ChevronRight size={18} />
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </motion.div>
+
+                {/* 2. Chart */}
+                <RidesChart rides={monthRides} className="h-full" />
+
+                {/* 3. Quick Access */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="glass-card p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 h-full"
+                >
+                    <h2 className="text-xl font-bold text-white mb-6">Acesso Rápido</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Link href="/dashboard/clients" className="p-6 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all text-left group">
+                            <Users className="text-emerald-400 mb-2 group-hover:scale-110 transition-transform" />
+                            <span className="block font-semibold">Novo Cliente</span>
+                        </Link>
+                        <Link href="/dashboard/rides" className="p-6 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all text-left group">
+                            <Bike className="text-blue-400 mb-2 group-hover:scale-110 transition-transform" />
+                            <span className="block font-semibold">Registrar Corrida</span>
+                        </Link>
+                    </div>
+                </motion.div>
+
+                {/* 4. Financial Reports */}
+                <Link href="/dashboard/finance" className="block outline-none h-full">
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="glass-card p-8 rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-blue-600/20 to-violet-600/20 relative overflow-hidden group hover:from-blue-600/30 transition-all cursor-pointer h-full"
+                    >
+                        <div className="relative z-10">
+                            <h2 className="text-2xl font-bold text-white">Relatórios Financeiros</h2>
+                            <p className="text-slate-300 mt-2 max-w-[80%]">Analise suas métricas detalhadas e exporte relatórios em PDF.</p>
+                            <div className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 font-bold rounded-xl group-hover:scale-105 transition-all">
+                                Acessar agora
                             </div>
-                            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500/20 blur-[60px] rounded-full"></div>
-                        </motion.div>
-                    </Link>
-                </div>
+                        </div>
+                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500/20 blur-[60px] rounded-full"></div>
+                    </motion.div>
+                </Link>
             </div>
         </div>
     );

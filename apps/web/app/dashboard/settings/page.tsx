@@ -17,6 +17,7 @@ import {
 import { api } from "@/services/api";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -33,6 +34,7 @@ export default function SettingsPage() {
     const [presets, setPresets] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const { user } = useAuth();
 
     // Edit Preset States
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -48,8 +50,12 @@ export default function SettingsPage() {
     });
 
     useEffect(() => {
-        loadPresets();
-    }, []);
+        if (user) {
+            loadPresets();
+        } else {
+            setIsLoading(false);
+        }
+    }, [user]);
 
     async function loadPresets() {
         try {

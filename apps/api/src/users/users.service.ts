@@ -1,65 +1,38 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { LibSQLDatabase } from 'drizzle-orm/libsql';
-import { DRIZZLE } from '../database/database.provider';
-import * as schema from '@mdc/database';
-import { eq, sql } from 'drizzle-orm';
-import { randomUUID } from 'crypto';
+import {
+  IUsersRepository,
+  CreateUserDto,
+  UpdateUserDto,
+} from './interfaces/users-repository.interface';
 
 @Injectable()
 export class UsersService {
-    constructor(
-        @Inject(DRIZZLE)
-        private db: LibSQLDatabase<typeof schema>,
-    ) { }
+  constructor(
+    @Inject(IUsersRepository)
+    private readonly usersRepository: IUsersRepository,
+  ) {}
 
-    async findByEmail(email: string) {
-        const results = await this.db
-            .select()
-            .from(schema.users)
-            .where(eq(schema.users.email, email))
-            .limit(1);
+  async findByEmail(email: string) {
+    return this.usersRepository.findByEmail(email);
+  }
 
-        return results[0];
-    }
+  async findById(id: string) {
+    return this.usersRepository.findById(id);
+  }
 
-    async findById(id: string) {
-        const results = await this.db
-            .select()
-            .from(schema.users)
-            .where(eq(schema.users.id, id))
-            .limit(1);
+  async create(data: any) {
+    return this.usersRepository.create(data as CreateUserDto);
+  }
 
-        return results[0];
-    }
+  async findAll() {
+    return this.usersRepository.findAll();
+  }
 
-    async create(data: any) {
-        const role = data.role || 'user';
+  async remove(id: string) {
+    return this.usersRepository.remove(id);
+  }
 
-        const results = await this.db
-            .insert(schema.users)
-            .values({
-                id: randomUUID(),
-                name: data.name,
-                email: data.email,
-                password: data.password,
-                taxId: data.taxId,
-                cellphone: data.cellphone,
-                role: role as any,
-            } as any)
-            .returning();
-
-        return results[0];
-    }
-
-    async findAll() {
-        return this.db.select().from(schema.users);
-    }
-
-    async remove(id: string) {
-        return this.db.delete(schema.users).where(eq(schema.users.id, id));
-    }
-
-    async update(id: string, data: Partial<typeof schema.users.$inferInsert>) {
-        return this.db.update(schema.users).set(data).where(eq(schema.users.id, id));
-    }
+  async update(id: string, data: UpdateUserDto) {
+    return this.usersRepository.update(id, data);
+  }
 }

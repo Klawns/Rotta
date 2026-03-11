@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
@@ -6,17 +6,17 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { RidesModule } from '../rides/rides.module';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './google.strategy';
 import { RefreshTokenService } from './refresh-token/refresh-token.service';
-import { DatabaseModule } from '../database/database.module';
 
 @Module({
   imports: [
-    UsersModule,
-    SubscriptionsModule,
+    forwardRef(() => UsersModule),
+    forwardRef(() => SubscriptionsModule),
+    forwardRef(() => RidesModule),
     PassportModule,
-    DatabaseModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -29,4 +29,4 @@ import { DatabaseModule } from '../database/database.module';
   controllers: [AuthController],
   exports: [AuthService],
 })
-export class AuthModule { }
+export class AuthModule {}

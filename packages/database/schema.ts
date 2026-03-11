@@ -1,4 +1,4 @@
-import { sqliteTable, text, real, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, real, integer, index } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
     id: text('id').primaryKey(),
@@ -18,14 +18,18 @@ export const refreshTokens = sqliteTable('refresh_tokens', {
     userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
+}, (table) => ({
+    userIdIdx: index('refresh_tokens_user_id_idx').on(table.userId),
+}));
 
 export const clients = sqliteTable('clients', {
     id: text('id').primaryKey(),
     userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
+}, (table) => ({
+    userIdIdx: index('clients_user_id_idx').on(table.userId),
+}));
 
 export const rides = sqliteTable('rides', {
     id: text('id').primaryKey(),
@@ -38,7 +42,11 @@ export const rides = sqliteTable('rides', {
     paymentStatus: text('payment_status', { enum: ['PENDING', 'PAID'] }).notNull().default('PAID'),
     rideDate: integer('ride_date', { mode: 'timestamp' }),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
+}, (table) => ({
+    userIdIdx: index('rides_user_id_idx').on(table.userId),
+    clientIdIdx: index('rides_client_id_idx').on(table.clientId),
+    userDateStatusIdx: index('rides_user_date_status_idx').on(table.userId, table.rideDate, table.status),
+}));
 
 export const ridePresets = sqliteTable('ride_presets', {
     id: text('id').primaryKey(),
@@ -47,7 +55,9 @@ export const ridePresets = sqliteTable('ride_presets', {
     value: real('value').notNull(), // Ex: 5.00
     location: text('location').notNull(), // Ex: "Terminal Central"
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
+}, (table) => ({
+    userIdIdx: index('ride_presets_user_id_idx').on(table.userId),
+}));
 
 export const subscriptions = sqliteTable('subscriptions', {
     id: text('id').primaryKey(),
@@ -57,7 +67,9 @@ export const subscriptions = sqliteTable('subscriptions', {
     rideCount: integer('ride_count').notNull().default(0),
     validUntil: integer('valid_until', { mode: 'timestamp' }),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
+}, (table) => ({
+    userIdIdx: index('subscriptions_user_id_idx').on(table.userId),
+}));
 
 export const pricingPlans = sqliteTable('pricing_plans', {
     id: text('id').primaryKey(), // starter, premium, lifetime

@@ -4,257 +4,275 @@ import * as bcrypt from 'bcrypt';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import type { LibSQLDatabase } from 'drizzle-orm/libsql';
-import { DRIZZLE } from '../database/database.provider';
-import * as schema from '@mdc/database';
-import { eq, sql } from 'drizzle-orm';
 import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
 import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
+import { IRidesRepository } from '../rides/interfaces/rides-repository.interface';
 
 @Injectable()
 export class AuthService {
-    constructor(
-        private usersService: UsersService,
-        private jwtService: JwtService,
-        private refreshTokenService: RefreshTokenService,
-        private subscriptionsService: SubscriptionsService,
-        @Inject(DRIZZLE)
-        private db: LibSQLDatabase<typeof schema>,
-        @Inject(CACHE_PROVIDER)
-        private cache: ICacheProvider,
-    ) { }
+  constructor(
+    private usersService: UsersService,
+    private jwtService: JwtService,
+    private refreshTokenService: RefreshTokenService,
+    private subscriptionsService: SubscriptionsService,
+    @Inject(IRidesRepository)
+    private ridesRepository: IRidesRepository,
+    @Inject(CACHE_PROVIDER)
+    private cache: ICacheProvider,
+  ) {}
 
-    async validateUser(email: string, pass: string): Promise<any> {
-        const user = await this.usersService.findByEmail(email);
-        if (user && (await bcrypt.compare(pass, user.password))) {
-            const { password, ...result } = user;
-            return result;
-        }
-        return null;
+  async validateUser(email: string, pass: string): Promise<any> {
+    const user = await this.usersService.findByEmail(email);
+    if (user && (await bcrypt.compare(pass, user.password))) {
+      const { password, ...result } = user;
+      return result;
+    }
+    return null;
+  }
+
+  async login(user: any) {
+    const subscription =
+      user.role !== 'admin'
+        ? await this.subscriptionsService.findByUserId(user.id)
+        : null;
+
+    const realRideCount =
+      user.role !== 'admin' ? await this.ridesRepository.countAll(user.id) : 0;
+
+    const now = new Date();
+    const isExpired = subscription?.validUntil
+      ? new Date(subscription.validUntil) < now
+      : false;
+
+    const payload = {
+      email: user.email,
+      sub: user.id,
+      name: user.name,
+      role: user.role,
+      taxId: user.taxId,
+      cellphone: user.cellphone,
+      hasSeenTutorial: user.hasSeenTutorial,
+      subscription: subscription
+        ? {
+            plan: subscription.plan,
+            status: isExpired ? 'expired' : subscription.status,
+            validUntil: subscription.validUntil,
+            rideCount: realRideCount,
+          }
+        : null,
+    };
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = await this.refreshTokenService.create(user.id);
+
+    console.log(
+      `[AuthService] Login realizado com sucesso para: ${user.email}. RideCount: ${realRideCount}`,
+    );
+
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        taxId: user.taxId,
+        cellphone: user.cellphone,
+        subscription: payload.subscription,
+      },
+    };
+  }
+
+  async refresh(oldToken: string) {
+    const refreshTokenData = await this.refreshTokenService.validate(oldToken);
+    const user = await this.usersService.findById(refreshTokenData.userId);
+
+    if (!user) {
+      throw new UnauthorizedException();
     }
 
-    async login(user: any) {
-        const subscription = user.role !== 'admin'
-            ? await this.subscriptionsService.findByUserId(user.id)
-            : null;
+    const subscription =
+      user.role !== 'admin'
+        ? await this.subscriptionsService.findByUserId(user.id)
+        : null;
 
-        const realRideCount = user.role !== 'admin'
-            ? await this.db
-                .select({ count: sql<number>`count(*)` })
-                .from(schema.rides)
-                .where(eq(schema.rides.userId, user.id))
-                .then(res => Number(res[0]?.count || 0))
-            : 0;
+    const realRideCount =
+      user.role !== 'admin' ? await this.ridesRepository.countAll(user.id) : 0;
 
-        const now = new Date();
-        const isExpired = subscription?.validUntil ? new Date(subscription.validUntil) < now : false;
+    const now = new Date();
+    const isExpired = subscription?.validUntil
+      ? new Date(subscription.validUntil) < now
+      : false;
 
-        const payload = {
-            email: user.email,
-            sub: user.id,
-            name: user.name,
-            role: user.role,
-            taxId: user.taxId,
-            cellphone: user.cellphone,
-            hasSeenTutorial: user.hasSeenTutorial,
-            subscription: subscription ? {
-                plan: subscription.plan,
-                status: isExpired ? 'expired' : subscription.status,
-                validUntil: subscription.validUntil,
-                rideCount: realRideCount,
-            } : null
-        };
-        const accessToken = this.jwtService.sign(payload);
-        const refreshToken = await this.refreshTokenService.create(user.id);
+    const payload = {
+      email: user.email,
+      sub: user.id,
+      name: user.name,
+      role: user.role,
+      taxId: user.taxId,
+      cellphone: user.cellphone,
+      hasSeenTutorial: user.hasSeenTutorial,
+      subscription: subscription
+        ? {
+            plan: subscription.plan,
+            status: isExpired ? 'expired' : subscription.status,
+            validUntil: subscription.validUntil,
+            rideCount: realRideCount,
+          }
+        : null,
+    };
 
-        console.log(`[AuthService] Login realizado com sucesso para: ${user.email}. RideCount: ${realRideCount}`);
+    const accessToken = this.jwtService.sign(payload);
+    const newRefreshToken = await this.refreshTokenService.create(user.id);
 
-        return {
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role,
-                taxId: user.taxId,
-                cellphone: user.cellphone,
-                subscription: payload.subscription
-            },
-        };
+    console.log(
+      `[AuthService] Refresh realizado com sucesso para: ${user.email}. RideCount: ${realRideCount}`,
+    );
+
+    // Rotação: revogar o token antigo imediatamente após o uso
+    await this.refreshTokenService.revoke(oldToken);
+
+    return {
+      access_token: accessToken,
+      refresh_token: newRefreshToken,
+    };
+  }
+
+  async register(data: any) {
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const user = await this.usersService.create({
+      ...data,
+      password: hashedPassword,
+    });
+    await this.subscriptionsService.updateOrCreate(user.id, 'starter');
+    return this.login(user);
+  }
+
+  async validateGoogleUser(profile: any) {
+    console.log(
+      '[AuthService] Google Profile recebido:',
+      JSON.stringify(profile),
+    );
+    const fullName = [profile.firstName, profile.lastName]
+      .filter(Boolean)
+      .join(' ');
+    let user = await this.usersService.findByEmail(profile.email);
+
+    if (!user) {
+      console.log(
+        '[AuthService] Criando novo usuário via Google:',
+        profile.email,
+        'Nome:',
+        fullName,
+      );
+      user = await this.usersService.create({
+        email: profile.email,
+        name: fullName,
+        password: '', // Sem senha para usuários social
+      });
+      await this.subscriptionsService.updateOrCreate(user.id, 'starter');
+    } else {
+      console.log(
+        '[AuthService] Usuário Google encontrado no banco:',
+        user.email,
+        'ID:',
+        user.id,
+        'Nome atual:',
+        user.name,
+      );
+      if (user.name && user.name.endsWith(' undefined')) {
+        const cleanedName = user.name.replace(' undefined', '').trim();
+        await this.usersService.update(user.id, { name: cleanedName });
+        user.name = cleanedName;
+      }
     }
 
-    async refresh(oldToken: string) {
-        const refreshTokenData = await this.refreshTokenService.validate(oldToken);
-        const user = await this.usersService.findById(refreshTokenData.userId);
+    return this.login(user);
+  }
 
-        if (!user) {
-            throw new UnauthorizedException();
-        }
+  async getUserSubscription(userId: string) {
+    return this.subscriptionsService.findByUserId(userId);
+  }
 
-        const subscription = user.role !== 'admin'
-            ? await this.subscriptionsService.findByUserId(user.id)
-            : null;
+  async updateProfile(userId: string, data: any) {
+    await this.usersService.update(userId, data);
+    await this.cache.del(`profile:${userId}`); // Invalida o cache
+    const user = await this.usersService.findById(userId);
+    return this.login(user);
+  }
 
-        const realRideCount = user.role !== 'admin'
-            ? await this.db
-                .select({ count: sql<number>`count(*)` })
-                .from(schema.rides)
-                .where(eq(schema.rides.userId, user.id))
-                .then(res => Number(res[0]?.count || 0))
-            : 0;
+  async tutorialSeen(userId: string) {
+    await this.usersService.update(userId, { hasSeenTutorial: true });
+    await this.cache.del(`profile:${userId}`); // Invalida o cache do perfil
+    return { success: true };
+  }
 
-        const now = new Date();
-        const isExpired = subscription?.validUntil ? new Date(subscription.validUntil) < now : false;
-
-        const payload = {
-            email: user.email,
-            sub: user.id,
-            name: user.name,
-            role: user.role,
-            taxId: user.taxId,
-            cellphone: user.cellphone,
-            hasSeenTutorial: user.hasSeenTutorial,
-            subscription: subscription ? {
-                plan: subscription.plan,
-                status: isExpired ? 'expired' : subscription.status,
-                validUntil: subscription.validUntil,
-                rideCount: realRideCount,
-            } : null
-        };
-
-        const accessToken = this.jwtService.sign(payload);
-        const newRefreshToken = await this.refreshTokenService.create(user.id);
-
-        console.log(`[AuthService] Refresh realizado com sucesso para: ${user.email}. RideCount: ${realRideCount}`);
-
-        // Rotação: revogar o token antigo imediatamente após o uso
-        await this.refreshTokenService.revoke(oldToken);
-
-        return {
-            access_token: accessToken,
-            refresh_token: newRefreshToken,
-        };
+  async changePassword(userId: string, currentPass: string, newPass: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user || !(await bcrypt.compare(currentPass, user.password))) {
+      throw new UnauthorizedException('Senha atual incorreta');
     }
 
-    async register(data: any) {
-        const hashedPassword = await bcrypt.hash(data.password, 10);
-        const user = await this.usersService.create({
-            ...data,
-            password: hashedPassword,
-        });
-        await this.subscriptionsService.updateOrCreate(user.id, 'starter');
-        return this.login(user);
+    const hashedNewPassword = await bcrypt.hash(newPass, 10);
+    await this.usersService.update(userId, { password: hashedNewPassword });
+
+    return { message: 'Senha alterada com sucesso' };
+  }
+
+  async logout(refreshToken: string) {
+    if (refreshToken) {
+      await this.refreshTokenService.revoke(refreshToken);
+    }
+    return { message: 'Logout realizado' };
+  }
+
+  async getLatestProfile(userId: string) {
+    const cacheKey = `profile:${userId}`;
+
+    // 1. Tenta carregar do Redis
+    const cachedProfile = await this.cache.get<any>(cacheKey);
+    if (cachedProfile) {
+      return cachedProfile;
     }
 
-    async validateGoogleUser(profile: any) {
-        console.log('[AuthService] Google Profile recebido:', JSON.stringify(profile));
-        const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ');
-        let user = await this.usersService.findByEmail(profile.email);
+    // 2. Busca do Banco (Turso)
+    const user = await this.usersService.findById(userId);
+    if (!user) return null;
 
-        if (!user) {
-            console.log('[AuthService] Criando novo usuário via Google:', profile.email, 'Nome:', fullName);
-            user = await this.usersService.create({
-                email: profile.email,
-                name: fullName,
-                password: '', // Sem senha para usuários social
-            });
-            await this.subscriptionsService.updateOrCreate(user.id, 'starter');
-        } else {
-            console.log('[AuthService] Usuário Google encontrado no banco:', user.email, 'ID:', user.id, 'Nome atual:', user.name);
-            if (user.name && user.name.endsWith(' undefined')) {
-                const cleanedName = user.name.replace(' undefined', '').trim();
-                await this.usersService.update(user.id, { name: cleanedName });
-                user.name = cleanedName;
-            }
-        }
+    const subscription =
+      user.role !== 'admin'
+        ? await this.subscriptionsService.findByUserId(user.id)
+        : null;
 
-        return this.login(user);
-    }
+    const realRideCount =
+      user.role !== 'admin' ? await this.ridesRepository.countAll(userId) : 0;
 
-    async getUserSubscription(userId: string) {
-        return this.subscriptionsService.findByUserId(userId);
-    }
+    const now = new Date();
+    const isExpired = subscription?.validUntil
+      ? new Date(subscription.validUntil) < now
+      : false;
 
-    async updateProfile(userId: string, data: any) {
-        await this.usersService.update(userId, data);
-        await this.cache.del(`profile:${userId}`); // Invalida o cache
-        const user = await this.usersService.findById(userId);
-        return this.login(user);
-    }
+    const finalProfile = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      taxId: user.taxId,
+      cellphone: user.cellphone,
+      hasSeenTutorial: user.hasSeenTutorial,
+      subscription: subscription
+        ? {
+            plan: subscription.plan,
+            status: isExpired ? 'expired' : subscription.status,
+            validUntil: subscription.validUntil,
+            rideCount: realRideCount,
+          }
+        : null,
+    };
 
-    async tutorialSeen(userId: string) {
-        await this.usersService.update(userId, { hasSeenTutorial: true });
-        await this.cache.del(`profile:${userId}`); // Invalida o cache do perfil 
-        return { success: true };
-    }
+    // 3. Guarda e expira naturalmente em 10 minutos (Dá espaço para não quebrar a sincronização)
+    await this.cache.set(cacheKey, finalProfile, 600);
 
-    async changePassword(userId: string, currentPass: string, newPass: string) {
-        const user = await this.usersService.findById(userId);
-        if (!user || !(await bcrypt.compare(currentPass, user.password))) {
-            throw new UnauthorizedException('Senha atual incorreta');
-        }
-
-        const hashedNewPassword = await bcrypt.hash(newPass, 10);
-        await this.usersService.update(userId, { password: hashedNewPassword });
-
-        return { message: 'Senha alterada com sucesso' };
-    }
-
-    async logout(refreshToken: string) {
-        if (refreshToken) {
-            await this.refreshTokenService.revoke(refreshToken);
-        }
-        return { message: 'Logout realizado' };
-    }
-
-    async getLatestProfile(userId: string) {
-        const cacheKey = `profile:${userId}`;
-
-        // 1. Tenta carregar do Redis
-        const cachedProfile = await this.cache.get<any>(cacheKey);
-        if (cachedProfile) {
-            return cachedProfile;
-        }
-
-        // 2. Busca do Banco (Turso)
-        const user = await this.usersService.findById(userId);
-        if (!user) return null;
-
-        const subscription = user.role !== 'admin'
-            ? await this.subscriptionsService.findByUserId(user.id)
-            : null;
-
-        const realRideCount = user.role !== 'admin'
-            ? await this.db
-                .select({ count: sql<number>`count(*)` })
-                .from(schema.rides)
-                .where(eq(schema.rides.userId, userId))
-                .then(res => Number(res[0]?.count || 0))
-            : 0;
-
-        const now = new Date();
-        const isExpired = subscription?.validUntil ? new Date(subscription.validUntil) < now : false;
-
-        const finalProfile = {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            taxId: user.taxId,
-            cellphone: user.cellphone,
-            hasSeenTutorial: user.hasSeenTutorial,
-            subscription: subscription ? {
-                plan: subscription.plan,
-                status: isExpired ? 'expired' : subscription.status,
-                validUntil: subscription.validUntil,
-                rideCount: realRideCount,
-            } : null
-        };
-
-        // 3. Guarda e expira naturalmente em 10 minutos (Dá espaço para não quebrar a sincronização)
-        await this.cache.set(cacheKey, finalProfile, 600);
-
-        return finalProfile;
-    }
+    return finalProfile;
+  }
 }
