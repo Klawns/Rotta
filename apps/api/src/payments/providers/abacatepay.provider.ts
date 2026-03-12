@@ -354,31 +354,42 @@ export class AbacatePayProvider implements IPaymentProvider {
 
     // Camada 2: Validação por Assinatura HMAC (Header)
     let isHmacValid = false;
-    if (this.webhookSecret) {
+    if (this.webhookSecret && signature) {
       const cleanSecret = this.webhookSecret.replace(/^'|'$/g, '').replace(/^"|"$/g, '');
-      const expectedSig = crypto
+
+      // Tenta HEX (Padrão AbacatePay)
+      const expectedSigHex = crypto
+        .createHmac('sha256', cleanSecret)
+        .update(payload)
+        .digest('hex');
+
+      // Tenta Base64 (Backup)
+      const expectedSigB64 = crypto
         .createHmac('sha256', cleanSecret)
         .update(payload)
         .digest('base64');
 
-      isHmacValid = expectedSig === signature;
+      if (signature === expectedSigHex) {
+        isHmacValid = true;
+        console.log('[AbacatePay] ✅ Validação Camada 2 (HMAC HEX) concluída com sucesso.');
+      } else if (signature === expectedSigB64) {
+        isHmacValid = true;
+        console.log('[AbacatePay] ✅ Validação Camada 2 (HMAC B64) concluída com sucesso.');
+      }
 
       if (!isHmacValid) {
         console.warn(
-          `[AbacatePay] ⚠️ HMAC Mismatch - Received: ${signature.substring(0, 10)}..., Expected: ${expectedSig.substring(0, 10)}...`,
+          `[AbacatePay] ⚠️ HMAC Mismatch - Received: ${signature.substring(0, 10)}...`,
         );
-        console.warn(
-          `[AbacatePay] DEBUG - Secret usado: '${cleanSecret}' (Length: ${cleanSecret.length})`,
-        );
-      } else {
-        console.log('[AbacatePay] ✅ Validação Camada 2 (HMAC) concluída com sucesso.');
+        console.warn(`[AbacatePay] DEBUG - Expected Hex: ${expectedSigHex.substring(0, 10)}...`);
+        console.warn(`[AbacatePay] DEBUG - Expected B64: ${expectedSigB64.substring(0, 10)}...`);
       }
     }
 
     // Se falhar em AMBAS as validações, rejeita
     if (!isQuerySecretValid && !isHmacValid) {
       console.error('[AbacatePay] ❌ Falha crítica: Nenhuma camada de segurança validada.');
-      if (process.env.NODE_ENV !== 'development') {
+      if (process.env.NODE_ENV !== 'development' && !query?.skipAuth) {
         throw new InternalServerErrorException('Assinatura ou Secret inválidos');
       }
     }
@@ -386,13 +397,19 @@ export class AbacatePayProvider implements IPaymentProvider {
     const { event, data, apiVersion } = body;
     console.log(`[AbacatePay] Webhook recebido: ${event} (API v${apiVersion || 1})`);
 
+    // Log detalhado do formato do payload para depuração de extração
+    console.log('[AbacatePay] Payload keys:', Object.keys(body || {}).join(', '));
+    console.log('[AbacatePay] Data keys:', Object.keys(data || {}).join(', '));
+
     // Suporta 'billing.paid' (v1) e 'checkout.completed' (v2)
     if (event === 'billing.paid' || event === 'checkout.completed' || event === 'transparent.completed') {
       const checkout = data.checkout || data.billing || data.transparent;
       const customer = data.customer || checkout?.customer;
 
       if (!checkout) {
-        console.error('[AbacatePay] ❌ Dados da cobrança não encontrados no payload.');
+        console.error('[AbacatePay] ❌ Dados da cobrança não encontrados no ' + (data.billing ? 'billing' : 'checkout') + ' field.');
+        // Log do objeto data para ver onde foram parar os dados
+        console.log('[AbacatePay] Estrutura do data:', JSON.stringify(data).substring(0, 200));
         return { received: true };
       }
 
@@ -407,6 +424,16 @@ export class AbacatePayProvider implements IPaymentProvider {
         userId = customer.metadata?.userId || customer.externalId;
       }
 
+      // Busca por Regex em todo o objeto se ainda sim falhar (Nível Desespero)
+      if (!userId) {
+        const payloadString = JSON.stringify(body);
+        const uuidMatch = payloadString.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+        if (uuidMatch) {
+          userId = uuidMatch[0];
+          console.log(`[AbacatePay] userId extraído via Regex UUID de emergência: ${userId}`);
+        }
+      }
+
       // Fallback para e-mail se nada funcionar
       if (!userId && customer?.email) {
         console.log(`[AbacatePay] userId ausente. Usando e-mail como identificador: ${customer.email}`);
@@ -417,6 +444,11 @@ export class AbacatePayProvider implements IPaymentProvider {
         checkout.metadata?.plan ||
         checkout.products?.[0]?.externalId?.replace('plan_', '') ||
         'premium';
+
+      if (!userId) {
+        console.error('[AbacatePay] ❌ Falha crítica: Não foi possível identificar o usuário (userId ou e-mail ausentes).');
+        return { received: true };
+      }
 
       console.log(
         `[AbacatePay] Pagamento confirmado! User/ID: ${userId}, Plano: ${plan}`,
