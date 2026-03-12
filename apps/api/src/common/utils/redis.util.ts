@@ -27,13 +27,13 @@ export function getRedisConfig(config: ConfigService) {
     logger.debug(`[getRedisConfig] Config: URL=${!!redisUrl}, HOST=${host}, PORT=${rawPort}, ENV=${process.env.NODE_ENV}`);
 
     if (redisUrl) {
-        logger.log(`[getRedisConfig] ✅ Usando REDIS_URL.`);
+        console.log(`[getRedisConfig] ✅ Usando REDIS_URL para conexão.`);
         return redisUrl;
     }
 
     if (host) {
         const port = typeof rawPort === 'string' ? parseInt(rawPort, 10) : (Number(rawPort) || 6379);
-        logger.log(`[getRedisConfig] ✅ Conectando em ${host}:${port}`);
+        console.log(`[getRedisConfig] ✅ Detectado ambiente Railway: ${host}:${port}`);
         return {
             host,
             port,
@@ -43,7 +43,7 @@ export function getRedisConfig(config: ConfigService) {
         };
     }
 
-    logger.warn(`[getRedisConfig] ⚠️ Nenhuma configuração encontrada. Usando localhost.`);
+    console.warn(`[getRedisConfig] ⚠️ REDISHOST ou REDIS_URL não encontrados. Tentando localhost:6379.`);
     return {
         host: 'localhost',
         port: 6379,
