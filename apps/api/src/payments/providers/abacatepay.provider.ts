@@ -355,22 +355,20 @@ export class AbacatePayProvider implements IPaymentProvider {
     // Camada 2: Validação por Assinatura HMAC (Header)
     let isHmacValid = false;
     if (this.webhookSecret) {
+      const cleanSecret = this.webhookSecret.replace(/^'|'$/g, '').replace(/^"|"$/g, '');
       const expectedSig = crypto
-        .createHmac('sha256', this.webhookSecret)
+        .createHmac('sha256', cleanSecret)
         .update(payload)
         .digest('base64');
 
-      const A = Buffer.from(expectedSig);
-      const B = Buffer.from(signature);
-
-      isHmacValid = A.length === B.length && crypto.timingSafeEqual(A, B);
+      isHmacValid = expectedSig === signature;
 
       if (!isHmacValid) {
         console.warn(
           `[AbacatePay] ⚠️ HMAC Mismatch - Received: ${signature.substring(0, 10)}..., Expected: ${expectedSig.substring(0, 10)}...`,
         );
         console.warn(
-          `[AbacatePay] INFO - WebhookSecret Configurado: ${this.webhookSecret.length} chars, Começa com: ${this.webhookSecret.substring(0, 2)}...`,
+          `[AbacatePay] DEBUG - Secret usado: '${cleanSecret}' (Length: ${cleanSecret.length})`,
         );
       } else {
         console.log('[AbacatePay] ✅ Validação Camada 2 (HMAC) concluída com sucesso.');
