@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
+import { Redis } from 'ioredis';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
@@ -17,6 +18,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { AdminModule } from './admin/admin.module';
 import { SettingsModule } from './settings/settings.module';
 import { DebugController } from './debug/debug.controller';
+import { getRedisConfig } from './common/utils/redis.util';
 
 @Module({
   imports: [
@@ -27,28 +29,33 @@ import { DebugController } from './debug/debug.controller';
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const redisUrl = config.get<string>('REDIS_URL');
+        const redisConfig = getRedisConfig(config);
+
         return {
           throttlers: [
             {
               ttl: 60000,
-              limit: 100, // Limite global generoso inicial: 100 req por min / ip
+              limit: 100,
             },
           ],
-          // Se REDIS_URL existir usa o redis distribuído. Se não (local dev) cai na memoria
-          storage: redisUrl
-            ? new ThrottlerStorageRedisService(redisUrl)
-            : undefined,
+          storage: typeof redisConfig === 'string'
+            ? new ThrottlerStorageRedisService(redisConfig)
+            : new ThrottlerStorageRedisService({
+              host: redisConfig.host,
+              port: redisConfig.port,
+              password: redisConfig.password,
+            }),
         };
       },
     }),
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
-        const redisUrl = configService.get<string>('REDIS_URL');
-        if (redisUrl) {
+        const redisConfig = getRedisConfig(configService);
+
+        if (typeof redisConfig === 'string') {
           try {
-            const url = new URL(redisUrl);
+            const url = new URL(redisConfig);
             return {
               connection: {
                 host: url.hostname,
@@ -56,17 +63,23 @@ import { DebugController } from './debug/debug.controller';
                 username: url.username || undefined,
                 password: url.password || undefined,
                 tls: url.protocol === 'rediss:' ? {} : undefined,
+                maxRetriesPerRequest: null,
               },
             };
           } catch (e) {
-            console.error('Falha ao fazer parse do REDIS_URL no BullMQ', e);
+            console.error('Falha ao parsear URL do Redis para BullMQ', e);
           }
         }
+
+        const configObj = redisConfig as any;
         return {
           connection: {
-            host: configService.get<string>('REDISHOST') || 'localhost',
-            port: configService.get<number>('REDISPORT') || 6379,
-            password: configService.get<string>('REDISPASSWORD'),
+            host: configObj.host,
+            port: configObj.port,
+            password: configObj.password,
+            username: configObj.username,
+            tls: configObj.tls,
+            maxRetriesPerRequest: null,
           },
         };
       },
@@ -91,4 +104,4 @@ import { DebugController } from './debug/debug.controller';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

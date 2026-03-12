@@ -7,65 +7,61 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { ICacheProvider } from '../interfaces/cache-provider.interface';
+import { getRedisConfig } from '../../common/utils/redis.util';
 
 @Injectable()
 export class RedisCacheProvider
-  implements ICacheProvider, OnModuleInit, OnModuleDestroy
-{
+  implements ICacheProvider, OnModuleInit, OnModuleDestroy {
   private redisClient: Redis;
   private readonly logger = new Logger(RedisCacheProvider.name);
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) { }
 
   onModuleInit() {
-    const redisUrl = this.configService.get<string>('REDIS_URL');
+    const redisConfig = getRedisConfig(this.configService);
 
-    if (!redisUrl) {
-      this.logger.warn(
-        '[RedisCacheProvider] ⚠️ REDIS_URL não detectado no .env. (Fallback para Redis local).',
-      );
-    } else {
+    if (typeof redisConfig === 'string') {
       this.logger.debug(
-        `[RedisCacheProvider] 🔍 Detectado REDIS_URL para conexão remota...`,
+        `[RedisCacheProvider] 🔍 Usando URL p/ conexão Redis...`,
       );
-    }
-
-    try {
-      // Se tiver Redis URL as strings (caso Railway), ele injetará.
-      if (redisUrl) {
-        const url = new URL(redisUrl);
-        this.redisClient = new Redis({
-          host: url.hostname,
-          port: parseInt(url.port, 10),
-          username: url.username || undefined,
-          password: url.password || undefined,
-          tls: url.protocol === 'rediss:' ? {} : undefined,
+      try {
+        const url = new URL(redisConfig);
+        this.redisClient = new Redis(redisConfig, {
           maxRetriesPerRequest: 3,
           retryStrategy(times) {
             return Math.min(times * 100, 3000);
           },
         });
         this.logger.debug(
-          `[RedisCacheProvider] 🔄 Tentando conectar em: ${url.hostname}:${url.port}`,
+          `[RedisCacheProvider] 🔄 Tentando conectar via URL: ${url.hostname}:${url.port}`,
         );
-      } else {
-        this.redisClient = new Redis('redis://localhost:6379', {
-          maxRetriesPerRequest: 3,
-          retryStrategy(times) {
-            return Math.min(times * 50, 2000);
-          },
-        });
+      } catch (e) {
+        this.logger.error(
+          `[RedisCacheProvider] ❌ Falha ao parsear REDIS_URL: ${e.message}`,
+        );
+        // Fallback para localhost em caso de URL inválida
+        this.redisClient = new Redis('redis://localhost:6379');
       }
-    } catch (e) {
-      this.logger.error(
-        `[RedisCacheProvider] ❌ Falha ao parsear credenciais. Usando localhost. Erro: ${e.message}`,
+    } else {
+      this.logger.debug(
+        `[RedisCacheProvider] 🔍 Usando Host/Porta p/ conexão Redis (${redisConfig.host}:${redisConfig.port})...`,
       );
-      this.redisClient = new Redis('redis://localhost:6379');
+      this.redisClient = new Redis({
+        host: redisConfig.host,
+        port: redisConfig.port,
+        username: redisConfig.username || undefined,
+        password: redisConfig.password || undefined,
+        tls: redisConfig.tls,
+        maxRetriesPerRequest: 3,
+        retryStrategy(times) {
+          return Math.min(times * 100, 3000);
+        },
+      });
     }
 
     this.redisClient.on('error', (err) => {
       this.logger.error(
-        `[RedisCacheProvider] 🔌 Conexão recusada / Droppada. Detalhe: ${err.message}`,
+        `[RedisCacheProvider] 🔌 Erro na conexão Redis: ${err.message}`,
       );
     });
 
