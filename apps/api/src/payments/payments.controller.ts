@@ -16,7 +16,7 @@ import * as express from 'express';
 
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(private readonly paymentsService: PaymentsService) { }
 
   @Get('plans')
   async getPlans() {
@@ -42,15 +42,22 @@ export class PaymentsController {
     @Headers('x-webhook-signature') signature: string,
     @Req() request: RawBodyRequest<express.Request>,
   ) {
-    console.log(
-      `[Webhook] Recebido! Signature: ${!!signature}, rawBody: ${!!request.rawBody}`,
-    );
+    console.log(`[Webhook] 📥 Requisição recebida em /payments/webhook`);
+    console.log(`[Webhook] Signature Header: ${signature ? 'Presente' : 'AUSENTE'}`);
+    console.log(`[Webhook] RawBody: ${request.rawBody ? 'Presente (' + request.rawBody.length + ' bytes)' : 'AUSENTE'}`);
+
     if (!signature || !request.rawBody) {
       console.error(
-        '[Webhook] Falha na validação inicial: Assinatura ou corpo ausente.',
+        '[Webhook] ❌ Falha na validação inicial: Assinatura ou corpo ausente.',
       );
       throw new UnauthorizedException('Missing signature or body content');
     }
-    return this.paymentsService.handleWebhook(signature, request.rawBody);
+
+    try {
+      return await this.paymentsService.handleWebhook(signature, request.rawBody);
+    } catch (error) {
+      console.error(`[Webhook] ❌ Erro ao processar: ${error.message}`);
+      throw error;
+    }
   }
 }
