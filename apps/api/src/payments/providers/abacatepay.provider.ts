@@ -355,7 +355,7 @@ export class AbacatePayProvider implements IPaymentProvider {
     // Camada 2: Validação por Assinatura HMAC (Header)
     let isHmacValid = false;
     if (this.webhookSecret && signature) {
-      const cleanSecret = this.webhookSecret.replace(/^'|'$/g, '').replace(/^"|"$/g, '');
+      const cleanSecret = this.webhookSecret.trim().replace(/^'|'$/g, '').replace(/^"|"$/g, '');
 
       // Tenta HEX (Padrão AbacatePay)
       const expectedSigHex = crypto
@@ -381,6 +381,7 @@ export class AbacatePayProvider implements IPaymentProvider {
         console.warn(
           `[AbacatePay] ⚠️ HMAC Mismatch - Received: ${signature.substring(0, 10)}...`,
         );
+        console.warn(`[AbacatePay] DEBUG - Cleaned Secret: '${cleanSecret}' (Len: ${cleanSecret.length})`);
         console.warn(`[AbacatePay] DEBUG - Expected Hex: ${expectedSigHex.substring(0, 10)}...`);
         console.warn(`[AbacatePay] DEBUG - Expected B64: ${expectedSigB64.substring(0, 10)}...`);
       }
@@ -397,56 +398,64 @@ export class AbacatePayProvider implements IPaymentProvider {
     const { event, data, apiVersion } = body;
     console.log(`[AbacatePay] Webhook recebido: ${event} (API v${apiVersion || 1})`);
 
-    // Log detalhado do formato do payload para depuração de extração
-    console.log('[AbacatePay] Payload keys:', Object.keys(body || {}).join(', '));
-    console.log('[AbacatePay] Data keys:', Object.keys(data || {}).join(', '));
+    // Log do payload para ver a estrutura real (seguro sem dados sensíveis)
+    const bodyStr = JSON.stringify(body);
+    console.log('[AbacatePay] Payload Preview:', bodyStr.substring(0, 500));
 
     // Suporta 'billing.paid' (v1) e 'checkout.completed' (v2)
     if (event === 'billing.paid' || event === 'checkout.completed' || event === 'transparent.completed') {
       const checkout = data.checkout || data.billing || data.transparent;
       const customer = data.customer || checkout?.customer;
 
-      if (!checkout) {
-        console.error('[AbacatePay] ❌ Dados da cobrança não encontrados no ' + (data.billing ? 'billing' : 'checkout') + ' field.');
-        // Log do objeto data para ver onde foram parar os dados
-        console.log('[AbacatePay] Estrutura do data:', JSON.stringify(data).substring(0, 200));
-        return { received: true };
-      }
-
-      // Tenta extrair o userId de várias fontes possíveis (Metadata é o ideal)
+      // Estratégia de busca de userId:
+      // 1. Metadata direta (o ideal)
       let userId =
-        checkout.metadata?.userId ||
-        data.metadata?.userId ||
-        checkout.externalId;
+        checkout?.metadata?.userId ||
+        data?.metadata?.userId ||
+        checkout?.externalId;
 
-      // Se ainda não temos o userId, tenta buscar no customer
+      // 2. Metadata no customer
       if (!userId && customer) {
         userId = customer.metadata?.userId || customer.externalId;
       }
 
-      // Busca por Regex em todo o objeto se ainda sim falhar (Nível Desespero)
+      // 3. Busca Recursiva Profunda (Encontra em qualquer nível)
       if (!userId) {
-        const payloadString = JSON.stringify(body);
-        const uuidMatch = payloadString.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+        const findDeep = (obj: any, target: string): any => {
+          if (!obj || typeof obj !== 'object') return undefined;
+          if (obj[target]) return obj[target];
+          for (const key in obj) {
+            const res = findDeep(obj[key], target);
+            if (res) return res;
+          }
+          return undefined;
+        };
+        userId = findDeep(body, 'userId') || findDeep(body, 'externalId');
+        if (userId) console.log(`[AbacatePay] userId encontrado via busca profunda: ${userId}`);
+      }
+
+      // 4. Busca por Regex UUID
+      if (!userId) {
+        const uuidMatch = bodyStr.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
         if (uuidMatch) {
           userId = uuidMatch[0];
           console.log(`[AbacatePay] userId extraído via Regex UUID de emergência: ${userId}`);
         }
       }
 
-      // Fallback para e-mail se nada funcionar
+      // Fallback para e-mail
       if (!userId && customer?.email) {
-        console.log(`[AbacatePay] userId ausente. Usando e-mail como identificador: ${customer.email}`);
+        console.log(`[AbacatePay] Usando e-mail como fallback: ${customer.email}`);
         userId = customer.email;
       }
 
       const plan =
-        checkout.metadata?.plan ||
-        checkout.products?.[0]?.externalId?.replace('plan_', '') ||
+        checkout?.metadata?.plan ||
+        checkout?.products?.[0]?.externalId?.replace('plan_', '') ||
         'premium';
 
       if (!userId) {
-        console.error('[AbacatePay] ❌ Falha crítica: Não foi possível identificar o usuário (userId ou e-mail ausentes).');
+        console.error('[AbacatePay] ❌ Falha crítica: Não foi possível identificar o usuário no payload.');
         return { received: true };
       }
 
