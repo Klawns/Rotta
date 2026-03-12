@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: 'MDC - Mohamed Delivery Control',
   description: 'Sistema de controle de corridas para entregadores',
   generator: 'v0.app',
+  themeColor: '#020617',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
