@@ -28,7 +28,7 @@ export function Navbar() {
         )}>
             <div className="container mx-auto flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2 group">
-                    <div className="h-10 w-10 bg-lime-500 rounded-xl flex items-center justify-center text-black shadow-lg shadow-lime-500/20 group-hover:scale-110 transition-transform">
+                    <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform">
                         <Bike size={20} />
                     </div>
                     <span className="text-2xl font-black text-white tracking-tighter">MDC</span>
@@ -41,9 +41,10 @@ export function Navbar() {
                             <Link
                                 key={link.label}
                                 href={link.href}
-                                className="text-sm font-bold text-slate-400 hover:text-lime-400 transition-colors uppercase tracking-widest"
+                                className="text-sm font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest relative group/link"
                             >
                                 {link.label}
+                                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all group-hover/link:w-full" />
                             </Link>
                         ))}
                     </div>
@@ -51,13 +52,13 @@ export function Navbar() {
                     <div className="flex items-center gap-4">
                         <Link
                             href="/login"
-                            className="text-sm font-bold text-white hover:text-lime-400 transition-colors uppercase tracking-widest px-4"
+                            className="text-sm font-bold text-white hover:text-blue-400 transition-colors uppercase tracking-widest px-4"
                         >
                             Entrar
                         </Link>
                         <Link
                             href="/register"
-                            className="bg-lime-500 hover:bg-lime-400 text-black px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-lime-500/20 active:scale-95 text-sm uppercase tracking-widest"
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95 text-sm uppercase tracking-widest"
                         >
                             Começar
                         </Link>
@@ -88,7 +89,7 @@ export function Navbar() {
                                     key={link.label}
                                     href={link.href}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="text-lg font-bold text-slate-300 hover:text-lime-400 transition-colors"
+                                    className="text-lg font-bold text-slate-300 hover:text-blue-400 transition-colors"
                                 >
                                     {link.label}
                                 </Link>
@@ -103,7 +104,7 @@ export function Navbar() {
                             </Link>
                             <Link
                                 href="/register"
-                                className="bg-lime-500 text-black px-6 py-4 rounded-2xl font-bold text-center shadow-lg shadow-lime-500/20"
+                                className="bg-blue-600 text-white px-6 py-4 rounded-2xl font-bold text-center shadow-lg shadow-blue-600/20"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
                                 Começar Agora

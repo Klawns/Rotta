@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import Stripe from 'stripe';
+import { ConfigService } from '@nestjs/config';
 import { IPaymentProvider, PaymentPlan } from './payment-provider.interface';
 
 @Injectable()
 export class StripeProvider implements IPaymentProvider {
   private stripe: Stripe;
 
-  constructor() {
+  constructor(private configService: ConfigService) {
     this.stripe = new Stripe(
-      process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder',
+      this.configService.get<string>('STRIPE_SECRET_KEY') || 'sk_test_placeholder',
     );
   }
 
@@ -45,7 +46,7 @@ export class StripeProvider implements IPaymentProvider {
   }
 
   async handleWebhook(signature: string, payload: Buffer, query?: any) {
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const endpointSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
     let event: Stripe.Event;
 
     if (!endpointSecret) throw new Error('STRIPE_WEBHOOK_SECRET not defined');

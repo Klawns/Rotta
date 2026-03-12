@@ -5,7 +5,7 @@ import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
 import { PAYMENT_PROVIDER } from './providers/payment-provider.interface';
 import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
-import { getQueueToken } from '@nestjs/bullmq';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -16,7 +16,7 @@ describe('PaymentsService', () => {
     const configMock = {};
     const providerMock = {};
     const cacheMock = {};
-    const queueMock = { add: jest.fn() };
+    const eventEmitterMock = { emit: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -26,7 +26,7 @@ describe('PaymentsService', () => {
         { provide: ConfigService, useValue: configMock },
         { provide: PAYMENT_PROVIDER, useValue: providerMock },
         { provide: CACHE_PROVIDER, useValue: cacheMock },
-        { provide: getQueueToken('webhooks'), useValue: queueMock },
+        { provide: EventEmitter2, useValue: eventEmitterMock },
       ],
     }).compile();
 

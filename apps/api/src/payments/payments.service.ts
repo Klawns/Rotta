@@ -1,4 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Audit } from '../common/decorators/audit.decorator';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -15,6 +17,7 @@ import type { ICacheProvider } from '../cache/interfaces/cache-provider.interfac
 import { IPaymentsRepository } from './interfaces/payments-repository.interface';
 
 import { WebhookJobData } from './queue/webhook.worker';
+import { PaymentEvents, PaymentWebhookReceivedEvent } from './events/payment.events';
 
 @Injectable()
 export class PaymentsService {
@@ -27,10 +30,10 @@ export class PaymentsService {
     private configService: ConfigService,
     @Inject(IPaymentsRepository)
     private readonly paymentsRepository: IPaymentsRepository,
-    @InjectQueue('webhooks')
-    private webhooksQueue: Queue<WebhookJobData>,
+    private eventEmitter: EventEmitter2,
   ) { }
 
+  @Audit()
   async createCheckoutSession(
     userId: string,
     plan: PaymentPlan,
@@ -107,6 +110,7 @@ export class PaymentsService {
     }
   }
 
+  @Audit()
   async handleWebhook(signature: string, payload: Buffer, query?: any) {
     // 1. Evita processamento duplo do MESMO webhook (Retentativas de rede)
     // Geramos um hash único do corpo da requisição para identificar se é o MESMO aviso
@@ -148,21 +152,13 @@ export class PaymentsService {
         | 'premium'
         | 'lifetime';
       console.log(
-        `[Webhook] Enfileirando Job de pagamento. Usuário: ${userId}, Novo Plano: ${plan}`,
+        `[Webhook] Emitindo evento de pagamento. Usuário: ${userId}, Novo Plano: ${plan}`,
       );
 
-      // Adiciona na Fila em vez de processar sincronicamente
-      await this.webhooksQueue.add(
-        'process-payment', // nome da tarefa
-        { userId, plan, eventId: crypto.randomUUID() }, // payload (WebhookJobData)
-        {
-          attempts: 5, // Tenta 5 vezes antes de desistir e ir pra rota de falhas (DLQ)
-          backoff: {
-            type: 'exponential',
-            delay: 5000, // Começa esperando 5 segundos e vai dobrando se falhar
-          },
-          removeOnComplete: true,
-        },
+      // Emite o evento (Observer Pattern)
+      this.eventEmitter.emit(
+        PaymentEvents.WEBHOOK_RECEIVED,
+        new PaymentWebhookReceivedEvent(userId, plan, result.eventId || crypto.randomUUID()),
       );
     }
 

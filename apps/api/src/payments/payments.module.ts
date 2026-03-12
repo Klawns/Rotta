@@ -8,9 +8,12 @@ import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
 import { PAYMENT_PROVIDER } from './providers/payment-provider.interface';
 import { AbacatePayProvider } from './providers/abacatepay.provider';
+import { StripeProvider } from './providers/stripe.provider';
+import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { WebhookWorker } from './queue/webhook.worker';
 import { DrizzlePaymentsRepository } from './repositories/drizzle-payments.repository';
 import { IPaymentsRepository } from './interfaces/payments-repository.interface';
+import { PaymentEventsListener } from './listeners/payment-events.listener';
 
 @Module({
   imports: [
@@ -25,10 +28,14 @@ import { IPaymentsRepository } from './interfaces/payments-repository.interface'
   providers: [
     PaymentsService,
     AbacatePayProvider,
+    StripeProvider,
+    PaymentProviderFactory,
     WebhookWorker,
+    PaymentEventsListener,
     {
       provide: PAYMENT_PROVIDER,
-      useClass: AbacatePayProvider,
+      useFactory: (factory: PaymentProviderFactory) => factory.getProvider(),
+      inject: [PaymentProviderFactory],
     },
     {
       provide: IPaymentsRepository,
@@ -38,4 +45,4 @@ import { IPaymentsRepository } from './interfaces/payments-repository.interface'
   controllers: [PaymentsController],
   exports: [PaymentsService, PAYMENT_PROVIDER, IPaymentsRepository],
 })
-export class PaymentsModule {}
+export class PaymentsModule { }

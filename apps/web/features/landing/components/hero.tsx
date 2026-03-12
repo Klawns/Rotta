@@ -36,19 +36,11 @@ export function Hero() {
         <section ref={heroRef} className="relative pt-32 pb-20 px-6 overflow-hidden">
             <div className="container mx-auto flex flex-col lg:flex-row items-center gap-12">
                 <div className="hero-content lg:w-1/2 text-left z-10">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-500/10 border border-lime-500/20 text-lime-400 text-xs font-bold uppercase tracking-widest mb-6"
-                    >
-                        <Zap size={14} />
-                        <span>Elite Delivery Control</span>
-                    </motion.div>
 
                     <h1 className="text-5xl lg:text-7xl font-black tracking-tight mb-6 leading-[1.1]">
                         <span className="text-white">Gerencie suas</span>
                         <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-lime-400 to-emerald-500 glow-text">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-500 glow-text">
                             corridas com maestria
                         </span>
                     </h1>
@@ -61,7 +53,7 @@ export function Hero() {
                     <div className="flex flex-col sm:flex-row gap-4">
                         <Link
                             href="/register?plan=starter"
-                            className="px-8 py-4 bg-lime-500 hover:bg-lime-400 text-black rounded-xl font-bold transition-all flex items-center justify-center gap-2 group shadow-lg shadow-lime-500/20 text-center active:scale-[0.98]"
+                            className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 group shadow-lg shadow-blue-600/20 text-center active:scale-[0.98]"
                         >
                             Começar Grátis
                             <ArrowRight className="group-hover:translate-x-1 transition-transform" />
