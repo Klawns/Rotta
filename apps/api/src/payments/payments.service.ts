@@ -28,7 +28,7 @@ export class PaymentsService {
     private readonly paymentsRepository: IPaymentsRepository,
     @InjectQueue('webhooks')
     private webhooksQueue: Queue<WebhookJobData>,
-  ) {}
+  ) { }
 
   async createCheckoutSession(
     userId: string,
@@ -52,11 +52,11 @@ export class PaymentsService {
       dbPlan.price,
       user
         ? {
-            name: user.name,
-            email: user.email,
-            taxId: user.taxId ?? undefined,
-            cellphone: user.cellphone ?? undefined,
-          }
+          name: user.name,
+          email: user.email,
+          taxId: user.taxId ?? undefined,
+          cellphone: user.cellphone ?? undefined,
+        }
         : undefined,
       couponCode ? [couponCode] : undefined,
     );
@@ -106,8 +106,8 @@ export class PaymentsService {
     }
   }
 
-  async handleWebhook(signature: string, payload: Buffer) {
-    const result = await this.provider.handleWebhook(signature, payload);
+  async handleWebhook(signature: string, payload: Buffer, query?: any) {
+    const result = await this.provider.handleWebhook(signature, payload, query);
 
     if (result.userId && result.plan) {
       let userId = result.userId;

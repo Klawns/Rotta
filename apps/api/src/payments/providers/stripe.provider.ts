@@ -44,7 +44,7 @@ export class StripeProvider implements IPaymentProvider {
     return { url: session.url as string };
   }
 
-  async handleWebhook(signature: string, payload: Buffer) {
+  async handleWebhook(signature: string, payload: Buffer, query?: any) {
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
     let event: Stripe.Event;
 
@@ -61,7 +61,7 @@ export class StripeProvider implements IPaymentProvider {
       return {
         received: true,
         userId: session.client_reference_id as string,
-        plan: session.metadata?.plan,
+        plan: session.metadata?.plan as PaymentPlan,
       };
     }
 

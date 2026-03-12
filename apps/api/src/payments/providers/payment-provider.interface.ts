@@ -18,7 +18,13 @@ export interface IPaymentProvider {
   handleWebhook(
     signature: string,
     payload: Buffer,
-  ): Promise<{ received: boolean; userId?: string; plan?: string }>;
+    query?: any,
+  ): Promise<{
+    received: boolean;
+    userId?: string;
+    plan?: PaymentPlan;
+    status?: string;
+  }>;
   listCoupons?(): Promise<any[]>;
   createCoupon?(data: any): Promise<any>;
 }

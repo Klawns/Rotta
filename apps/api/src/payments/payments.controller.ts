@@ -54,7 +54,7 @@ export class PaymentsController {
     }
 
     try {
-      return await this.paymentsService.handleWebhook(signature, request.rawBody);
+      return await this.paymentsService.handleWebhook(signature, request.rawBody, request.query);
     } catch (error) {
       console.error(`[Webhook] ❌ Erro ao processar: ${error.message}`);
       throw error;
