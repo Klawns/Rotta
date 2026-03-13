@@ -18,7 +18,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
   constructor(
     @Inject(DRIZZLE)
     private readonly db: LibSQLDatabase<typeof schema>,
-  ) {}
+  ) { }
 
   async findAll(
     userId: string,
@@ -58,6 +58,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
         rideDate: schema.rides.rideDate,
         createdAt: schema.rides.createdAt,
         location: schema.rides.location,
+        photo: schema.rides.photo,
         client: {
           id: schema.clients.id,
           name: schema.clients.name,
@@ -66,7 +67,11 @@ export class DrizzleRidesRepository implements IRidesRepository {
       .from(schema.rides)
       .leftJoin(schema.clients, eq(schema.rides.clientId, schema.clients.id))
       .where(and(...conditions))
-      .orderBy(desc(schema.rides.rideDate), desc(schema.rides.createdAt));
+      .orderBy(
+        desc(sql`COALESCE(${schema.rides.rideDate}, ${schema.rides.createdAt})`),
+        desc(schema.rides.createdAt),
+        desc(schema.rides.id)
+      );
 
     if (limit !== undefined) query.limit(limit);
     if (offset !== undefined) query.offset(offset);
@@ -115,14 +120,12 @@ export class DrizzleRidesRepository implements IRidesRepository {
       .select({
         id: schema.clients.id,
         name: schema.clients.name,
-        rideCount: sql<number>`count(${schema.rides.id})`,
+        isPinned: schema.clients.isPinned,
       })
       .from(schema.clients)
-      .innerJoin(schema.rides, eq(schema.clients.id, schema.rides.clientId))
-      .where(eq(schema.clients.userId, userId))
-      .groupBy(schema.clients.id)
-      .orderBy(desc(sql`count(${schema.rides.id})`))
-      .limit(5);
+      .where(and(eq(schema.clients.userId, userId), eq(schema.clients.isPinned, true)))
+      .orderBy(desc(schema.clients.createdAt))
+      .limit(10);
 
     return results;
   }
@@ -170,7 +173,11 @@ export class DrizzleRidesRepository implements IRidesRepository {
           eq(schema.rides.clientId, clientId),
         ),
       )
-      .orderBy(desc(schema.rides.rideDate), desc(schema.rides.createdAt));
+      .orderBy(
+        desc(sql`COALESCE(${schema.rides.rideDate}, ${schema.rides.createdAt})`),
+        desc(schema.rides.createdAt),
+        desc(schema.rides.id)
+      );
 
     if (limit !== undefined) query.limit(limit);
     if (offset !== undefined) query.offset(offset);
@@ -219,6 +226,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
         rideDate: schema.rides.rideDate,
         createdAt: schema.rides.createdAt,
         location: schema.rides.location,
+        photo: schema.rides.photo,
         client: {
           id: schema.clients.id,
           name: schema.clients.name,
@@ -226,7 +234,12 @@ export class DrizzleRidesRepository implements IRidesRepository {
       })
       .from(schema.rides)
       .leftJoin(schema.clients, eq(schema.rides.clientId, schema.clients.id))
-      .where(and(...conditions));
+      .where(and(...conditions))
+      .orderBy(
+        desc(sql`COALESCE(${schema.rides.rideDate}, ${schema.rides.createdAt})`),
+        desc(schema.rides.createdAt),
+        desc(schema.rides.id)
+      );
 
     const totalValue = results.reduce(
       (acc, ride) => acc + (ride.value || 0),

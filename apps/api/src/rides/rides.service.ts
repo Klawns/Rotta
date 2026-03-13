@@ -37,6 +37,7 @@ export class RidesService {
       status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
       paymentStatus?: 'PENDING' | 'PAID';
       rideDate?: Date;
+      photo?: string;
     },
   ) {
     const sub = await this.subscriptionsService.findByUserId(userId);
@@ -62,6 +63,7 @@ export class RidesService {
       status: data.status || 'COMPLETED',
       paymentStatus: data.paymentStatus || 'PAID',
       rideDate: data.rideDate || new Date(),
+      photo: data.photo,
       userId,
     });
 
@@ -97,6 +99,7 @@ export class RidesService {
       status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
       paymentStatus?: 'PENDING' | 'PAID';
       rideDate?: Date;
+      photo?: string;
     },
   ) {
     return this.ridesRepository.update(userId, id, data);

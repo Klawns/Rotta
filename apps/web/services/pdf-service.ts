@@ -69,7 +69,7 @@ export class PDFService {
 
         // Table
         const tableData = rides.map(ride => [
-            format(new Date(ride.createdAt || ride.rideDate), "dd/MM/yy HH:mm"),
+            format(new Date(ride.rideDate || ride.createdAt), "dd/MM/yy HH:mm"),
             ride.client?.name || "---",
             ride.location || "---",
             formatCurrency(ride.value),

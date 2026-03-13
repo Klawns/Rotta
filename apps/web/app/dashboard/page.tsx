@@ -213,7 +213,7 @@ export default function DashboardPage() {
                                                 </div>
                                                 <div className="flex-1">
                                                     <h4 className="font-semibold text-white">ID: {ride.id?.split("-")[0] || "---"}</h4>
-                                                    <p className="text-xs text-slate-500 mt-0.5">{new Date(ride.createdAt).toLocaleString()}</p>
+                                                    <p className="text-xs text-slate-500 mt-0.5">{new Date(ride.rideDate || ride.createdAt).toLocaleString()}</p>
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="font-bold text-white">{formatCurrency(ride.value)}</p>

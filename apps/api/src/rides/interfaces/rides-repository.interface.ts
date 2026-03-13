@@ -44,7 +44,7 @@ export interface IRidesRepository {
 
   getFrequentClients(
     userId: string,
-  ): Promise<Array<{ id: string; name: string; rideCount: number }>>;
+  ): Promise<Array<{ id: string; name: string; isPinned: boolean }>>;
 
   update(userId: string, id: string, data: UpdateRideDto): Promise<Ride>;
 

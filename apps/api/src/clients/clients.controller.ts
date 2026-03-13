@@ -48,7 +48,7 @@ export class ClientsController {
   async update(
     @Request() req: any,
     @Param('id') id: string,
-    @Body() body: { name: string },
+    @Body() body: any,
   ) {
     return this.clientsService.update(req.user.id, id, body);
   }

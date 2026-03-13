@@ -26,6 +26,7 @@ export const clients = sqliteTable('clients', {
     id: text('id').primaryKey(),
     userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
+    isPinned: integer('is_pinned', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 }, (table) => ({
     userIdIdx: index('clients_user_id_idx').on(table.userId),
@@ -41,6 +42,7 @@ export const rides = sqliteTable('rides', {
     status: text('status', { enum: ['PENDING', 'COMPLETED', 'CANCELLED'] }).notNull().default('COMPLETED'),
     paymentStatus: text('payment_status', { enum: ['PENDING', 'PAID'] }).notNull().default('PAID'),
     rideDate: integer('ride_date', { mode: 'timestamp' }),
+    photo: text('photo'),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 }, (table) => ({
     userIdIdx: index('rides_user_id_idx').on(table.userId),

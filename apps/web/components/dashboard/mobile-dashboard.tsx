@@ -25,6 +25,7 @@ import {
     Camera
 } from "lucide-react";
 import { api } from "@/services/api";
+import { uploadImage } from "@/lib/upload";
 
 const RIDE_LIMIT_FREE = 20;
 import { formatCurrency, cn } from "@/lib/utils";
@@ -192,12 +193,27 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
 
         setIsSaving(true);
         try {
+            let uploadedPhotoUrl = photo;
+
+            if (photo && photo.startsWith('data:image')) {
+                try {
+                    const response = await fetch(photo);
+                    const blob = await response.blob();
+                    const file = new File([blob], "ride-photo.jpg", { type: blob.type });
+                    const res = await uploadImage(file, 'rides');
+                    uploadedPhotoUrl = res.url;
+                } catch (uploadErr) {
+                    console.error("Erro no upload R2:", uploadErr);
+                    uploadedPhotoUrl = undefined;
+                }
+            }
+
             await api.post("/rides", {
                 clientId: selectedClient.id,
                 value: finalValue,
                 location: finalLocation,
                 notes: notes || undefined,
-                photo: photo || undefined,
+                photo: uploadedPhotoUrl || undefined,
                 status: rideStatus,
                 paymentStatus: paymentStatus,
                 rideDate: rideDate || undefined
@@ -258,12 +274,27 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
         if (!editingRide) return;
         setIsUpdating(true);
         try {
+            let uploadedPhotoUrl = editPhoto;
+
+            if (editPhoto && editPhoto.startsWith('data:image')) {
+                try {
+                    const response = await fetch(editPhoto);
+                    const blob = await response.blob();
+                    const file = new File([blob], "ride-photo.jpg", { type: blob.type });
+                    const res = await uploadImage(file, 'rides');
+                    uploadedPhotoUrl = res.url;
+                } catch (uploadErr) {
+                    console.error("Erro no upload R2:", uploadErr);
+                    uploadedPhotoUrl = undefined;
+                }
+            }
+
             await api.patch(`/rides/${editingRide.id}`, {
                 value: Number(editValue),
                 location: editLocation,
                 rideDate: editRideDate || undefined,
                 notes: editNotes || undefined,
-                photo: editPhoto || undefined,
+                photo: uploadedPhotoUrl || undefined,
                 status: editStatus,
                 paymentStatus: editPaymentStatus
             });
@@ -590,7 +621,9 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
                                                 </div>
                                             )}
                                         </div>
-                                        <span className="text-[10px] text-slate-500 truncate flex items-center gap-1"><MapPin size={8} /> {r.location || "Central"}</span>
+                                        <span className="text-[10px] text-slate-500 truncate flex items-center gap-1">
+                                            <MapPin size={8} /> {r.location || "Central"} • {new Date(r.rideDate || r.createdAt).toLocaleDateString([], { day: '2-digit', month: '2-digit' })} {new Date(r.rideDate || r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-1.5">

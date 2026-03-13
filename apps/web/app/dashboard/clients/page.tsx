@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, User, Bike, ChevronRight, X, Calendar, Trash2 } from "lucide-react";
+import { Plus, Search, User, Bike, ChevronRight, X, Calendar, Trash2, Star } from "lucide-react";
 import { api } from "@/services/api";
 import { formatCurrency, cn } from "@/lib/utils";
 import { RideModal } from "@/components/ride-modal";
@@ -13,6 +13,7 @@ interface Client {
     id: string;
     name: string;
     userId: string;
+    isPinned: boolean;
     createdAt: string;
 }
 
@@ -187,6 +188,26 @@ export default function ClientsPage() {
                                         <p className="text-sm text-slate-500">Clique para ver detalhes</p>
                                     </div>
                                     <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                try {
+                                                    await api.patch(`/clients/${client.id}`, { isPinned: !client.isPinned });
+                                                    fetchClients();
+                                                } catch (err) {
+                                                    alert("Erro ao fixar cliente");
+                                                }
+                                            }}
+                                            className={cn(
+                                                "p-3 rounded-xl transition-all active:scale-90",
+                                                client.isPinned
+                                                    ? "bg-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white shadow-lg shadow-amber-500/20"
+                                                    : "bg-white/5 text-slate-500 hover:bg-white/10 hover:text-white"
+                                            )}
+                                            title={client.isPinned ? "Desafixar" : "Fixar"}
+                                        >
+                                            <Star size={18} className={cn(client.isPinned && "fill-amber-500 hover:fill-white")} />
+                                        </button>
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();

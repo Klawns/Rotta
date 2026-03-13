@@ -20,6 +20,7 @@ import { AdminModule } from './admin/admin.module';
 import { SettingsModule } from './settings/settings.module';
 import { DebugController } from './debug/debug.controller';
 import { getRedisConfig } from './common/utils/redis.util';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { getRedisConfig } from './common/utils/redis.util';
     SubscriptionsModule,
     AdminModule,
     SettingsModule,
+    UploadModule,
   ],
   controllers: [AppController, DebugController],
   providers: [

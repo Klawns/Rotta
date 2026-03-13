@@ -17,7 +17,7 @@ import { ActiveSubscriptionGuard } from '../auth/guards/active-subscription.guar
 @Controller('rides')
 @UseGuards(AuthGuard('jwt'), ActiveSubscriptionGuard)
 export class RidesController {
-  constructor(private ridesService: RidesService) {}
+  constructor(private ridesService: RidesService) { }
 
   @Get()
   async findAll(
@@ -46,7 +46,7 @@ export class RidesController {
     );
   }
 
-  @Get('frequent-clients')
+  @Get('frequent-clients') // Repurposed for pinned clients
   async getFrequentClients(@Request() req: any) {
     return this.ridesService.getFrequentClients(req.user.id);
   }
@@ -60,6 +60,7 @@ export class RidesController {
       value: number;
       location: string;
       notes?: string;
+      photo?: string;
       status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
       paymentStatus?: 'PENDING' | 'PAID';
       rideDate?: string;
@@ -156,6 +157,7 @@ export class RidesController {
       value?: number;
       location?: string;
       notes?: string;
+      photo?: string;
       status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
       paymentStatus?: 'PENDING' | 'PAID';
       rideDate?: string;

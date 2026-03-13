@@ -4,11 +4,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
-import { Users, Settings } from "lucide-react";
+import { Users, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+    const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
 
@@ -62,6 +63,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         Configurações
                     </Link>
                 </div>
+
+                <Button
+                    onClick={logout}
+                    variant="ghost"
+                    className="group bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/20 rounded-2xl px-6 py-6 transition-all"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
+                            <LogOut size={18} className="text-red-500" />
+                        </div>
+                        <div className="text-left">
+                            <div className="text-sm font-bold text-white leading-none">Sair do Painel</div>
+                            <div className="text-[10px] text-red-500/60 font-medium mt-0.5">Encerrar Sessão</div>
+                        </div>
+                    </div>
+                </Button>
             </header>
 
             {children}

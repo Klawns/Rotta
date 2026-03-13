@@ -31,7 +31,7 @@ export class ClientsService {
     return this.clientsRepository.findOne(userId, id);
   }
 
-  async update(userId: string, id: string, data: { name: string }) {
+  async update(userId: string, id: string, data: Partial<CreateClientDto>) {
     return this.clientsRepository.update(userId, id, data);
   }
 

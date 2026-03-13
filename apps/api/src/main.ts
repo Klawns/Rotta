@@ -36,16 +36,15 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  // Middleware de diagnóstico para o Railway
+  // Middleware de diagnóstico
   app.use((req: Request, res: Response, next: NextFunction) => {
-    if (process.env.NODE_ENV === 'production') {
-      const hasAccessToken = !!(
-        req.cookies['access_token'] || req.cookies['admin_access_token']
-      );
-      console.log(
-        `[Request] ${req.method} ${req.url} - Origin: ${req.get('origin')} - Has Cookies: ${hasAccessToken}`,
-      );
-    }
+    const isProd = process.env.NODE_ENV === 'production';
+    const hasAccessToken = !!(
+      req.cookies['access_token'] || req.cookies['admin_access_token']
+    );
+    console.log(
+      `[Request] ${req.method} ${req.url} - Origin: ${req.get('origin')} - Has Cookies: ${hasAccessToken}`,
+    );
     next();
   });
 

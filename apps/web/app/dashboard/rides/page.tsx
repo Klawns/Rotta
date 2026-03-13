@@ -29,7 +29,7 @@ interface Client {
 }
 
 interface FrequentClient extends Client {
-    rideCount: number;
+    isPinned: boolean;
 }
 
 export default function RidesPage() {
@@ -143,7 +143,7 @@ export default function RidesPage() {
                 </button>
             </header>
 
-            {/* Clientes Frequentes - Acesso Rápido */}
+            {/* Clientes Fixados - Acesso Rápido */}
             <AnimatePresence>
                 {!isLoading && frequentClients.length > 0 && (
                     <motion.section
@@ -152,8 +152,8 @@ export default function RidesPage() {
                         className="space-y-4"
                     >
                         <div className="flex items-center gap-2 px-1">
-                            <Star size={14} className="text-amber-400 fill-amber-400" />
-                            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Clientes Mais Ativos</h2>
+                            <Star size={14} className="text-blue-400 fill-blue-400" />
+                            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Clientes Fixados</h2>
                         </div>
                         <div className="flex flex-wrap gap-3">
                             {frequentClients.map(client => (
@@ -170,7 +170,7 @@ export default function RidesPage() {
                                     </div>
                                     <div className="text-left">
                                         <p className="text-sm font-bold text-white leading-tight">{client.name}</p>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">{client.rideCount} corridas</p>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Fixado</p>
                                     </div>
                                     <ArrowRight size={14} className="text-slate-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
                                 </button>
