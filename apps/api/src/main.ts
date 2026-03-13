@@ -19,10 +19,10 @@ async function bootstrap() {
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      const allowed = [frontendUrl, 'http://localhost:3000'].map((u) =>
-        u?.replace(/\/$/, ''),
-      );
-      if (!origin || allowed.includes(origin.replace(/\/$/, ''))) {
+      const allowed = [frontendUrl, 'http://localhost:3000']
+        .filter(Boolean)
+        .map((u) => u!.trim().replace(/\/$/, ''));
+      if (!origin || allowed.includes(origin.trim().replace(/\/$/, ''))) {
         callback(null, true);
       } else {
         console.error(
