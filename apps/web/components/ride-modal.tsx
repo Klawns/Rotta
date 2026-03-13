@@ -32,11 +32,12 @@ interface RideModalProps {
     onSuccess: () => void;
     clientId?: string; // Se fornecido, pula a seleção de cliente
     clientName?: string;
+    rideToEdit?: any; // Dados da corrida a ser editada
 }
 
 const QUICK_VALUES = [10, 15, 20, 25];
 
-export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName }: RideModalProps) {
+export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName, rideToEdit }: RideModalProps) {
     const { verify, user } = useAuth();
     const [clients, setClients] = useState<Client[]>([]);
     const [presets, setPresets] = useState<any[]>([]);
@@ -55,12 +56,31 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName }: 
     useEffect(() => {
         if (isOpen && user) {
             loadInitialData();
-            // Reset to defaults when opening
-            setPaymentStatus("PAID");
-            setStatus("COMPLETED");
-            setPhoto(null);
+
+            if (rideToEdit) {
+                setSelectedClientId(rideToEdit.clientId);
+                setValue(rideToEdit.value.toString());
+                setLocation(rideToEdit.location || "");
+                setNotes(rideToEdit.notes || "");
+                setRideDate(rideToEdit.rideDate ? rideToEdit.rideDate.substring(0, 16) : "");
+                setPaymentStatus(rideToEdit.paymentStatus);
+                setStatus(rideToEdit.status);
+                setPhoto(rideToEdit.photo || null);
+                setIsCustomValue(true);
+            } else {
+                // Reset to defaults when opening for new ride
+                setPaymentStatus("PAID");
+                setStatus("COMPLETED");
+                setPhoto(null);
+                setSelectedClientId(clientId || "");
+                setValue("");
+                setLocation("");
+                setNotes("");
+                setRideDate("");
+                setIsCustomValue(false);
+            }
         }
-    }, [isOpen, clientId, user]);
+    }, [isOpen, clientId, rideToEdit, user]);
 
     const loadInitialData = async () => {
         setIsLoadingData(true);
@@ -105,7 +125,7 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName }: 
 
         setIsSubmitting(true);
         try {
-            await api.post("/rides", {
+            const payload = {
                 clientId: selectedClientId,
                 value: Number(value),
                 location: location || "Não informada",
@@ -114,16 +134,22 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName }: 
                 status,
                 paymentStatus,
                 rideDate: rideDate || undefined
-            });
+            };
+
+            if (rideToEdit) {
+                await api.patch(`/rides/${rideToEdit.id}`, payload);
+            } else {
+                await api.post("/rides", payload);
+            }
 
             // Atualiza os dados do usuário globalmente (rideCount)
             await verify();
 
-            resetForm();
+            if (!rideToEdit) resetForm();
             onSuccess();
             onClose();
         } catch (err) {
-            alert("Erro ao registrar corrida. Tente novamente.");
+            alert(`Erro ao ${rideToEdit ? 'atualizar' : 'registrar'} corrida. Tente novamente.`);
         } finally {
             setIsSubmitting(false);
         }
@@ -152,9 +178,9 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName }: 
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent showCloseButton={false} className="bg-slate-900 border-white/10 p-0 overflow-hidden sm:rounded-[2.5rem] w-[calc(100%-2rem)] max-w-lg sm:max-w-[480px] gap-0 shadow-2xl">
                 <DialogHeader className="sr-only">
-                    <DialogTitle>Nova Corrida</DialogTitle>
+                    <DialogTitle>{rideToEdit ? 'Editar Corrida' : 'Nova Corrida'}</DialogTitle>
                     <DialogDescription>
-                        Registre uma nova corrida no sistema.
+                        {rideToEdit ? 'Altere as informações da corrida selecionada.' : 'Registre uma nova corrida no sistema.'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -178,8 +204,8 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName }: 
                                 <Bike size={24} />
                             </div>
                             <div>
-                                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tighter leading-none">Nova Corrida</h2>
-                                <p className="text-slate-500 text-[10px] sm:text-xs mt-1.5 uppercase tracking-[0.2em] font-bold opacity-70">Registro Instantâneo</p>
+                                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tighter leading-none">{rideToEdit ? 'Editar Corrida' : 'Nova Corrida'}</h2>
+                                <p className="text-slate-500 text-[10px] sm:text-xs mt-1.5 uppercase tracking-[0.2em] font-bold opacity-70">{rideToEdit ? `ID: ${rideToEdit.id.split("-")[0]}` : 'Registro Instantâneo'}</p>
                             </div>
                         </div>
                     </div>
@@ -457,7 +483,7 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName }: 
                                     <div className="h-7 w-7 border-[3px] border-white/30 border-t-white rounded-full animate-spin"></div>
                                 ) : (
                                     <>
-                                        Registrar Corrida
+                                        {rideToEdit ? 'Salvar Alterações' : 'Registrar Corrida'}
                                         <CheckCircle2 size={24} className="group-hover:translate-x-1 transition-transform" />
                                     </>
                                 )}

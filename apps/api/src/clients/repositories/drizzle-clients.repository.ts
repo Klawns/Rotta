@@ -16,7 +16,7 @@ export class DrizzleClientsRepository implements IClientsRepository {
   constructor(
     @Inject(DRIZZLE)
     private readonly db: LibSQLDatabase<typeof schema>,
-  ) {}
+  ) { }
 
   async findAll(
     userId: string,
@@ -71,6 +71,20 @@ export class DrizzleClientsRepository implements IClientsRepository {
       .from(schema.clients)
       .where(and(eq(schema.clients.id, id), eq(schema.clients.userId, userId)))
       .limit(1);
+
+    return results[0];
+  }
+
+  async update(
+    userId: string,
+    id: string,
+    data: Partial<CreateClientDto>,
+  ): Promise<Client> {
+    const results = await this.db
+      .update(schema.clients)
+      .set(data)
+      .where(and(eq(schema.clients.id, id), eq(schema.clients.userId, userId)))
+      .returning();
 
     return results[0];
   }

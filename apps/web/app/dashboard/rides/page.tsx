@@ -40,6 +40,7 @@ export default function RidesPage() {
     const [isRideModalOpen, setIsRideModalOpen] = useState(false);
     const [selectedQuickClient, setSelectedQuickClient] = useState<{ id: string, name: string } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [rideToEdit, setRideToEdit] = useState<Ride | null>(null);
     const { user } = useAuth();
 
     // Pagination & Filters State
@@ -101,6 +102,11 @@ export default function RidesPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleEditRide = (ride: Ride) => {
+        setRideToEdit(ride);
+        setIsRideModalOpen(true);
     };
 
     const togglePaymentStatus = async (ride: Ride) => {
@@ -311,7 +317,8 @@ export default function RidesPage() {
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: index * 0.05 }}
-                                    className="glass-card p-6 rounded-3xl border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition-all group flex flex-col md:flex-row md:items-center gap-6"
+                                    onClick={() => handleEditRide(ride)}
+                                    className="glass-card p-6 rounded-3xl border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition-all group flex flex-col md:flex-row md:items-center gap-6 cursor-pointer"
                                 >
                                     <div className="flex items-center gap-6 flex-1">
                                         <div className="p-4 bg-blue-600/10 rounded-2xl text-blue-400 group-hover:scale-110 transition-transform flex-shrink-0">
@@ -358,7 +365,10 @@ export default function RidesPage() {
                                                 {ride.status === 'COMPLETED' ? 'Concluída' : ride.status === 'PENDING' ? 'Pendente' : 'Cancelada'}
                                             </span>
                                             <button
-                                                onClick={() => togglePaymentStatus(ride)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    togglePaymentStatus(ride);
+                                                }}
                                                 className={cn(
                                                     "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all active:scale-95",
                                                     ride.paymentStatus === 'PAID' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"
@@ -409,10 +419,12 @@ export default function RidesPage() {
                 onClose={() => {
                     setIsRideModalOpen(false);
                     setSelectedQuickClient(null);
+                    setRideToEdit(null);
                 }}
                 onSuccess={fetchData}
                 clientId={selectedQuickClient?.id}
                 clientName={selectedQuickClient?.name}
+                rideToEdit={rideToEdit}
             />
         </div>
     );

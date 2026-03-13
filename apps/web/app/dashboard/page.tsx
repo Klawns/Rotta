@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import Link from "next/link";
+import { RideModal } from "@/components/ride-modal";
 import { MobileDashboard } from "@/components/dashboard/mobile-dashboard";
 import { RidesChart } from "@/components/dashboard/rides-chart";
 
@@ -23,6 +24,8 @@ export default function DashboardPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
     const [activitiesPage, setActivitiesPage] = useState(1);
+    const [isRideModalOpen, setIsRideModalOpen] = useState(false);
+    const [rideToEdit, setRideToEdit] = useState<any>(null);
     const itemsPerPage = 4;
 
     useEffect(() => {
@@ -76,6 +79,11 @@ export default function DashboardPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleEditRide = (ride: any) => {
+        setRideToEdit(ride);
+        setIsRideModalOpen(true);
     };
 
     const dashboardStats = [
@@ -195,7 +203,11 @@ export default function DashboardPage() {
                                     {stats.rides
                                         .slice((activitiesPage - 1) * itemsPerPage, activitiesPage * itemsPerPage)
                                         .map((ride: any) => (
-                                            <div key={ride.id} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5 group">
+                                            <div
+                                                key={ride.id}
+                                                onClick={() => handleEditRide(ride)}
+                                                className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5 group cursor-pointer"
+                                            >
                                                 <div className={cn("p-3 rounded-xl", period === 'today' ? "bg-blue-500/10 text-blue-400" : "bg-orange-500/10 text-orange-400")}>
                                                     <Calendar size={20} />
                                                 </div>
@@ -278,6 +290,15 @@ export default function DashboardPage() {
                     </motion.div>
                 </Link>
             </div>
+            <RideModal
+                isOpen={isRideModalOpen}
+                onClose={() => {
+                    setIsRideModalOpen(false);
+                    setRideToEdit(null);
+                }}
+                onSuccess={fetchStats}
+                rideToEdit={rideToEdit}
+            />
         </div>
     );
 }

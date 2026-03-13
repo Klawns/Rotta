@@ -6,6 +6,7 @@ import { Plus, Search, User, Bike, ChevronRight, X, Calendar, Trash2 } from "luc
 import { api } from "@/services/api";
 import { formatCurrency, cn } from "@/lib/utils";
 import { RideModal } from "@/components/ride-modal";
+import { ClientModal } from "@/components/client-modal";
 import { useAuth } from "@/hooks/use-auth";
 
 interface Client {
@@ -33,6 +34,8 @@ export default function ClientsPage() {
     const [rides, setRides] = useState<Ride[]>([]);
     const [isAddingClient, setIsAddingClient] = useState(false);
     const [isRideModalOpen, setIsRideModalOpen] = useState(false);
+    const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+    const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { user } = useAuth();
 
@@ -102,6 +105,16 @@ export default function ClientsPage() {
         }
     };
 
+    const handleEditClient = (client: Client) => {
+        setClientToEdit(client);
+        setIsClientModalOpen(true);
+    };
+
+    const handleNewClient = () => {
+        setClientToEdit(null);
+        setIsClientModalOpen(true);
+    };
+
     const handleCreateClient = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
@@ -129,7 +142,7 @@ export default function ClientsPage() {
                     <p className="text-slate-400 mt-1">Gerencie sua base e inicie novas corridas.</p>
                 </div>
                 <button
-                    onClick={() => setIsAddingClient(true)}
+                    onClick={handleNewClient}
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95"
                 >
                     <Plus size={20} />
@@ -162,7 +175,7 @@ export default function ClientsPage() {
                                 key={client.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                onClick={() => setSelectedClient(client)}
+                                onClick={() => handleEditClient(client)}
                                 className="glass-card p-6 rounded-3xl border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition-all cursor-pointer group relative overflow-hidden"
                             >
                                 <div className="flex items-center gap-4 relative z-10">
@@ -185,7 +198,16 @@ export default function ClientsPage() {
                                         >
                                             <Bike size={18} />
                                         </button>
-                                        <ChevronRight className="text-slate-600 group-hover:text-white transition-colors" />
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedClient(client);
+                                            }}
+                                            className="p-3 hover:bg-white/5 rounded-xl text-slate-600 hover:text-white transition-all group/arrow"
+                                            title="Ver Histórico"
+                                        >
+                                            <ChevronRight className="group-hover/arrow:translate-x-1 transition-transform" />
+                                        </button>
                                     </div>
                                 </div>
                             </motion.div>
@@ -219,55 +241,6 @@ export default function ClientsPage() {
                     )}
                 </>
             )}
-
-            {/* Modal Novo Cliente */}
-            <AnimatePresence>
-                {isAddingClient && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsAddingClient(false)}
-                            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
-                        />
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="bg-slate-900 border border-white/10 p-8 rounded-[2rem] w-full max-w-md relative z-10 shadow-2xl"
-                        >
-                            <h2 className="text-2xl font-bold text-white mb-6">Cadastrar Cliente</h2>
-                            <form onSubmit={handleCreateClient} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Nome Completo</label>
-                                    <input
-                                        name="name"
-                                        required
-                                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50 transition-all"
-                                        placeholder="Ex: Pastelaria do Jhow"
-                                    />
-                                </div>
-                                <div className="flex gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsAddingClient(false)}
-                                        className="flex-1 px-4 py-3 rounded-xl border border-white/5 text-slate-400 font-bold hover:bg-white/5 transition-all"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-600/20"
-                                    >
-                                        Cadastrar
-                                    </button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
 
             {/* Drawer de Detalhes do Cliente */}
             <AnimatePresence>
@@ -403,6 +376,15 @@ export default function ClientsPage() {
                 onSuccess={() => selectedClient && fetchRides(selectedClient.id, ridePage)}
                 clientId={selectedClient?.id}
                 clientName={selectedClient?.name}
+            />
+            <ClientModal
+                isOpen={isClientModalOpen}
+                onClose={() => {
+                    setIsClientModalOpen(false);
+                    setClientToEdit(null);
+                }}
+                onSuccess={fetchClients}
+                clientToEdit={clientToEdit || undefined}
             />
         </div>
     );

@@ -9,7 +9,7 @@ export class ClientsService {
   constructor(
     @Inject(IClientsRepository)
     private readonly clientsRepository: IClientsRepository,
-  ) {}
+  ) { }
 
   async findAll(
     userId: string,
@@ -29,6 +29,10 @@ export class ClientsService {
 
   async findOne(userId: string, id: string) {
     return this.clientsRepository.findOne(userId, id);
+  }
+
+  async update(userId: string, id: string, data: { name: string }) {
+    return this.clientsRepository.update(userId, id, data);
   }
 
   async delete(userId: string, id: string) {

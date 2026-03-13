@@ -7,6 +7,7 @@ import {
   Request,
   Delete,
   Param,
+  Patch,
   Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -16,7 +17,7 @@ import { ActiveSubscriptionGuard } from '../auth/guards/active-subscription.guar
 @Controller('clients')
 @UseGuards(AuthGuard('jwt'), ActiveSubscriptionGuard)
 export class ClientsController {
-  constructor(private clientsService: ClientsService) {}
+  constructor(private clientsService: ClientsService) { }
 
   @Get()
   async findAll(
@@ -41,6 +42,15 @@ export class ClientsController {
   @Get(':id')
   async findOne(@Request() req: any, @Param('id') id: string) {
     return this.clientsService.findOne(req.user.id, id);
+  }
+
+  @Patch(':id')
+  async update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { name: string },
+  ) {
+    return this.clientsService.update(req.user.id, id, body);
   }
 
   @Delete(':id')
