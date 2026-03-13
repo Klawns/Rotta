@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Bike, User, DollarSign, FileText, CheckCircle2, Calendar, Plus } from "lucide-react";
+import { X, Bike, User, DollarSign, FileText, CheckCircle2, Calendar, Plus, Camera, Trash2 } from "lucide-react";
 import { api } from "@/services/api";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -44,6 +44,7 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName }: 
     const [value, setValue] = useState<string>("");
     const [location, setLocation] = useState("");
     const [notes, setNotes] = useState("");
+    const [photo, setPhoto] = useState<string | null>(null);
     const [rideDate, setRideDate] = useState("");
     const [paymentStatus, setPaymentStatus] = useState<'PENDING' | 'PAID'>("PAID");
     const [status, setStatus] = useState<'PENDING' | 'COMPLETED' | 'CANCELLED'>("COMPLETED");
@@ -57,6 +58,7 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName }: 
             // Reset to defaults when opening
             setPaymentStatus("PAID");
             setStatus("COMPLETED");
+            setPhoto(null);
         }
     }, [isOpen, clientId, user]);
 
@@ -86,6 +88,17 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName }: 
         if (clientId) setSelectedClientId(clientId);
     }, [clientId]);
 
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPhoto(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedClientId || !value) return;
@@ -97,6 +110,7 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName }: 
                 value: Number(value),
                 location: location || "Não informada",
                 notes: notes || undefined,
+                photo: photo || undefined,
                 status,
                 paymentStatus,
                 rideDate: rideDate || undefined
@@ -361,30 +375,76 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName }: 
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="grid grid-cols-1 gap-5">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
-                                        <Calendar size={12} /> Data
+                                        <Calendar size={12} className="text-blue-500/50" /> Data da Corrida
+                                        <span className="text-blue-500/60 lowercase italic font-medium tracking-normal">(opcional)</span>
                                     </label>
-                                    <input
-                                        type="datetime-local"
-                                        value={rideDate}
-                                        onChange={(e) => setRideDate(e.target.value)}
-                                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-[11px] font-bold"
-                                    />
+                                    <div className="relative group">
+                                        <input
+                                            type="datetime-local"
+                                            value={rideDate}
+                                            onChange={(e) => setRideDate(e.target.value)}
+                                            className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-[11px] font-bold [color-scheme:dark]"
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
-                                        <FileText size={12} /> Observações
-                                    </label>
-                                    <textarea
-                                        value={notes}
-                                        onChange={(e) => setNotes(e.target.value)}
-                                        placeholder="Ex: Troco para 50..."
-                                        rows={1}
-                                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none placeholder:text-slate-700 text-[11px] font-medium min-h-[46px]"
-                                    />
+                                <div className="space-y-3 order-last sm:order-none">
+                                    <div className="flex items-center justify-between pl-1">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                                            <FileText size={12} /> Observações & Foto
+                                            <span className="text-blue-500/60 lowercase italic font-medium tracking-normal">(opcional)</span>
+                                        </label>
+
+                                        <label className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 rounded-lg text-blue-400 cursor-pointer transition-colors active:scale-95 group">
+                                            <Camera size={12} className="group-hover:rotate-12 transition-transform" />
+                                            <span className="text-[9px] font-black uppercase tracking-wider">Tirar Foto</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                capture="environment"
+                                                className="hidden"
+                                                onChange={handlePhotoChange}
+                                            />
+                                        </label>
+                                    </div>
+
+                                    <div className="relative group/notes">
+                                        <textarea
+                                            value={notes}
+                                            onChange={(e) => setNotes(e.target.value)}
+                                            placeholder="Ex: Troco para 50, deixar na portaria..."
+                                            rows={2}
+                                            className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none placeholder:text-slate-700 text-xs font-medium min-h-[80px]"
+                                        />
+
+                                        <AnimatePresence>
+                                            {photo && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                    exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                                    className="mt-3 relative inline-block group/photo"
+                                                >
+                                                    <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-blue-500/30 shadow-2xl">
+                                                        <img src={photo} alt="Preview" className="w-full h-full object-cover" />
+                                                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/photo:opacity-100 transition-opacity flex items-center justify-center">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPhoto(null)}
+                                                                className="p-1.5 bg-red-500 rounded-lg text-white shadow-lg active:scale-90 transition-transform"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter">Foto Anexada</span>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
                                 </div>
                             </div>
 

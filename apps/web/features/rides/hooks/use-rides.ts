@@ -7,6 +7,7 @@ export interface Ride {
   clientName: string
   value: number
   createdAt: string
+  rideDate?: string
   paid: boolean
 }
 
@@ -31,12 +32,14 @@ export function useRides() {
     setIsLoaded(true)
   }, [])
 
-  const addRide = useCallback((clientName: string, value: number) => {
+  const addRide = useCallback((clientName: string, value: number, rideDate?: string) => {
     const newRide: Ride = {
       id: crypto.randomUUID(),
       clientName,
       value,
       createdAt: new Date().toISOString(),
+      rideDate,
+      paid: false,
     }
     setRides((prev) => {
       const updated = [newRide, ...prev]
@@ -106,27 +109,27 @@ export function useRides() {
   const getLast7DaysData = useCallback(() => {
     const days = []
     const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
-    
+
     for (let i = 6; i >= 0; i--) {
       const date = new Date()
       date.setDate(date.getDate() - i)
       date.setHours(0, 0, 0, 0)
-      
+
       const nextDate = new Date(date)
       nextDate.setDate(nextDate.getDate() + 1)
-      
+
       const dayTotal = rides
         .filter((ride) => {
           const rideDate = new Date(ride.createdAt)
           return rideDate >= date && rideDate < nextDate
         })
         .reduce((sum, ride) => sum + ride.value, 0)
-      
+
       const dayRides = rides.filter((ride) => {
         const rideDate = new Date(ride.createdAt)
         return rideDate >= date && rideDate < nextDate
       }).length
-      
+
       days.push({
         day: dayNames[date.getDay()],
         date: date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
@@ -134,7 +137,7 @@ export function useRides() {
         corridas: dayRides,
       })
     }
-    
+
     return days
   }, [rides])
 

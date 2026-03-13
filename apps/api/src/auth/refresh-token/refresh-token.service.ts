@@ -5,13 +5,13 @@ import { randomUUID } from 'crypto';
 
 @Injectable()
 export class RefreshTokenService {
-  // Definimos 7 dias de validade em segundos
-  private readonly TTL_SECONDS = 7 * 24 * 60 * 60;
+  // Definimos 15 dias de validade em segundos
+  private readonly TTL_SECONDS = 15 * 24 * 60 * 60;
 
   constructor(
     @Inject(CACHE_PROVIDER)
     private cache: ICacheProvider,
-  ) {}
+  ) { }
 
   async create(userId: string): Promise<string> {
     const token = randomUUID();

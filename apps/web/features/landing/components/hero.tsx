@@ -95,83 +95,66 @@ export function Hero() {
                     </div>
                 </div>
 
-                <div className="lg:w-1/2 relative w-full h-[400px] lg:h-[550px] hero-image-container">
-                    {/* Floating Decorative Icons */}
-                    <motion.div
-                        animate={{ y: [0, -15, 0], x: [0, 5, 0] }}
-                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute -top-10 left-10 z-20 p-4 rounded-2xl bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-2xl hidden lg:block"
-                    >
-                        <BarChart3 className="text-blue-400" size={24} />
-                    </motion.div>
+                <div className="lg:w-1/2 relative w-full h-[500px] md:h-[500px] lg:h-[600px] hero-image-container flex items-center justify-center">
+                    {/* Layered Showcase - Responsive Scale */}
+                    <div className="relative w-full max-w-[90%] h-full scale-[0.95] sm:scale-100 transition-transform duration-500">
 
-                    <motion.div
-                        animate={{ y: [0, 15, 0], x: [0, -10, 0] }}
-                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                        className="absolute -bottom-10 right-10 z-20 p-4 rounded-2xl bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-2xl hidden lg:block"
-                    >
-                        <Smartphone className="text-violet-400" size={24} />
-                    </motion.div>
-
-                    <motion.div
-                        animate={{ y: [0, 10, 0] }}
-                        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                        className="absolute top-1/4 -right-6 z-20 p-4 rounded-2xl bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-2xl hidden lg:block"
-                    >
-                        <Globe className="text-green-400" size={24} />
-                    </motion.div>
-
-                    <motion.div
-                        animate={{ y: [0, -10, 0] }}
-                        transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-                        className="absolute bottom-1/4 -left-6 z-20 p-4 rounded-2xl bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-2xl hidden lg:block"
-                    >
-                        <Smartphone className="text-orange-400" size={24} />
-                    </motion.div>
-
-                    {/* Main Showcase with Tilt */}
-                    <motion.div
-                        onMouseMove={handleMouseMove}
-                        onMouseLeave={handleMouseLeave}
-                        style={{
-                            rotateX,
-                            rotateY,
-                            transformStyle: "preserve-3d",
-                        }}
-                        className="relative w-full h-full group"
-                    >
-                        {/* Shadow Layer */}
-                        <div className="absolute inset-4 bg-blue-600/20 blur-[50px] rounded-[2rem] transition-opacity duration-500 group-hover:opacity-40 opacity-0" />
-
-                        <div className="relative w-full h-full rounded-[2rem] border border-white/10 overflow-hidden bg-slate-900/40 backdrop-blur-md shadow-2xl p-3">
-                            <div className="relative w-full h-full rounded-[1.5rem] overflow-hidden bg-slate-950">
-                                <Image
-                                    src="/assets/dashboard2.png"
-                                    alt="Rotta Dashboard"
-                                    fill
-                                    className="object-cover object-top opacity-90 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700"
-                                    priority
-                                />
-
-                                {/* Overlay Gradient */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
-                            </div>
+                        {/* Central "Brilhozão" - Dynamic Glow */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] -z-10 pointer-events-none overflow-visible">
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-blue-600/30 blur-[140px] rounded-full animate-pulse" />
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50%] h-[50%] bg-indigo-500/20 blur-[100px] rounded-full opacity-60" />
                         </div>
 
-                        {/* Interactive HUD element */}
+                        {/* Desktop Print (Background) */}
                         <motion.div
-                            style={{ translateZ: "50px" }}
-                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-30"
+                            style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+                            initial={{ opacity: 0, x: 40 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 1.2, ease: "easeOut" }}
+                            className="absolute top-1/2 -translate-y-1/2 right-0 w-[95%] md:w-[100%] h-[75%] md:h-[80%] z-10"
                         >
-                            <Link
-                                href="/register?plan=starter"
-                                className="px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl flex items-center gap-2 whitespace-nowrap transition-colors active:scale-95"
-                            >
-                                <MousePointer2 size={14} />
-                                Explore o Sistema
-                            </Link>
+                            <div className="relative w-full h-full glass-card rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2 shadow-2xl overflow-hidden">
+                                <div className="relative w-full h-full rounded-[1rem] md:rounded-[1.5rem] overflow-hidden bg-slate-950">
+                                    <Image
+                                        src="/assets/dashboard2.png"
+                                        alt="Desktop Dashboard View"
+                                        fill
+                                        className="object-cover object-top opacity-90"
+                                        priority
+                                    />
+                                    {/* Subtle overlay for depth */}
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent pointer-events-none" />
+                                </div>
+                            </div>
                         </motion.div>
-                    </motion.div>
+
+                        {/* Mobile Print (Foreground) */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8, x: -40 }}
+                            animate={{ opacity: 1, scale: 1, x: 0 }}
+                            transition={{ duration: 1, delay: 0.3, ease: "backOut" }}
+                            className="absolute top-[12%] md:top-[10%] lg:top-[calc(10%-45px)] left-[-20px] md:left-[-40px] lg:left-[calc(-10%-120px)] w-[45%] md:w-[42%] lg:w-[40%] h-[80%] md:h-full z-20 flex items-center"
+                        >
+                            <div className="relative w-full aspect-[9/18.5] p-2 bg-slate-900 border-[4px] md:border-[6px] border-slate-800 rounded-[2rem] md:rounded-[2.5rem] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] lg:rotate-[-1deg]">
+                                <div className="relative w-full h-full rounded-[1.6rem] md:rounded-[2rem] overflow-hidden bg-slate-950">
+                                    <Image
+                                        src="/assets/celular_dashbaord.png"
+                                        alt="Mobile App Interface"
+                                        fill
+                                        className="object-cover"
+                                    />
+                                    {/* Notch for realism */}
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[35%] h-3 md:h-5 bg-slate-900 rounded-b-lg md:rounded-b-xl z-30" />
+
+                                    {/* Screen glare */}
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Extra decorative blur beneath desktop */}
+                        <div className="absolute top-1/2 right-0 -translate-y-1/2 w-[60%] h-[30%] bg-blue-600/10 blur-[60px] md:blur-[80px] -z-10 rounded-full" />
+                    </div>
                 </div>
             </div>
         </section>

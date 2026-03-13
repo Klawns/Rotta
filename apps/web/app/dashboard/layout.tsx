@@ -230,15 +230,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </aside>
 
             <main className="flex-1 relative overflow-y-auto flex flex-col min-w-0">
-                {!isSidebarOpen && (
-                    <button
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="fixed bottom-8 left-8 z-[70] hidden lg:flex h-14 w-14 bg-blue-600 rounded-2xl items-center justify-center text-white shadow-2xl shadow-blue-500/40 hover:scale-110 active:scale-95 transition-all"
-                    >
-                        <Menu size={24} />
-                    </button>
-                )}
-
                 {isExpired && (
                     <div className="bg-red-600 text-white px-6 py-2 text-center text-sm font-bold flex items-center justify-center gap-4 sticky top-0 z-[60]">
                         <span>Sua assinatura expirou!</span>

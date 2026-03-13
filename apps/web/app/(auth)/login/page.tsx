@@ -109,9 +109,6 @@ export default function LoginPage() {
                             Google
                         </button>
 
-                        <p className="text-[10px] text-center text-slate-500 uppercase tracking-widest font-bold pt-4">
-                            ambiente 100% verificado
-                        </p>
                     </div>
 
                     <div className="mt-12 pt-8 border-t border-white/5 flex flex-col items-center gap-4 text-sm">

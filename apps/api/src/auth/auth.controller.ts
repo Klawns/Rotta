@@ -80,12 +80,12 @@ export class AuthController {
 
     res.cookie('refresh_token', tokens.refresh_token, {
       ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 15 * 24 * 60 * 60 * 1000,
     });
 
     res.cookie('access_token', tokens.access_token, {
       ...cookieOptions,
-      maxAge: 15 * 60 * 1000,
+      maxAge: 30 * 60 * 1000,
     });
 
     const selectedPlan = req.cookies['selected_plan'] || 'starter';
@@ -140,12 +140,12 @@ export class AuthController {
 
     res.cookie('refresh_token', tokens.refresh_token, {
       ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 15 * 24 * 60 * 60 * 1000,
     });
 
     res.cookie('access_token', tokens.access_token, {
       ...cookieOptions,
-      maxAge: 15 * 60 * 1000,
+      maxAge: 30 * 60 * 1000,
     });
 
     return {
@@ -175,12 +175,12 @@ export class AuthController {
 
     res.cookie(refreshCookieName, tokens.refresh_token, {
       ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 15 * 24 * 60 * 60 * 1000,
     });
 
     res.cookie(accessCookieName, tokens.access_token, {
       ...cookieOptions,
-      maxAge: 15 * 60 * 1000,
+      maxAge: 30 * 60 * 1000,
     });
 
     return {
@@ -200,12 +200,12 @@ export class AuthController {
 
     res.cookie('refresh_token', tokens.refresh_token, {
       ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 15 * 24 * 60 * 60 * 1000,
     });
 
     res.cookie('access_token', tokens.access_token, {
       ...cookieOptions,
-      maxAge: 15 * 60 * 1000,
+      maxAge: 30 * 60 * 1000,
     });
 
     return {
@@ -232,12 +232,12 @@ export class AuthController {
 
     res.cookie(refreshTokenName, tokens.refresh_token, {
       ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 15 * 24 * 60 * 60 * 1000,
     });
 
     res.cookie(accessTokenName, tokens.access_token, {
       ...cookieOptions,
-      maxAge: 15 * 60 * 1000,
+      maxAge: 30 * 60 * 1000,
     });
 
     return { success: true };

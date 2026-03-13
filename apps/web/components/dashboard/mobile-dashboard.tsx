@@ -21,7 +21,8 @@ import {
     Trash2,
     Lock,
     Crown,
-    Info
+    Info,
+    Camera
 } from "lucide-react";
 import { api } from "@/services/api";
 
@@ -84,16 +85,44 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
     const [showCustomForm, setShowCustomForm] = useState(false);
     const [rideStatus, setRideStatus] = useState<'PENDING' | 'COMPLETED'>('COMPLETED');
     const [paymentStatus, setPaymentStatus] = useState<'PENDING' | 'PAID'>('PAID');
+    const [rideDate, setRideDate] = useState("");
+    const [notes, setNotes] = useState("");
+    const [photo, setPhoto] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPhoto(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     // Edit Ride States
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingRide, setEditingRide] = useState<any>(null);
     const [editValue, setEditValue] = useState("");
     const [editLocation, setEditLocation] = useState("");
+    const [editRideDate, setEditRideDate] = useState("");
+    const [editNotes, setEditNotes] = useState("");
+    const [editPhoto, setEditPhoto] = useState<string | null>(null);
     const [editStatus, setEditStatus] = useState<any>("");
     const [editPaymentStatus, setEditPaymentStatus] = useState<any>("");
     const [isUpdating, setIsUpdating] = useState(false);
+
+    const handleEditPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setEditPhoto(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     useEffect(() => {
         if (user) {
@@ -167,9 +196,11 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
                 clientId: selectedClient.id,
                 value: finalValue,
                 location: finalLocation,
+                notes: notes || undefined,
+                photo: photo || undefined,
                 status: rideStatus,
                 paymentStatus: paymentStatus,
-                rideDate: new Date()
+                rideDate: rideDate || undefined
             });
 
             toast({ title: "Corrida registrada!", description: `R$ ${finalValue.toFixed(2)} para ${selectedClient.name}` });
@@ -180,6 +211,9 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
             setShowCustomForm(false);
             setCustomValue("");
             setCustomLocation("");
+            setRideDate("");
+            setNotes("");
+            setPhoto(null);
             setHistoryPage(0);
 
             onRideCreated(); // Tell layout/parent to sync
@@ -212,6 +246,9 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
         setEditingRide(ride);
         setEditValue(ride.value.toString());
         setEditLocation(ride.location || "");
+        setEditRideDate(ride.rideDate || ride.createdAt || "");
+        setEditNotes(ride.notes || "");
+        setEditPhoto(ride.photo || null);
         setEditStatus(ride.status);
         setEditPaymentStatus(ride.paymentStatus);
         setIsEditModalOpen(true);
@@ -224,6 +261,9 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
             await api.patch(`/rides/${editingRide.id}`, {
                 value: Number(editValue),
                 location: editLocation,
+                rideDate: editRideDate || undefined,
+                notes: editNotes || undefined,
+                photo: editPhoto || undefined,
                 status: editStatus,
                 paymentStatus: editPaymentStatus
             });
@@ -435,6 +475,68 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
                                 </motion.div>
                             )}
 
+                            {/* Campo de Data Opcional */}
+                            <div className="border-t border-white/5 pt-4 mt-2 space-y-3">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                    <Calendar size={14} className="text-blue-500/50" />
+                                    Data da Corrida <span className="lowercase italic font-medium opacity-40">(opcional)</span>
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    value={rideDate}
+                                    onChange={(e) => setRideDate(e.target.value)}
+                                    className="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-white text-xs outline-none focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
+                                />
+                            </div>
+
+                            {/* Nova Seção: Observação & Foto (Mobile First) */}
+                            <div className="group/notes border-t border-white/5 pt-4 mt-2 mb-6 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                        <FileText size={14} className="text-blue-500/50" />
+                                        Observação <span className="lowercase italic font-medium opacity-40">(opcional)</span>
+                                    </label>
+
+                                    <label className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 border border-blue-500/20 rounded-lg text-blue-400 cursor-pointer active:scale-95 transition-all text-[10px] font-black uppercase tracking-tight">
+                                        <Camera size={14} />
+                                        Tirar Foto
+                                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoChange} />
+                                    </label>
+                                </div>
+
+                                <textarea
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    placeholder="Ex: Deixar na portaria, troco para 50..."
+                                    rows={2}
+                                    className="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-white text-xs outline-none focus:ring-1 focus:ring-blue-500/30 resize-none transition-all placeholder:text-slate-700"
+                                />
+
+                                <AnimatePresence>
+                                    {photo && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9 }}
+                                            className="relative inline-block group/photo"
+                                        >
+                                            <div className="relative w-20 h-20 rounded-2xl overflow-hidden border border-blue-500/30 shadow-2xl">
+                                                <img src={photo} alt="Preview" className="w-full h-full object-cover" />
+                                                <button
+                                                    onClick={() => setPhoto(null)}
+                                                    className="absolute inset-0 bg-red-500/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                                                >
+                                                    <Trash2 size={16} className="text-white drop-shadow-xl" />
+                                                </button>
+                                            </div>
+                                            <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center border-2 border-slate-900">
+                                                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
                             {/* Global Save Button - Only shown when client is selected */}
                             <Button
                                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black h-14 rounded-2xl shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
@@ -479,7 +581,15 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
                                         <Pencil size={14} />
                                     </div>
                                     <div className="flex flex-col truncate">
-                                        <span className="text-xs font-bold text-white truncate">{r.client?.name || "Cliente"}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-white truncate">{r.client?.name || "Cliente"}</span>
+                                            {(r.notes || r.photo) && (
+                                                <div className="flex gap-1 opacity-40">
+                                                    {r.notes && <FileText size={8} />}
+                                                    {r.photo && <Camera size={8} />}
+                                                </div>
+                                            )}
+                                        </div>
                                         <span className="text-[10px] text-slate-500 truncate flex items-center gap-1"><MapPin size={8} /> {r.location || "Central"}</span>
                                     </div>
                                 </div>
@@ -599,6 +709,19 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
                             />
                         </div>
 
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                <Calendar size={14} className="text-blue-500/50" />
+                                Data/Hora da Corrida
+                            </Label>
+                            <Input
+                                type="datetime-local"
+                                value={editRideDate}
+                                onChange={(e) => setEditRideDate(e.target.value)}
+                                className="bg-slate-950 border-white/10 h-14 rounded-2xl text-xs focus-visible:ring-blue-500 [color-scheme:dark]"
+                            />
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Status</Label>
@@ -639,6 +762,45 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
                                     >PAGO</button>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Notas e Foto na Edição */}
+                        <div className="space-y-4 pt-4 border-t border-white/5">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Observação & Foto</Label>
+                                <label className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 border border-blue-500/20 rounded-lg text-blue-400 cursor-pointer active:scale-95 transition-all text-[10px] font-black uppercase tracking-tight">
+                                    <Camera size={14} />
+                                    Alterar Foto
+                                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleEditPhotoChange} />
+                                </label>
+                            </div>
+                            <textarea
+                                value={editNotes}
+                                onChange={(e) => setEditNotes(e.target.value)}
+                                placeholder="Notas da corrida..."
+                                rows={2}
+                                className="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-white text-xs outline-none focus:ring-1 focus:ring-blue-500/30 resize-none transition-all"
+                            />
+                            <AnimatePresence>
+                                {editPhoto && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        className="relative inline-block"
+                                    >
+                                        <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-blue-500/30 shadow-2xl">
+                                            <img src={editPhoto} alt="Preview" className="w-full h-full object-cover" />
+                                            <button
+                                                onClick={() => setEditPhoto(null)}
+                                                className="absolute inset-0 bg-red-500/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                                            >
+                                                <Trash2 size={20} className="text-white drop-shadow-xl" />
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
 

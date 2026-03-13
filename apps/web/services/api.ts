@@ -40,11 +40,6 @@ api.interceptors.response.use(
 
         // Verifica se é 401 e se não é uma tentativa de retry do próprio refresh
         if (error.response?.status === 401 && !originalRequest._retry) {
-            // Se a requisição explicitamente pedir para não redirecionar, apenas falha
-            if (originalRequest._skipRedirect) {
-                return Promise.reject(error);
-            }
-
             // Se já estiver renovando, adiciona esta requisição à fila
             if (isRefreshing) {
                 return new Promise(function (resolve, reject) {
@@ -67,16 +62,24 @@ api.interceptors.response.use(
                 await axios.post(
                     `${api.defaults.baseURL}/auth/refresh`,
                     {},
-                    { withCredentials: true }
+                    {
+                        withCredentials: true,
+                        // Evita que o axios lance erro no console para 401/403 durante o refresh
+                        validateStatus: (status) => status < 500
+                    }
                 );
 
                 console.log("[API] Token renovado com sucesso. Processando fila...");
-                isRefreshing = false; // Importante setar ANTES de processar a fila
+                isRefreshing = false;
                 processQueue(null);
 
                 return api(originalRequest);
             } catch (refreshError: any) {
-                console.error("[API] Falha crítica ao renovar token:", refreshError);
+                // Só logamos erro real se não for 401 (que é apenas sessão expirada)
+                if (refreshError.response?.status !== 401) {
+                    console.error("[API] Falha ao renovar token:", refreshError);
+                }
+
                 processQueue(refreshError, null);
                 isRefreshing = false;
 

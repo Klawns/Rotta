@@ -30,12 +30,19 @@ function RegisterContent() {
                         <motion.div
                             initial={{ scale: 0.8 }}
                             animate={{ scale: 1 }}
-                            className="inline-block p-4 rounded-2xl bg-violet-500/10 mb-4"
+                            className="inline-block p-1 rounded-2xl bg-blue-500/10 mb-4"
                         >
-                            <div className="w-10 h-10 flex items-center justify-center bg-violet-500 rounded-lg text-white font-bold text-xl">M</div>
+                            <div className="relative w-16 h-16 overflow-hidden rounded-xl shadow-lg shadow-blue-500/20">
+                                <Image
+                                    src="/assets/logo8.jpg"
+                                    alt="Rotta Logo"
+                                    fill
+                                    className="object-cover"
+                                />
+                            </div>
                         </motion.div>
-                        <h1 className="text-3xl font-bold text-white mb-2">Crie sua conta</h1>
-                        <p className="text-slate-400">Junte-se à maior rede de motoristas verificados</p>
+                        <h1 className="text-3xl font-bold text-white mb-2">Bem-vindo ao Rotta</h1>
+                        <p className="text-slate-400 text-balance">Acesse sua conta para gerenciar suas corridas com segurança</p>
                     </div>
 
                     <div className="space-y-4">
@@ -51,9 +58,6 @@ function RegisterContent() {
                             Cadastrar com Google
                         </button>
 
-                        <p className="text-[10px] text-center text-slate-500 uppercase tracking-widest font-bold pt-4">
-                            Registro instantâneo via social
-                        </p>
                     </div>
 
                     <div className="mt-12 pt-8 border-t border-white/5 text-center text-slate-400 text-sm">

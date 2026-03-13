@@ -3,14 +3,40 @@
 import { Navbar } from "./components/navbar";
 import { Hero } from "./components/hero";
 import { Features } from "./components/features";
+import { HowItWorks } from "./components/how-it-works";
 import { Pricing } from "./components/pricing";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useEffect, useCallback } from "react";
 import "./styles/deep-night.css";
-import { useEffect } from "react";
 
 export default function LandingPage() {
+    // Parallax logic for background grid
+    const mouseX = useMotionValue(0);
+    const mouseY = useMotionValue(0);
+
+    const springX = useSpring(mouseX, { stiffness: 50, damping: 20 });
+    const springY = useSpring(mouseY, { stiffness: 50, damping: 20 });
+
+    // Move in opposite direction (parallax) - Refined for subtle movement
+    const gridX = useTransform(springX, (value) => value * -0.2);
+    const gridY = useTransform(springY, (value) => value * -0.2);
+
+    const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
+        const { clientX, clientY } = e;
+        const { innerWidth, innerHeight } = window;
+
+        // Normalize coordinates to -0.5 to 0.5
+        const x = (clientX / innerWidth) - 0.5;
+        const y = (clientY / innerHeight) - 0.5;
+
+        mouseX.set(x * 100); // Scale up for easier transform mapping
+        mouseY.set(y * 100);
+    }, [mouseX, mouseY]);
+
     useEffect(() => {
+        window.addEventListener("mousemove", handleGlobalMouseMove);
+
         // Implement smooth scroll to anchors
         const handleAnchorClick = (e: Event) => {
             const anchor = e.currentTarget as HTMLAnchorElement;
@@ -32,19 +58,26 @@ export default function LandingPage() {
         });
 
         return () => {
+            window.removeEventListener("mousemove", handleGlobalMouseMove);
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                 anchor.removeEventListener('click', handleAnchorClick);
             });
         };
-    }, []);
+    }, [handleGlobalMouseMove]);
 
     return (
         <main className="deep-night-bg selection:bg-blue-500/30 selection:text-white relative overflow-hidden">
             {/* Background Decorations */}
             <div className="fixed inset-0 pointer-events-none z-0">
-                {/* Subtle Grid Pattern */}
-                <div className="absolute inset-0 opacity-[0.03]"
-                    style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '60px 60px' }}
+                {/* Subtle Grid Pattern with Parallax - Scaled back for elegance */}
+                <motion.div
+                    className="absolute inset-[-15%] opacity-[0.04]"
+                    style={{
+                        backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+                        backgroundSize: '80px 80px',
+                        x: gridX,
+                        y: gridY
+                    }}
                 />
 
                 {/* Vertical frame lines for luxury feel */}
@@ -85,6 +118,7 @@ export default function LandingPage() {
                 <Navbar />
                 <Hero />
                 <Features />
+                <HowItWorks />
                 <Pricing />
 
                 <footer className="py-20 px-6 border-t border-white/5 bg-[#020617] relative overflow-hidden">

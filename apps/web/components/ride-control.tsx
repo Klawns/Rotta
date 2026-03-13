@@ -96,7 +96,7 @@ export function RideControl() {
         {/* Add Ride Form */}
         <AddRideForm
           selectedClient={selectedClient}
-          onAdd={addRide}
+          onAdd={(name, value, rideDate) => addRide(name, value, rideDate)}
           onClearSelection={() => setSelectedClient(null)}
         />
 
