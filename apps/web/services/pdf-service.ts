@@ -91,7 +91,7 @@ export class PDFService {
             doc.setPage(i);
             doc.setFontSize(8);
             doc.setTextColor(148, 163, 184);
-            doc.text(`MDC App - Sistema de Gestão para Motoristas | Página ${i} de ${pageCount}`, 14, 285);
+            doc.text(`Rotta - Sistema de Gestão para Motoristas | Página ${i} de ${pageCount}`, 14, 285);
         }
 
         doc.save(`Relatorio_${period}_${format(new Date(), "ddMMyyyy")}.pdf`);

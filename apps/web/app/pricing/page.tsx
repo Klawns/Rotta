@@ -24,7 +24,7 @@ export default function PricingGatePage() {
                 >
                     <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                     <p className="text-red-400 text-sm font-bold">
-                        Limite de 20 corridas atingido! Faça o upgrade para continuar usando o MDC.
+                        Limite de 20 corridas atingido! Faça o upgrade para continuar usando o Rotta.
                     </p>
                 </motion.div>
             )}
@@ -51,8 +51,9 @@ export default function PricingGatePage() {
                     </h1>
 
                     <p className="text-slate-400 max-w-2xl mx-auto text-lg leading-relaxed">
-                        Desbloqueie corridas ilimitadas, relatórios avançados e suporte prioritário.
-                        Sua evolução como entregador de elite começa aqui.
+                        Desbloqueie corridas ilimitadas e relatórios avançados.
+                        <br />
+                        <span className="text-lime-400 font-bold">Assinaturas atualmente sob demanda — Entre em contato para ativar.</span>
                     </p>
                 </header>
 

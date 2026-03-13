@@ -6,6 +6,9 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
 import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
 
+import { UsersService } from '../users/users.service';
+import * as bcrypt from 'bcrypt';
+
 @Injectable()
 export class AdminService {
   private readonly adminEmail = 'admin@mdc.com';
@@ -16,6 +19,7 @@ export class AdminService {
     @Inject(PAYMENT_PROVIDER)
     private abacatePay: AbacatePayProvider,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly usersService: UsersService,
     @Inject(CACHE_PROVIDER)
     private readonly cache: ICacheProvider,
   ) { }
@@ -83,6 +87,17 @@ export class AdminService {
     // Invalidating user cache so frontend updates gracefully
     await this.cache.del(`profile:${userId}`);
     return result;
+  }
+
+  async createUser(data: any) {
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const user = await this.usersService.create({
+      ...data,
+      password: hashedPassword,
+    });
+    // Create a starter subscription by default
+    await this.subscriptionsService.updateOrCreate(user.id, 'starter');
+    return user;
   }
 
   async deleteUser(id: string) {

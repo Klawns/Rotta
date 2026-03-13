@@ -5,10 +5,12 @@ import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
+import { api } from "@/services/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function LoginPage() {
+    const { login } = useAuth();
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 relative overflow-hidden">
             {/* Background elements */}
@@ -27,15 +29,75 @@ export default function LoginPage() {
                         <motion.div
                             initial={{ scale: 0.8 }}
                             animate={{ scale: 1 }}
-                            className="inline-block p-4 rounded-2xl bg-blue-500/10 mb-4"
+                            className="inline-block p-1 rounded-2xl bg-blue-500/10 mb-4"
                         >
-                            <div className="w-10 h-10 flex items-center justify-center bg-blue-500 rounded-lg text-white font-bold text-xl">M</div>
+                            <div className="relative w-16 h-16 overflow-hidden rounded-xl shadow-lg shadow-blue-500/20">
+                                <Image
+                                    src="/assets/logo8.jpg"
+                                    alt="Rotta Logo"
+                                    fill
+                                    className="object-cover"
+                                />
+                            </div>
                         </motion.div>
-                        <h1 className="text-3xl font-bold text-white mb-2">Bem-vindo ao MDC</h1>
+                        <h1 className="text-3xl font-bold text-white mb-2">Bem-vindo ao Rotta</h1>
                         <p className="text-slate-400 text-balance">Acesse sua conta para gerenciar suas corridas com segurança</p>
                     </div>
 
                     <div className="space-y-4">
+                        <form
+                            onSubmit={async (e) => {
+                                e.preventDefault();
+                                const formData = new FormData(e.currentTarget);
+                                const email = formData.get("email") as string;
+                                const password = formData.get("password") as string;
+
+                                try {
+                                    const response = await api.post("/auth/login", { email, password });
+                                    login(response.data.user);
+                                } catch (error: any) {
+                                    alert(error.response?.data?.message || "Erro ao fazer login");
+                                }
+                            }}
+                            className="space-y-4"
+                        >
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-300 ml-1">E-mail</label>
+                                <input
+                                    name="email"
+                                    type="email"
+                                    required
+                                    placeholder="seu@email.com"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-300 ml-1">Senha</label>
+                                <input
+                                    name="password"
+                                    type="password"
+                                    required
+                                    placeholder="••••••"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98]"
+                            >
+                                Entrar
+                            </button>
+                        </form>
+
+                        <div className="relative py-4">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-white/5"></div>
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-slate-950 px-2 text-slate-500">Ou continue com</span>
+                            </div>
+                        </div>
+
                         <button
                             onClick={() => {
                                 const isProd = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
@@ -44,7 +106,7 @@ export default function LoginPage() {
                             className="w-full bg-white text-slate-950 hover:bg-slate-100 font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-3 group shadow-xl shadow-white/5"
                         >
                             <Image src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width={22} height={22} />
-                            Continuar com Google
+                            Google
                         </button>
 
                         <p className="text-[10px] text-center text-slate-500 uppercase tracking-widest font-bold pt-4">

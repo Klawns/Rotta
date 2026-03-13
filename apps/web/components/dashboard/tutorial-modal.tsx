@@ -51,7 +51,7 @@ export function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
                             <div className="w-16 h-16 bg-amber-500/20 text-amber-400 rounded-3xl flex items-center justify-center mb-4">
                                 <Sparkles size={32} />
                             </div>
-                            <h2 className="text-3xl font-black text-white leading-tight">Bem-vindo ao Novo MDC! 🚀</h2>
+                            <h2 className="text-3xl font-black text-white leading-tight">Bem-vindo ao Novo Rotta! 🚀</h2>
                             <p className="text-slate-400">Preparamos ferramentas incríveis para facilitar suas corridas.</p>
                         </header>
 

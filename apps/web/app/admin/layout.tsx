@@ -37,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h1 className="text-4xl font-extrabold text-white tracking-tighter">Painel Admin</h1>
-                    <p className="text-slate-400 mt-2">Visão consolidada do Mohamed Delivery Control</p>
+                    <p className="text-slate-400 mt-2">Visão consolidada do Rotta</p>
                 </div>
 
                 <div className="bg-slate-900/50 p-1 rounded-2xl border border-white/5 flex gap-1">

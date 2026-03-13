@@ -56,7 +56,7 @@ export function CheckoutSelector() {
             return;
         }
 
-        router.push(`/checkout?plan=${planId}`);
+        router.push('/contato');
     };
 
     if (isLoading) {

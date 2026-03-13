@@ -11,8 +11,10 @@ import { IAdminRepository } from './interfaces/admin-repository.interface';
 import { DrizzleAdminSettingsRepository } from './repositories/drizzle-admin-settings.repository';
 import { IAdminSettingsRepository } from './interfaces/admin-settings-repository.interface';
 
+import { UsersModule } from '../users/users.module';
+
 @Module({
-  imports: [PaymentsModule, SubscriptionsModule, CacheModule],
+  imports: [PaymentsModule, SubscriptionsModule, CacheModule, UsersModule],
   providers: [
     AdminService,
     AdminSettingsService,

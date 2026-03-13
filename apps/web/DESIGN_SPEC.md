@@ -1,5 +1,5 @@
 Especificações de Design - Dashboard
-Este documento detalha as fontes, cores e estilos utilizados no Dashboard do sistema Mohamed Delivery Control, juntamente com a localização exata de cada definição no código-fonte.
+Este documento detalha as fontes, cores e estilos utilizados no Dashboard do sistema Rotta, juntamente com a localização exata de cada definição no código-fonte.
 
 1. Fontes (Typography)
 As fontes são configuradas no arquivo 

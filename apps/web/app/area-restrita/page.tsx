@@ -54,7 +54,7 @@ export default function AreaRestritaPage() {
                         >
                             <Lock className="w-10 h-10 text-red-500" />
                         </motion.div>
-                        <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Área Restrita</h1>
+                        <h1 className="text-3xl font-black text-white mb-2 tracking-tight uppercase italic">Rotta Admin</h1>
                         <p className="text-slate-400 text-sm">Acesso exclusivo para administradores</p>
                     </div>
 

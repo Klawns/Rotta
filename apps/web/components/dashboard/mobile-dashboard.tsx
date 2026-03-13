@@ -462,8 +462,8 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
                 </div>
                 <div className="space-y-2">
                     {recentRides.length === 0 ? (
-                        <div className="text-center py-8">
-                            <p className="text-xs text-slate-500 italic">Nenhum registro encontrado.</p>
+                        <div className="flex items-center gap-2">
+                            <span className="text-white font-black italic">ROTTA</span>
                         </div>
                     ) : (
                         recentRides.map(r => (
@@ -696,7 +696,7 @@ export function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
                         </div>
 
                         <div className="pt-4 border-t border-white/5 flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2">
-                            <span>MDC PLATINUM</span>
+                            <span>Rotta Platinum</span>
                             <div className="flex gap-1">
                                 <div className="w-1 h-1 rounded-full bg-blue-500" />
                                 <div className="w-1 h-1 rounded-full bg-violet-500" />

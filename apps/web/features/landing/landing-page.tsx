@@ -98,16 +98,16 @@ export default function LandingPage() {
                             <div className="flex items-center gap-3">
                                 <div className="relative h-10 w-10">
                                     <Image
-                                        src="/assets/logo3.webp"
+                                        src="/assets/logo8.jpg"
                                         alt="Rotta Logo"
                                         fill
-                                        className="object-contain rounded-lg"
+                                        className="object-cover rounded-lg"
                                     />
                                 </div>
                                 <span className="text-2xl font-black text-white tracking-tighter uppercase italic">ROTTA</span>
                             </div>
                             <p className="text-slate-500 text-sm text-center md:text-left leading-relaxed font-medium">
-                                © 2026 Rotta Delivery Control.<br />A elite do gerenciamento para entregadores profissionais.
+                                © 2026 Rotta.<br />A elite do gerenciamento para entregadores profissionais.
                             </p>
                         </div>
 

@@ -31,10 +31,10 @@ export function Navbar() {
                 <Link href="/" className="flex items-center gap-3 group">
                     <div className="relative h-12 w-12 group-hover:scale-105 transition-transform duration-300">
                         <Image
-                            src="/assets/logo3.webp"
+                            src="/assets/logo8.jpg"
                             alt="Rotta Logo"
                             fill
-                            className="object-contain rounded-xl"
+                            className="object-cover rounded-xl"
                             priority
                         />
                     </div>

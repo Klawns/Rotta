@@ -7,6 +7,19 @@ import { AuthProvider } from '@/hooks/use-auth'
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat" });
 
+export const metadata: Metadata = {
+  title: 'Rotta',
+  description: 'A elite do gerenciamento para entregadores profissionais.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Rotta',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+}
 
 export default function RootLayout({
   children,

@@ -40,7 +40,7 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   private getCookieOptions() {
     const frontendUrl = this.configService.get('FRONTEND_URL');
@@ -70,7 +70,7 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(GoogleAuthGuard)
-  async googleAuth(@Req() req: any) {}
+  async googleAuth(@Req() req: any) { }
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
@@ -166,21 +166,19 @@ export class AuthController {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
-    if (user.role !== 'admin') {
-      throw new UnauthorizedException(
-        'Acesso restrito para administradores por este meio. Por favor, utilize o Login com Google.',
-      );
-    }
-
     const tokens = await this.authService.login(user);
     const cookieOptions = this.getCookieOptions();
 
-    res.cookie('admin_refresh_token', tokens.refresh_token, {
+    const isAdmin = user.role === 'admin';
+    const refreshCookieName = isAdmin ? 'admin_refresh_token' : 'refresh_token';
+    const accessCookieName = isAdmin ? 'admin_access_token' : 'access_token';
+
+    res.cookie(refreshCookieName, tokens.refresh_token, {
       ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.cookie('admin_access_token', tokens.access_token, {
+    res.cookie(accessCookieName, tokens.access_token, {
       ...cookieOptions,
       maxAge: 15 * 60 * 1000,
     });

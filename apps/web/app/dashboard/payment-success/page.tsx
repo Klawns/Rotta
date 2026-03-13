@@ -94,7 +94,7 @@ export default function PaymentSuccessPage() {
                                 <ShieldCheck size={48} strokeWidth={2.5} />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-black text-white tracking-tight mb-2">Acesso Liberado!</h1>
+                                <h2 className="text-3xl font-black text-white leading-tight">Bem-vindo ao Novo Rotta! 🚀</h2>
                                 <p className="text-slate-400">Seu plano foi ativado com sucesso. Bem-vindo à elite.</p>
                             </div>
 
@@ -165,7 +165,7 @@ export default function PaymentSuccessPage() {
                 </AnimatePresence>
 
                 <p className="mt-10 text-[10px] text-slate-600 uppercase tracking-[0.2em] font-medium">
-                    Suporte MDC • ID Transação: {user?.id?.slice(0, 8)}
+                    Suporte Rotta • ID Transação: {user?.id?.slice(0, 8)}
                 </p>
             </motion.div>
         </div>

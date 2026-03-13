@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   UseGuards,
   Query,
   Delete,
@@ -32,6 +33,13 @@ export class AdminController {
     @Query('limit') limit: string = '10',
   ) {
     return this.adminService.getRecentUsers(Number(page), Number(limit));
+  }
+
+  @Roles('admin')
+  @HttpCode(HttpStatus.CREATED)
+  @Post('users')
+  async createUser(@Body() data: any) {
+    return this.adminService.createUser(data);
   }
 
   @Delete('users/:id')

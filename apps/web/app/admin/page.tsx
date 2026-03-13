@@ -9,7 +9,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/services/api";
 import { DeleteUserModal } from "./components/delete-user-modal";
+import { CreateUserModal } from "./components/create-user-modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { UserPlus } from "lucide-react";
 
 export default function AdminDashboardPage() {
     const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -23,6 +25,9 @@ export default function AdminDashboardPage() {
     // Estados para Exclusão
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<any>(null);
+
+    // Estado para Criação
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     useEffect(() => {
         if (!authLoading) {
@@ -128,7 +133,16 @@ export default function AdminDashboardPage() {
                         className="w-full glass-card rounded-[2rem] border border-white/5 bg-slate-900/40 overflow-hidden"
                     >
                         <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/5">
-                            <h2 className="text-xl font-bold text-white">Usuários Recentes</h2>
+                            <div className="flex items-center gap-6">
+                                <h2 className="text-xl font-bold text-white">Usuários Recentes</h2>
+                                <button
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-600/20 active:scale-[0.98]"
+                                >
+                                    <UserPlus size={14} />
+                                    Novo Usuário
+                                </button>
+                            </div>
                             <div className="relative group max-w-xs">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                                     <Search size={14} />
@@ -260,6 +274,15 @@ export default function AdminDashboardPage() {
 
                 </div>
             </motion.div>
+
+            <CreateUserModal
+                open={isCreateModalOpen}
+                onOpenChange={setIsCreateModalOpen}
+                onSuccess={() => {
+                    loadUsers(currentPage);
+                    loadStats();
+                }}
+            />
 
             <DeleteUserModal
                 user={userToDelete}
