@@ -14,6 +14,7 @@ export interface IPaymentProvider {
     amount: number,
     customer?: CustomerData,
     coupons?: string[],
+    planName?: string,
   ): Promise<{ url: string }>;
   handleWebhook(
     signature: string,
@@ -28,6 +29,7 @@ export interface IPaymentProvider {
   }>;
   listCoupons?(): Promise<any[]>;
   createCoupon?(data: any): Promise<any>;
+  getRevenue?(startDate: string, endDate: string): Promise<{ total: number }>;
 }
 
 export const PAYMENT_PROVIDER = 'PAYMENT_PROVIDER';

@@ -141,13 +141,9 @@ export function Pricing() {
                                 </ul>
 
                                 <button
-                                    onClick={() => {
-                                        if (tier.id === 'starter') {
-                                            router.push(`/register?plan=${tier.id}`);
-                                        } else {
-                                            router.push('/contato');
-                                        }
-                                    }}
+                                onClick={() => {
+                                    router.push("/contato");
+                                }}
                                     className={cn(
                                         "w-full py-5 rounded-2xl font-black transition-all text-xs uppercase tracking-[0.2em] active:scale-[0.98] shadow-2xl relative overflow-hidden group/btn",
                                         tier.highlight
