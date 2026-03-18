@@ -67,7 +67,8 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName, ri
             loadInitialData();
 
             if (rideToEdit) {
-                setSelectedClientId(rideToEdit.clientId);
+                console.log("[RideModal] Editando corrida:", rideToEdit);
+                setSelectedClientId(rideToEdit.clientId || rideToEdit.client?.id || "");
                 setValue(rideToEdit.value.toString());
                 setLocation(rideToEdit.location || "");
                 setNotes(rideToEdit.notes || "");
@@ -142,13 +143,16 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName, ri
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (currentStep < 5) {
-            setCurrentStep(prev => prev + 1);
+    const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+        e?.preventDefault();
+
+        console.log("[RideModal] Submetendo form:", { selectedClientId, value, status, paymentStatus });
+
+        if (!selectedClientId || !value) {
+            console.error("[RideModal] Validação falhou: dados obrigatórios ausentes", { selectedClientId, value });
+            alert("Erro: Informe o cliente e o valor da corrida.");
             return;
         }
-        if (!selectedClientId || !value) return;
 
         setIsSubmitting(true);
         try {
@@ -272,9 +276,9 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName, ri
 
                     <div className="overflow-y-auto px-6 sm:px-10 pb-10 custom-scrollbar">
                         <form 
-                            onSubmit={handleSubmit} 
+                            onSubmit={(e) => e.preventDefault()} 
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.type !== 'submit') {
+                                if (e.key === 'Enter') {
                                     e.preventDefault();
                                 }
                             }}
@@ -721,7 +725,8 @@ export function RideModal({ isOpen, onClose, onSuccess, clientId, clientName, ri
                                     </button>
                                 ) : (
                                     <button
-                                        type="submit"
+                                        type="button"
+                                        onClick={handleSubmit}
                                         disabled={isSubmitting}
                                         className="flex-1 h-14 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-50"
                                     >

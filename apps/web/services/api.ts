@@ -12,6 +12,7 @@ api.interceptors.request.use((config) => {
         if (path.startsWith("/admin") || path.startsWith("/area-restrita")) {
             config.headers["X-Session-Mode"] = "admin";
         }
+        console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.headers["X-Session-Mode"] ? `(Mode: ${config.headers["X-Session-Mode"]})` : "");
     }
     return config;
 });
@@ -73,7 +74,7 @@ api.interceptors.response.use(
                     throw { response: refreshResponse };
                 }
 
-                console.log("[API] Token renovado com sucesso. Processando fila...");
+                console.log("[API] Token renovado com sucesso. Processando fila de", failedQueue.length, "requisições...");
                 isRefreshing = false;
                 processQueue(null);
 
@@ -84,6 +85,7 @@ api.interceptors.response.use(
                     console.error("[API] Falha ao renovar token:", refreshError);
                 }
 
+                console.log("[API] Falha no refresh, limpando fila...");
                 processQueue(refreshError, null);
                 isRefreshing = false;
 

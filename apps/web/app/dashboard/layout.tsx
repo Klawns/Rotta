@@ -17,7 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const { user, logout, isLoading, isAuthenticated, updateUser } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isTutorialOpen, setIsTutorialOpen] = useState(false);
 
     useEffect(() => {
