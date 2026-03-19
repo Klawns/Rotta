@@ -1,0 +1,150 @@
+"use client";
+
+import { motion, AnimatePresence } from "framer-motion";
+import { DollarSign, Star, MapPin } from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { RidePreset } from "../../types";
+
+const QUICK_VALUES = [10, 12, 15, 20, 25, 30];
+
+interface StepRideDetailsProps {
+    presets: RidePreset[];
+    value: string;
+    setValue: (v: string) => void;
+    location: string;
+    setLocation: (l: string) => void;
+    isCustomValue: boolean;
+    setIsCustomValue: (v: boolean) => void;
+    clientName?: string;
+    handlePresetClick: (preset: RidePreset) => void;
+}
+
+export function StepRideDetails({
+    presets,
+    value,
+    setValue,
+    location,
+    setLocation,
+    isCustomValue,
+    setIsCustomValue,
+    clientName,
+    handlePresetClick
+}: StepRideDetailsProps) {
+    return (
+        <motion.div
+            key="step2"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+        >
+            <div className="flex items-center gap-3 bg-slate-950/30 p-4 rounded-2xl border border-white/5">
+                <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 font-black uppercase text-xs">
+                    {clientName?.substring(0, 2) || "CL"}
+                </div>
+                <div>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none mb-0.5">Cliente Selecionado</p>
+                    <p className="text-white font-bold">{clientName || "Cliente"}</p>
+                </div>
+            </div>
+
+            <div className="space-y-4">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
+                    <DollarSign size={12} /> Valor e Localização
+                </label>
+
+                <div className="grid grid-cols-3 gap-2.5">
+                    {QUICK_VALUES.map((v) => {
+                        const matchingPreset = presets.find((p) => p.value === v);
+                        
+                        return (
+                            <button
+                                key={v}
+                                type="button"
+                                onClick={() => {
+                                    if (matchingPreset) {
+                                        handlePresetClick(matchingPreset);
+                                    } else {
+                                        setValue(String(v));
+                                        setLocation("Central");
+                                        setIsCustomValue(false);
+                                    }
+                                }}
+                                className={cn(
+                                    "p-3.5 rounded-2xl border flex flex-col items-center justify-center transition-all group active:scale-95",
+                                    value === String(v) && !isCustomValue
+                                        ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/25"
+                                        : "bg-slate-950/50 border-white/5 text-slate-400 hover:bg-slate-900"
+                                )}
+                            >
+                                <span className="text-base font-black">R$ {v}</span>
+                            </button>
+                        );
+                    })}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setIsCustomValue(true);
+                            setValue("");
+                            setLocation("");
+                        }}
+                        className={cn(
+                            "p-3.5 rounded-2xl border flex flex-col items-center justify-center transition-all group active:scale-95",
+                            isCustomValue
+                                ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/25"
+                                : "bg-slate-950/50 border-white/5 text-slate-400 hover:bg-slate-900"
+                        )}
+                    >
+                        <span className="text-sm font-black">OUTRO</span>
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2 px-1">
+                    <Star size={10} className="text-blue-500/50" />
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+                        Valores e locais fixos podem ser alterados nas <Link href="/dashboard/settings" className="text-blue-500 hover:underline">Configurações</Link>
+                    </p>
+                </div>
+
+                <AnimatePresence>
+                    {value !== "" && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                            animate={{ height: "auto", opacity: 1, marginTop: 16 }}
+                            exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                            className="overflow-hidden space-y-4"
+                        >
+                            {isCustomValue && (
+                                <div className="relative group">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-black text-base">R$</span>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={value}
+                                        onChange={(e) => { setValue(e.target.value); setIsCustomValue(true); }}
+                                        placeholder="Valor Personalizado"
+                                        className="w-full bg-slate-950/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-xl font-black focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-800"
+                                    />
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
+                                    <MapPin size={12} className="text-blue-500" /> Localização da Corrida
+                                </label>
+                                <input
+                                    type="text"
+                                    value={location}
+                                    onChange={(e) => setLocation(e.target.value)}
+                                    placeholder="Onde será a corrida? (Ex: Centro, Shopping...)"
+                                    className="w-full bg-slate-950/50 border border-white/10 rounded-2xl py-4 px-5 text-white text-sm font-bold focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-800"
+                                />
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </motion.div>
+    );
+}

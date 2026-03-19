@@ -1,0 +1,30 @@
+import { motion } from "framer-motion";
+import { AlertCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+export function ErrorState() {
+    const router = useRouter();
+
+    return (
+        <motion.div
+            key="error"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center gap-6"
+        >
+            <div className="w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center border border-red-500/20 text-red-500">
+                <AlertCircle size={32} />
+            </div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Ops! Algo deu errado</h1>
+            <p className="text-slate-400">
+                Tivemos um problema técnico ao atualizar sua conta. Não se preocupe, seu pagamento está seguro.
+            </p>
+            <button
+                onClick={() => router.push("/pricing")}
+                className="w-full bg-white/5 border border-white/10 text-white h-14 rounded-2xl font-bold hover:bg-white/10 transition-all mt-4"
+            >
+                Voltar e Tentar Novamente
+            </button>
+        </motion.div>
+    );
+}

@@ -12,7 +12,6 @@ api.interceptors.request.use((config) => {
         if (path.startsWith("/admin") || path.startsWith("/area-restrita")) {
             config.headers["X-Session-Mode"] = "admin";
         }
-        console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.headers["X-Session-Mode"] ? `(Mode: ${config.headers["X-Session-Mode"]})` : "");
     }
     return config;
 });

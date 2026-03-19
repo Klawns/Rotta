@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { api } from "@/services/api";
 
-interface User {
+export interface User {
     id: string;
     email: string;
     name: string;

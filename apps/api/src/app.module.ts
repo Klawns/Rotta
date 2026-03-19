@@ -38,7 +38,7 @@ import { UploadModule } from './upload/upload.module';
           throttlers: [
             {
               ttl: 60000,
-              limit: 100,
+              limit: 200,
             },
           ],
           storage:
