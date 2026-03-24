@@ -32,9 +32,11 @@ const processQueue = (error: any, token: string | null = null) => {
     failedQueue = [];
 };
 
-// Interceptor para tratar expiração de token e refresh automático
+// Interceptor para tratar erros globais e refresh de token
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        return response;
+    },
     async (error) => {
         const originalRequest = error.config;
 
@@ -108,3 +110,61 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+/**
+ * Cliente de API com unwrapping automático para o padrão V2.
+ * O frontend deve consumir esses métodos no lugar de `api.get` direto.
+ * Isso garante que `res.data.data` ou vazamentos do envelope `{ data, meta }` não se espalhem pelo código.
+ */
+export const apiClient = {
+    async get<T = any>(url: string, config?: any): Promise<T> {
+        const response = await api.get(url, config);
+        // Desempacota { data, meta } se detectar padrão V2, caso contrário, retorna response.data
+        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+            return response.data.data as T;
+        }
+        return response.data as T;
+    },
+
+    async getPaginated<T = any>(url: string, config?: any): Promise<{ data: T; meta: any }> {
+        const response = await api.get(url, config);
+        // Garante que o formato V2 paginado retorne corretamente o envelope para hooks de scroll infinito/paginação
+        if (response.data && typeof response.data === 'object' && 'meta' in response.data) {
+            return response.data as { data: T; meta: any };
+        }
+        // Fallback defensivo para caso o backend não honre o contrato paginado
+        return { data: (typeof response.data !== 'undefined' ? response.data : []) as T, meta: {} };
+    },
+
+    async post<T = any>(url: string, data?: any, config?: any): Promise<T> {
+        const response = await api.post(url, data, config);
+        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+            return response.data.data as T;
+        }
+        return response.data as T;
+    },
+
+    async put<T = any>(url: string, data?: any, config?: any): Promise<T> {
+        const response = await api.put(url, data, config);
+        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+            return response.data.data as T;
+        }
+        return response.data as T;
+    },
+
+    async patch<T = any>(url: string, data?: any, config?: any): Promise<T> {
+        const response = await api.patch(url, data, config);
+        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+            return response.data.data as T;
+        }
+        return response.data as T;
+    },
+
+    async delete<T = any>(url: string, config?: any): Promise<T> {
+        const response = await api.delete(url, config);
+        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+            return response.data.data as T;
+        }
+        return response.data as T;
+    }
+};

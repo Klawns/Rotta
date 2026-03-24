@@ -1,49 +1,47 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { api } from "@/services/api";
+import { createContext, useContext, ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { clientsService } from "@/services/clients-service";
 import { useAuth } from "@/hooks/use-auth";
-
-export interface ClientData {
-    id: string;
-    name: string;
-    isPinned?: boolean;
-    userId?: string;
-    createdAt?: string;
-}
+import { clientKeys } from "@/lib/query-keys";
+import { Client as ClientData } from "@/types/rides";
 
 interface ClientsContextValue {
     clients: ClientData[];
     isLoading: boolean;
-    refetchClients: () => Promise<void>;
+    refetchClients: () => Promise<any>;
 }
 
 const ClientsContext = createContext<ClientsContextValue | null>(null);
 
 export function ClientsProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
-    const [clients, setClients] = useState<ClientData[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
 
-    const fetchClients = useCallback(async () => {
-        if (!user) return;
+    const { 
+        data: response, 
+        isLoading, 
+        refetch 
+    } = useQuery({
+        queryKey: clientKeys.lists(),
+        queryFn: ({ signal }) => clientsService.getClients(undefined, signal),
+        enabled: !!user,
+        staleTime: 1000 * 60 * 5, // 5 min
+    });
 
-        try {
-            const { data } = await api.get("/clients");
-            setClients(data.clients || []);
-        } catch (err) {
-            console.error("[ClientsProvider] Erro ao buscar clientes", err);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [user]);
+    const clients = response?.data || [];
 
-    useEffect(() => {
-        fetchClients();
-    }, [fetchClients]);
+    // Validação temporária durante transição V2
+    if (response && !Array.isArray(response.data)) {
+        console.error('Formato inválido em response.data', response);
+    }
 
     return (
-        <ClientsContext.Provider value={{ clients, isLoading, refetchClients: fetchClients }}>
+        <ClientsContext.Provider value={{ 
+            clients, 
+            isLoading, 
+            refetchClients: refetch 
+        }}>
             {children}
         </ClientsContext.Provider>
     );

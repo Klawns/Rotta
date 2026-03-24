@@ -16,12 +16,44 @@ export class PDFService {
         const doc = new jsPDF();
         const { userName, period, pixKey } = options;
 
-        // Header
+        // Title (Top Left)
         doc.setFontSize(22);
         doc.setTextColor(30, 41, 59); // Slate 800
-        doc.text("Relatório de Faturamento", 14, 22);
+        doc.text("Relatório de Faturamento", 14, 20);
 
-        let currentY = 30;
+        // Logo & Branding (Top Right)
+        const logoUrl = "/assets/logo8.jpg";
+        try {
+            // Tentar carregar a imagem e adicionar ao PDF no canto direito
+            const img = new Image();
+            img.src = logoUrl;
+            await new Promise((resolve) => {
+                img.onload = resolve;
+                img.onerror = resolve; 
+            });
+
+            const rightMargin = 196;
+            if (img.complete && img.naturalWidth > 0) {
+                doc.addImage(img, 'JPEG', rightMargin - 10, 10, 10, 10);
+            } else {
+                doc.setFillColor(30, 41, 59);
+                doc.roundedRect(rightMargin - 10, 10, 10, 10, 2, 2, 'F');
+            }
+            
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(30, 41, 59);
+            doc.text("Rotta", rightMargin - 12, 16, { align: 'right' });
+            
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(100, 116, 139);
+            doc.text("Gestão de Entregas", rightMargin - 12, 20, { align: 'right' });
+        } catch (e) {
+            console.error("Error drawing logo", e);
+        }
+
+        let currentY = 32;
         doc.setFontSize(10);
         doc.setTextColor(100, 116, 139); // Slate 500
         doc.text(`Motorista: ${userName}`, 14, currentY);
@@ -29,7 +61,7 @@ export class PDFService {
         doc.text(`Período: ${this.getPeriodLabel(period)}`, 14, currentY);
         currentY += 5;
         doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, currentY);
-        currentY += 5;
+        currentY += 8;
 
         // PIX Key highlighting
         if (pixKey) {
@@ -83,10 +115,10 @@ export class PDFService {
         // Table
         const tableData = rides.map(ride => [
             format(new Date(ride.rideDate || ride.createdAt), "dd/MM/yy HH:mm"),
-            ride.client?.name || "---",
+            ride.clientName || ride.client?.name || "---",
             ride.location || "---",
             formatCurrency(ride.value),
-            ride.paymentStatus === 'PAID' ? "PAGO" : "PENDENTE"
+            ride.paymentStatus === 'PAID' ? "Pago" : "Pendente"
         ]);
 
         autoTable(doc, {
@@ -107,27 +139,65 @@ export class PDFService {
             doc.text(`Rotta - Sistema de Gestão para Motoristas | Página ${i} de ${pageCount}`, 14, 285);
         }
 
-        doc.save(`Relatorio_${period}_${format(new Date(), "ddMMyyyy")}.pdf`);
+        const monthName = format(new Date(), "MMMM", { locale: ptBR });
+        const year = format(new Date(), "yyyy");
+        const fileName = period === 'month' 
+            ? `Relatorio_Financeiro_${monthName.charAt(0).toUpperCase() + monthName.slice(1)}_${year}.pdf` 
+            : `Relatorio_Financeiro_${this.getPeriodLabel(period)}_${format(new Date(), "dd_MM_yyyy")}.pdf`;
+
+        doc.save(fileName);
     }
 
     static async generateClientDebtReport(client: { name: string; id: string }, rides: any[], payments: any[], balance: { totalDebt: number; totalPaid: number; remainingBalance: number }, options: { userName: string; pixKey?: string }) {
         const doc = new jsPDF();
         const { userName, pixKey } = options;
 
-        // Header
+        // Title (Top Left)
         doc.setFontSize(22);
         doc.setTextColor(30, 41, 59);
-        doc.text("Detalhamento de Dívida", 14, 22);
+        doc.text("Detalhamento de Dívida", 14, 20);
 
-        let currentY = 30;
+        // Logo & Branding (Top Right)
+        const logoUrl = "/assets/logo8.jpg";
+        try {
+            // Tentar carregar a imagem e adicionar ao PDF no canto direito
+            const img = new Image();
+            img.src = logoUrl;
+            await new Promise((resolve) => {
+                img.onload = resolve;
+                img.onerror = resolve; 
+            });
+
+            const rightMargin = 196;
+            if (img.complete && img.naturalWidth > 0) {
+                doc.addImage(img, 'JPEG', rightMargin - 10, 10, 10, 10);
+            } else {
+                doc.setFillColor(30, 41, 59);
+                doc.roundedRect(rightMargin - 10, 10, 10, 10, 2, 2, 'F');
+            }
+            
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(30, 41, 59);
+            doc.text("Rotta", rightMargin - 12, 16, { align: 'right' });
+            
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(100, 116, 139);
+            doc.text("Gestão de Entregas", rightMargin - 12, 20, { align: 'right' });
+        } catch (e) {
+            console.error("Error drawing logo", e);
+        }
+
+        let currentY = 32;
         doc.setFontSize(10);
         doc.setTextColor(100, 116, 139);
         doc.text(`Motorista: ${userName}`, 14, currentY);
         currentY += 5;
-        doc.text(`Cliente: ${client.name}`, 14, currentY);
+        doc.text(`Cliente: ${client.name || "Sem nome"}`, 14, currentY);
         currentY += 5;
         doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, currentY);
-        currentY += 5;
+        currentY += 8;
 
         // PIX Key
         if (pixKey) {
@@ -221,7 +291,7 @@ export class PDFService {
             doc.text(`Rotta - Sistema de Gestão para Motoristas | Página ${i} de ${pageCount}`, 14, 285);
         }
 
-        doc.save(`Debito_${client.name.replace(/\s+/g, '_')}_${format(new Date(), "ddMMyyyy")}.pdf`);
+        doc.save(`Debito_${(client.name || 'Sem_nome').replace(/\s+/g, '_')}_${format(new Date(), "ddMMyyyy")}.pdf`);
     }
 
     private static getPeriodLabel(period: string) {

@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { api } from "@/services/api";
+import { api, apiClient } from "@/services/api";
 
 export interface User {
     id: string;
@@ -40,9 +40,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const fetchProfile = async () => {
         try {
-            const response = await api.get("/auth/me", { _skipRedirect: true } as any);
-            setUser(response.data);
-            return response.data;
+            const data = await apiClient.get<User>("/auth/me", { _skipRedirect: true } as any);
+            setUser(data);
+            return data;
         } catch (error) {
             setUser(null);
             return null;
@@ -57,7 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = (userData: User, redirectTo?: string) => {
         setUser(userData);
-        router.push(redirectTo || "/dashboard");
+        // Usamos window.location.href para garantir que o Safari sincronize os cookies 
+        // antes do Middleware interceptar a próxima requisição.
+        window.location.href = redirectTo || "/dashboard";
     };
 
     const updateUser = (userData: User) => {
@@ -66,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = async () => {
         try {
-            await api.post("/auth/logout");
+            await apiClient.post("/auth/logout");
         } catch (error) {
             console.error("Erro ao fazer logout:", error);
         } finally {
