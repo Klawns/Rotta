@@ -31,6 +31,11 @@
       "sourceType": "github",
       "computedHash": "5113e4d68b0c3aacf82a1008eaa12a2c0ce934800cfee664f78868e5e7d16afe"
     },
+    "saas-landing-pages": {
+      "source": "realjaymes/marketingagentskills",
+      "sourceType": "github",
+      "computedHash": "8abcad6f8a8a02887f070384e35ddd2559b41cc8dbad804fc4f2997a5ea03895"
+    },
     "sql-query-optimizer": {
       "source": "patricio0312rev/skills",
       "sourceType": "github",
