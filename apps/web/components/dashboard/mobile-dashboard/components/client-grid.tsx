@@ -91,12 +91,12 @@ export function ClientGrid({
                                                 <button
                                                     key="new-button"
                                                     onClick={openCreateModal}
-                                                    className="aspect-square border border-dashed border-primary/30 bg-primary/5 rounded-2xl flex flex-col items-center justify-center p-3 group active:bg-primary/10 transition-all active:scale-95"
+                                                    className="min-h-[70px] border border-dashed border-primary/30 bg-primary/5 rounded-2xl flex flex-col items-center justify-center p-2 group active:bg-primary/10 transition-all active:scale-95 shadow-sm"
                                                 >
-                                                    <div className="w-8 h-8 rounded-full border border-dashed border-primary/40 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform text-primary">
-                                                        <Plus size={14} />
+                                                    <div className="w-6 h-6 rounded-full border border-dashed border-primary/40 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform text-primary">
+                                                        <Plus size={10} />
                                                     </div>
-                                                    <span className="text-[10px] text-primary font-display font-bold uppercase tracking-wider">Novo</span>
+                                                    <span className="text-[9px] text-primary font-display font-bold uppercase tracking-widest">Novo</span>
                                                 </button>
                                             );
                                         }
@@ -110,13 +110,12 @@ export function ClientGrid({
                                                 whileTap={{ scale: 0.95 }}
                                                 onClick={() => onSelect(client)}
                                                 className={cn(
-                                                    "aspect-square rounded-2xl flex flex-col items-center justify-center p-2 text-center transition-all relative group overflow-hidden",
+                                                    "min-h-[70px] rounded-2xl flex flex-col items-center justify-center p-2 text-center transition-all relative group overflow-hidden shadow-sm",
                                                     isSelected 
-                                                        ? "bg-primary/20 border-primary/50 ring-1 ring-primary/20" 
-                                                        : "bg-muted/50 border-border-subtle border active:bg-hover-accent"
+                                                        ? "bg-primary/20 border-primary/50 ring-1 ring-primary/20 shadow-primary/10" 
+                                                        : "bg-card-background border-border-subtle border active:bg-hover-accent"
                                                 )}
                                             >
-
                                                 {client.isPinned && (
                                                     <div className="absolute top-2 right-2 text-amber-500 animate-pulse">
                                                         <Star size={10} className="fill-amber-500" />
@@ -124,8 +123,8 @@ export function ClientGrid({
                                                 )}
 
                                                 <span className={cn(
-                                                    "text-[16px] font-bold leading-[1.1] w-full text-center break-words px-2 line-clamp-2 transition-colors",
-                                                    isSelected ? "text-foreground" : "text-foreground/90 group-active:text-foreground"
+                                                    "text-[13px] font-display font-extrabold leading-tight w-full text-center break-words px-1 line-clamp-2 transition-colors tracking-tight",
+                                                    isSelected ? "text-primary" : "text-text-primary group-active:text-primary"
                                                 )}>
                                                     {client.name || "Sem nome"}
                                                 </span>
