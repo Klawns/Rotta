@@ -1,6 +1,6 @@
-import { Injectable, Inject } from '@nestjs/common';
+  import { Injectable, Inject } from '@nestjs/common';
 import { LibSQLDatabase } from 'drizzle-orm/libsql';
-import { eq, and, or, like, sql, desc, lt } from 'drizzle-orm';
+import { eq, and, or, like, sql, desc, asc, lt, gt } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import * as schema from '@mdc/database';
 
@@ -35,16 +35,21 @@ export class DrizzleClientsRepository implements IClientsRepository {
         const decodedString = Buffer.from(cursor, 'base64').toString('utf-8');
         const parsedCursor = JSON.parse(decodedString);
 
-        if (!parsedCursor.createdAt || !parsedCursor.id) {
+        if (parsedCursor.name === undefined || parsedCursor.isPinned === undefined || !parsedCursor.id) {
           throw new Error('Invalid cursor payload structure');
         }
 
-        const cursorCreatedAt = new Date(parsedCursor.createdAt);
         const cursorCondition = or(
-          lt(schema.clients.createdAt, cursorCreatedAt),
+          lt(schema.clients.isPinned, parsedCursor.isPinned),
           and(
-            eq(schema.clients.createdAt, cursorCreatedAt),
-            lt(schema.clients.id, parsedCursor.id)
+            eq(schema.clients.isPinned, parsedCursor.isPinned),
+            or(
+              gt(sql`lower(${schema.clients.name})`, sql`lower(${parsedCursor.name})`),
+              and(
+                eq(sql`lower(${schema.clients.name})`, sql`lower(${parsedCursor.name})`),
+                gt(schema.clients.id, parsedCursor.id)
+              )
+            )
           )
         );
 
@@ -52,8 +57,7 @@ export class DrizzleClientsRepository implements IClientsRepository {
           conditions.push(cursorCondition);
         }
       } catch (err) {
-        // Fallback for old simple-date cursors if they exist
-        conditions.push(lt(schema.clients.createdAt, new Date(cursor)));
+        // Fallback or ignore invalid cursor
       }
     }
 
@@ -61,7 +65,7 @@ export class DrizzleClientsRepository implements IClientsRepository {
       .select()
       .from(schema.clients)
       .where(and(...conditions))
-      .orderBy(desc(schema.clients.createdAt), desc(schema.clients.id))
+      .orderBy(desc(schema.clients.isPinned), sql`lower(${schema.clients.name}) asc`, schema.clients.id)
       .limit(limit + 1);
 
     const countQuery = this.db
@@ -78,7 +82,8 @@ export class DrizzleClientsRepository implements IClientsRepository {
     if (hasMore) {
       const lastItem = items[items.length - 1];
       const nextCursorData = {
-        createdAt: lastItem.createdAt?.toISOString() ?? new Date().toISOString(),
+        isPinned: lastItem.isPinned,
+        name: lastItem.name,
         id: lastItem.id,
       };
       nextCursorHash = Buffer.from(JSON.stringify(nextCursorData)).toString('base64');

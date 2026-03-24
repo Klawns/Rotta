@@ -117,8 +117,8 @@ export function ClientGrid({
                                                 )}
                                             >
                                                 {client.isPinned && (
-                                                    <div className="absolute top-2 right-2 text-amber-500 animate-pulse">
-                                                        <Star size={10} className="fill-amber-500" />
+                                                    <div className="absolute top-2 right-2 text-yellow-400 animate-pulse drop-shadow-md">
+                                                        <Star size={10} className="fill-yellow-400" />
                                                     </div>
                                                 )}
 
