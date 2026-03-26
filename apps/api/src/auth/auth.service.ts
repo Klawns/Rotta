@@ -36,8 +36,7 @@ export class AuthService {
         ? await this.subscriptionsService.findByUserId(user.id)
         : null;
 
-    const realRideCount =
-      user.role !== 'admin' ? await this.ridesRepository.countAll(user.id) : 0;
+    const rideCount = subscription?.rideCount || 0;
 
     const now = new Date();
     const isExpired = subscription?.validUntil
@@ -57,7 +56,7 @@ export class AuthService {
             plan: subscription.plan,
             status: isExpired ? 'expired' : subscription.status,
             validUntil: subscription.validUntil,
-            rideCount: realRideCount,
+            rideCount,
           }
         : null,
     };

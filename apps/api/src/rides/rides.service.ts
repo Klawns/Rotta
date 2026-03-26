@@ -92,6 +92,7 @@ export class RidesService {
     if (result) {
       await this.subscriptionsService.incrementRideCount(userId);
       await this.invalidateUserCache(userId);
+      await this.cache.del(`profile:${userId}`);
       this.logger.log(`[RidesService] Corrida ${result.id} criada com sucesso`, 'RidesService');
     }
 
@@ -127,7 +128,6 @@ export class RidesService {
     const result = await this.ridesRepository.delete(userId, id);
 
     if (result) {
-      await this.subscriptionsService.decrementRideCount(userId);
       await this.invalidateUserCache(userId);
       this.logger.log(`[RidesService] Corrida ${id} removida com sucesso`, 'RidesService');
     } else {
@@ -135,6 +135,14 @@ export class RidesService {
     }
 
     return result;
+  }
+
+  async deleteAll(userId: string) {
+    this.logger.log(`[RidesService] Removendo TODAS as corridas do usuário ${userId}`, 'RidesService');
+    await this.ridesRepository.deleteAll(userId);
+    await this.invalidateUserCache(userId);
+    this.logger.log(`[RidesService] Todas as corridas do usuário ${userId} removidas com sucesso`, 'RidesService');
+    return { success: true };
   }
 
   async updateStatus(

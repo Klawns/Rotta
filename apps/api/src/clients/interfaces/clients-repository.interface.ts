@@ -24,4 +24,5 @@ export interface IClientsRepository {
   ): Promise<Client>;
 
   delete(userId: string, id: string): Promise<void>;
+  deleteAll(userId: string): Promise<void>;
 }

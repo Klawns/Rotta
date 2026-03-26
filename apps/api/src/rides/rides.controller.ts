@@ -111,6 +111,9 @@ export class RidesController {
 
   @Delete(':id')
   async delete(@Request() req: any, @Param('id') id: string) {
+    if (id === 'all') {
+      return this.ridesService.deleteAll(req.user.id);
+    }
     const result = await this.ridesService.delete(req.user.id, id);
     return result ? RideMapper.toHttp(result) : null;
   }

@@ -18,4 +18,5 @@ export interface ISubscriptionsRepository {
     userId: string,
     plan: 'starter' | 'premium' | 'lifetime',
   ): Promise<Subscription[]>;
+  resetRideCount(userId: string): Promise<Subscription[]>;
 }

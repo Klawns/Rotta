@@ -138,4 +138,10 @@ export class DrizzleClientsRepository implements IClientsRepository {
       .delete(schema.clients)
       .where(and(eq(schema.clients.id, id), eq(schema.clients.userId, userId)));
   }
+
+  async deleteAll(userId: string): Promise<void> {
+    await this.db
+      .delete(schema.clients)
+      .where(eq(schema.clients.userId, userId));
+  }
 }

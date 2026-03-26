@@ -46,6 +46,10 @@ export class ClientsService {
     return this.clientsRepository.delete(userId, id);
   }
 
+  async deleteAll(userId: string) {
+    return this.clientsRepository.deleteAll(userId);
+  }
+
   async getClientBalance(userId: string, clientId: string) {
     // 1. Get total pending debt and count from DB
     const { totalDebt, pendingRidesCount } = await this.ridesRepository.getPendingDebtStats(clientId, userId);

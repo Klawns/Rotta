@@ -20,6 +20,10 @@ export class SubscriptionsService {
     return this.subscriptionsRepository.decrementRideCount(userId);
   }
 
+  async resetRideCount(userId: string) {
+    return this.subscriptionsRepository.resetRideCount(userId);
+  }
+
   async updateOrCreate(
     userId: string,
     plan: 'starter' | 'premium' | 'lifetime',

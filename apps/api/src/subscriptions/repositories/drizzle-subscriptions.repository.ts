@@ -187,4 +187,15 @@ export class DrizzleSubscriptionsRepository implements ISubscriptionsRepository 
         .returning();
     }
   }
+
+  async resetRideCount(userId: string): Promise<Subscription[]> {
+    return this.db
+      .update(schema.subscriptions)
+      .set({
+        rideCount: 0,
+        createdAt: new Date(),
+      } as any)
+      .where(eq(schema.subscriptions.userId, userId))
+      .returning();
+  }
 }

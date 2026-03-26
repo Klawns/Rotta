@@ -187,6 +187,36 @@ export function useRideForm({ isOpen, onClose, onSuccess, clientId, rideToEdit }
 
     const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            const target = e.target as HTMLElement;
+            const isTextArea = target.tagName.toLowerCase() === 'textarea';
+            
+            if (isTextArea) return;
+
+            e.preventDefault();
+
+            // Lógica para Criar Cliente se estiver com o mini-modal aberto
+            if (isCreatingClient && newClientName.trim()) {
+                handleCreateClient();
+                return;
+            }
+
+            const canNext =
+                (currentStep === 1 && !!selectedClientId) ||
+                (currentStep === 2 && !!value) ||
+                (currentStep > 2);
+
+            if (canNext) {
+                if (currentStep === 5) {
+                    handleSubmit();
+                } else {
+                    nextStep();
+                }
+            }
+        }
+    };
+
     return {
         // Data
         clients,
@@ -229,6 +259,7 @@ export function useRideForm({ isOpen, onClose, onSuccess, clientId, rideToEdit }
         handlePhotoChange,
         handleSubmit,
         handlePresetClick,
-        resetForm
+        resetForm,
+        handleKeyDown
     };
 }

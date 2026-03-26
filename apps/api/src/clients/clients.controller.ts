@@ -58,6 +58,9 @@ export class ClientsController {
 
   @Delete(':id')
   async delete(@Request() req: any, @Param('id') id: string) {
+    if (id === 'all') {
+      return this.clientsService.deleteAll(req.user.id);
+    }
     return this.clientsService.delete(req.user.id, id);
   }
 

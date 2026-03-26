@@ -72,7 +72,7 @@ export function RideModal(props: RideModalProps) {
                     )}>
                         <form 
                             onSubmit={(e) => e.preventDefault()} 
-                            onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+                            onKeyDown={form.handleKeyDown}
                             className="space-y-6 sm:space-y-8 pb-10"
                         >
                             <AnimatePresence mode="wait">

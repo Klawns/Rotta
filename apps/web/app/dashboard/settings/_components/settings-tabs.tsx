@@ -1,47 +1,49 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-
-interface Tab {
-    id: string;
-    label: string;
-    icon?: React.ReactNode;
-}
+import { Settings2, ShieldCheck, ShieldAlert } from "lucide-react";
 
 interface SettingsTabsProps {
-    tabs: Tab[];
     activeTab: string;
-    onChange: (id: string) => void;
+    onTabChange: (tab: string) => void;
 }
 
-export function SettingsTabs({ tabs, activeTab, onChange }: SettingsTabsProps) {
+export function SettingsTabs({ activeTab, onTabChange }: SettingsTabsProps) {
+    const tabs = [
+        { id: "general", label: "Geral", icon: Settings2 },
+        { id: "security", label: "Segurança", icon: ShieldCheck },
+        { id: "danger", label: "Zona de Perigo", icon: ShieldAlert, variant: "danger" },
+    ];
+
     return (
-        <div className="flex items-center gap-1 p-1 bg-accent/50 border border-border rounded-2xl w-fit">
+        <div className="flex items-center gap-2 p-1.5 bg-card-background border border-border-subtle rounded-3xl shadow-lg w-full md:w-fit backdrop-blur-sm">
             {tabs.map((tab) => {
+                const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
-                
+                const isDanger = tab.variant === "danger";
+
                 return (
                     <button
                         key={tab.id}
-                        onClick={() => onChange(tab.id)}
+                        onClick={() => onTabChange(tab.id)}
                         className={cn(
-                            "relative flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all duration-300 outline-none",
-                            isActive ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                            "flex items-center gap-2.5 px-6 py-3.5 rounded-2xl font-display font-black uppercase tracking-widest text-[10px] transition-all relative overflow-hidden group",
+                            isActive 
+                                ? (isDanger 
+                                    ? "bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20" 
+                                    : "bg-primary text-primary-foreground shadow-lg shadow-primary/20")
+                                : "text-text-muted hover:text-text-primary hover:bg-hover-accent"
                         )}
                     >
-                        {isActive && (
-                            <motion.div
-                                layoutId="active-tab"
-                                className="absolute inset-0 bg-primary rounded-xl shadow-lg shadow-primary/20"
-                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                            />
-                        )}
+                        <Icon size={16} strokeWidth={isActive ? 3 : 2.5} className={cn(
+                            "transition-transform group-hover:scale-110",
+                            !isActive && (isDanger ? "text-destructive" : "text-primary")
+                        )} />
+                        {tab.label}
                         
-                        <span className="relative z-10 flex items-center gap-2 font-black uppercase tracking-widest text-[10px]">
-                            {tab.icon && <span className={cn("transition-colors", isActive ? "text-primary-foreground" : "text-muted-foreground")}>{tab.icon}</span>}
-                            {tab.label}
-                        </span>
+                        {isActive && (
+                            <div className="absolute inset-0 bg-white/10 mix-blend-overlay animate-pulse" />
+                        )}
                     </button>
                 );
             })}

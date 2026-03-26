@@ -399,4 +399,10 @@ export class DrizzleRidesRepository implements IRidesRepository {
       
     return result.length;
   }
+
+  async deleteAll(userId: string): Promise<void> {
+    await this.db
+      .delete(schema.rides)
+      .where(eq(schema.rides.userId, userId));
+  }
 }
