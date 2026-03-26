@@ -1,31 +1,41 @@
-import { FactoryProvider } from '@nestjs/common';
+import { FactoryProvider, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { drizzle } from 'drizzle-orm/libsql';
-import * as schema from '@mdc/database';
+import { SqliteStrategy } from './strategies/sqlite-strategy';
+import { PostgresStrategy } from './strategies/postgres-strategy';
+import { DatabaseStrategy } from './interfaces/database-strategy.interface';
 
 export const DRIZZLE = 'DRIZZLE';
+
+const logger = new Logger('DatabaseProvider');
 
 export const databaseProvider: FactoryProvider = {
   provide: DRIZZLE,
   inject: [ConfigService],
   useFactory: async (configService: ConfigService) => {
-    const url = configService.get<string>('DATABASE_URL');
-    const authToken = configService.get<string>('DATABASE_AUTH_TOKEN');
+    const provider = configService.get<string>('DB_PROVIDER', 'sqlite').toLowerCase();
+    let strategy: DatabaseStrategy;
 
-    console.log(`[Database] Connecting to: ${url ? url.substring(0, 15) + '...' : 'MISSING'}`);
+    logger.log(`Using Database Provider: ${provider.toUpperCase()}`);
 
-    if (!url) {
-      throw new Error('DATABASE_URL not found in environment');
+    if (provider === 'postgres') {
+      strategy = new PostgresStrategy(configService);
+    } else {
+      strategy = new SqliteStrategy(configService);
     }
 
-    // Importação dinâmica para lidar com pacote ESM em ambiente CJS
-    const { createClient } = await import('@libsql/client');
-
-    const client = createClient({
-      url,
-      authToken,
-    });
-
-    return drizzle(client, { schema });
+    try {
+      return await strategy.connect();
+    } catch (error) {
+      logger.error(`Failed to connect to ${provider} database: ${error.message}`);
+      
+      // Fallback logic if Postgres fails and SQLite is configured as backup
+      if (provider === 'postgres' && configService.get<boolean>('DB_FALLBACK_TO_SQLITE', false)) {
+        logger.warn('Attempting fallback to SQLite...');
+        strategy = new SqliteStrategy(configService);
+        return await strategy.connect();
+      }
+      
+      throw error;
+    }
   },
 };
