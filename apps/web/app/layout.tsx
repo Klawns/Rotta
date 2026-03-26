@@ -1,3 +1,4 @@
+// Build: 2026-03-26 - Database refactoring sync
 import type { Metadata } from 'next'
 import { Inter, Montserrat, Outfit } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
