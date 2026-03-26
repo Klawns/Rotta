@@ -1,10 +1,9 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { eq, sql, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-import * as schema from '@mdc/database';
 
 import { DRIZZLE } from '../../database/database.provider';
+import type { DrizzleClient } from '../../database/database.provider';
 import {
   ISubscriptionsRepository,
   Subscription,
@@ -16,40 +15,48 @@ export class DrizzleSubscriptionsRepository implements ISubscriptionsRepository 
 
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: LibSQLDatabase<typeof schema>,
+    private readonly drizzle: DrizzleClient,
   ) {}
+
+  private get db() {
+    return this.drizzle.db;
+  }
+
+  private get schema() {
+    return this.drizzle.schema;
+  }
 
   async findByUserId(userId: string): Promise<Subscription | undefined> {
     const results = await this.db
       .select()
-      .from(schema.subscriptions)
-      .where(eq(schema.subscriptions.userId, userId))
+      .from(this.schema.subscriptions)
+      .where(eq(this.schema.subscriptions.userId, userId))
       .limit(1);
     return results[0];
   }
 
   async incrementRideCount(userId: string): Promise<Subscription[]> {
     return this.db
-      .update(schema.subscriptions)
+      .update(this.schema.subscriptions)
       .set({
-        rideCount: sql`${schema.subscriptions.rideCount} + 1`,
-        createdAt: new Date(), // using createdAt as there is no updatedAt on schema
+        rideCount: sql`${this.schema.subscriptions.rideCount} + 1`,
+        createdAt: new Date(),
       } as any)
-      .where(eq(schema.subscriptions.userId, userId))
+      .where(eq(this.schema.subscriptions.userId, userId))
       .returning();
   }
 
   async decrementRideCount(userId: string): Promise<Subscription[]> {
     return this.db
-      .update(schema.subscriptions)
+      .update(this.schema.subscriptions)
       .set({
-        rideCount: sql`${schema.subscriptions.rideCount} - 1`,
+        rideCount: sql`${this.schema.subscriptions.rideCount} - 1`,
         createdAt: new Date(),
       } as any)
       .where(
         and(
-          eq(schema.subscriptions.userId, userId),
-          sql`${schema.subscriptions.rideCount} > 0`,
+          eq(this.schema.subscriptions.userId, userId),
+          sql`${this.schema.subscriptions.rideCount} > 0`,
         ),
       )
       .returning();
@@ -64,8 +71,8 @@ export class DrizzleSubscriptionsRepository implements ISubscriptionsRepository 
     );
     const existing = await this.db
       .select()
-      .from(schema.subscriptions)
-      .where(eq(schema.subscriptions.userId, userId))
+      .from(this.schema.subscriptions)
+      .where(eq(this.schema.subscriptions.userId, userId))
       .limit(1);
 
     let validUntil: Date | null = null;
@@ -87,13 +94,13 @@ export class DrizzleSubscriptionsRepository implements ISubscriptionsRepository 
       );
       try {
         const updated = await this.db
-          .update(schema.subscriptions)
+          .update(this.schema.subscriptions)
           .set({
             plan,
             status: 'active',
             validUntil,
           } as any)
-          .where(eq(schema.subscriptions.userId, userId))
+          .where(eq(this.schema.subscriptions.userId, userId))
           .returning();
         this.logger.debug(
           `[Subscription] Plano atualizado com sucesso: ${JSON.stringify(updated[0])}`,
@@ -113,7 +120,7 @@ export class DrizzleSubscriptionsRepository implements ISubscriptionsRepository 
     );
     try {
       const inserted = await this.db
-        .insert(schema.subscriptions)
+        .insert(this.schema.subscriptions)
         .values({
           id: randomUUID(),
           userId,
@@ -153,29 +160,29 @@ export class DrizzleSubscriptionsRepository implements ISubscriptionsRepository 
       validUntil = null;
     } else if (plan === 'starter') {
       validUntil = null;
-      rideCount = 0; // Reset rides when downgraded to starter
+      rideCount = 0;
     }
 
     const existing = await this.db
       .select()
-      .from(schema.subscriptions)
-      .where(eq(schema.subscriptions.userId, userId))
+      .from(this.schema.subscriptions)
+      .where(eq(this.schema.subscriptions.userId, userId))
       .limit(1);
 
     if (existing.length > 0) {
       return this.db
-        .update(schema.subscriptions)
+        .update(this.schema.subscriptions)
         .set({
           plan,
           status: 'active',
           validUntil,
           ...(rideCount !== undefined && { rideCount }),
         } as any)
-        .where(eq(schema.subscriptions.userId, userId))
+        .where(eq(this.schema.subscriptions.userId, userId))
         .returning();
     } else {
       return this.db
-        .insert(schema.subscriptions)
+        .insert(this.schema.subscriptions)
         .values({
           id: randomUUID(),
           userId,
@@ -190,12 +197,12 @@ export class DrizzleSubscriptionsRepository implements ISubscriptionsRepository 
 
   async resetRideCount(userId: string): Promise<Subscription[]> {
     return this.db
-      .update(schema.subscriptions)
+      .update(this.schema.subscriptions)
       .set({
         rideCount: 0,
         createdAt: new Date(),
       } as any)
-      .where(eq(schema.subscriptions.userId, userId))
+      .where(eq(this.schema.subscriptions.userId, userId))
       .returning();
   }
 }

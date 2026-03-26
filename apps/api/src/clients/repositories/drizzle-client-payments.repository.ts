@@ -1,10 +1,9 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { LibSQLDatabase } from 'drizzle-orm/libsql';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { Injectable, Inject, Logger } from '@nestjs/common';
+import { eq, and, sql, desc, count } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-import * as schema from '@mdc/database';
 
 import { DRIZZLE } from '../../database/database.provider';
+import type { DrizzleClient } from '../../database/database.provider';
 import {
   IClientPaymentsRepository,
   ClientPayment,
@@ -13,10 +12,20 @@ import {
 
 @Injectable()
 export class DrizzleClientPaymentsRepository implements IClientPaymentsRepository {
+  private readonly logger = new Logger(DrizzleClientPaymentsRepository.name);
+
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: LibSQLDatabase<typeof schema>,
+    private readonly drizzle: DrizzleClient,
   ) {}
+
+  private get db() {
+    return this.drizzle.db;
+  }
+
+  private get schema() {
+    return this.drizzle.schema;
+  }
 
   async findByClient(
     clientId: string,
@@ -24,24 +33,24 @@ export class DrizzleClientPaymentsRepository implements IClientPaymentsRepositor
     status?: 'UNUSED' | 'USED',
   ): Promise<ClientPayment[]> {
     const conditions = [
-      eq(schema.clientPayments.clientId, clientId),
-      eq(schema.clientPayments.userId, userId),
+      eq(this.schema.clientPayments.clientId, clientId),
+      eq(this.schema.clientPayments.userId, userId),
     ];
 
     if (status) {
-      conditions.push(eq(schema.clientPayments.status, status));
+      conditions.push(eq(this.schema.clientPayments.status, status));
     }
 
     return this.db
       .select()
-      .from(schema.clientPayments)
+      .from(this.schema.clientPayments)
       .where(and(...conditions))
-      .orderBy(desc(schema.clientPayments.createdAt));
+      .orderBy(desc(this.schema.clientPayments.createdAt));
   }
 
   async create(data: CreateClientPaymentDto): Promise<ClientPayment> {
     const results = await this.db
-      .insert(schema.clientPayments)
+      .insert(this.schema.clientPayments)
       .values({
         ...data,
         id: data.id || randomUUID(),
@@ -53,13 +62,13 @@ export class DrizzleClientPaymentsRepository implements IClientPaymentsRepositor
 
   async markAsUsed(clientId: string, userId: string): Promise<void> {
     await this.db
-      .update(schema.clientPayments)
+      .update(this.schema.clientPayments)
       .set({ status: 'USED' })
       .where(
         and(
-          eq(schema.clientPayments.clientId, clientId),
-          eq(schema.clientPayments.userId, userId),
-          eq(schema.clientPayments.status, 'UNUSED'),
+          eq(this.schema.clientPayments.clientId, clientId),
+          eq(this.schema.clientPayments.userId, userId),
+          eq(this.schema.clientPayments.status, 'UNUSED'),
         ),
       );
   }
@@ -67,21 +76,22 @@ export class DrizzleClientPaymentsRepository implements IClientPaymentsRepositor
   async getUnusedPaymentsStats(clientId: string, userId: string): Promise<{ totalPaid: number; unusedPaymentsCount: number }> {
     const result = await this.db
       .select({
-        total: sql<number>`SUM(${schema.clientPayments.amount})`,
-        count: sql<number>`COUNT(*)`
+        total: sql<number>`SUM(${this.schema.clientPayments.amount})`,
+        count: count()
       })
-      .from(schema.clientPayments)
+      .from(this.schema.clientPayments)
       .where(
         and(
-          eq(schema.clientPayments.clientId, clientId),
-          eq(schema.clientPayments.userId, userId),
-          eq(schema.clientPayments.status, 'UNUSED')
+          eq(this.schema.clientPayments.clientId, clientId),
+          eq(this.schema.clientPayments.userId, userId),
+          eq(this.schema.clientPayments.status, 'UNUSED')
         )
       );
 
     return {
       totalPaid: Number(result[0]?.total || 0),
-      unusedPaymentsCount: Number(result[0]?.count || 0),
+      unusedPaymentsCount: result[0]?.count || 0,
     };
   }
 }
+

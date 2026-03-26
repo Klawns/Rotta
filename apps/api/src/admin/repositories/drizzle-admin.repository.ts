@@ -1,58 +1,70 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { LibSQLDatabase } from 'drizzle-orm/libsql';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { count, eq, desc, ne } from 'drizzle-orm';
-import * as schema from '@mdc/database';
 
 import { DRIZZLE } from '../../database/database.provider';
+import type { DrizzleClient } from '../../database/database.provider';
 import { IAdminRepository } from '../interfaces/admin-repository.interface';
 
 @Injectable()
 export class DrizzleAdminRepository implements IAdminRepository {
+  private readonly logger = new Logger(DrizzleAdminRepository.name);
+
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: LibSQLDatabase<typeof schema>,
+    private readonly drizzle: DrizzleClient,
   ) {}
+
+  private get db() {
+    return this.drizzle.db;
+  }
+
+  private get schema() {
+    return this.drizzle.schema;
+  }
 
   async getUsersCount(adminEmail: string): Promise<number> {
     const [usersCount] = await this.db
       .select({ value: count() })
-      .from(schema.users)
-      .where(ne(schema.users.email, adminEmail));
+      .from(this.schema.users)
+      .where(ne(this.schema.users.email, adminEmail));
     return usersCount.value;
   }
 
   async getActiveSubscriptionsCount(): Promise<number> {
     const [activeSubscriptions] = await this.db
       .select({ value: count() })
-      .from(schema.subscriptions)
-      .innerJoin(schema.users, eq(schema.users.id, schema.subscriptions.userId))
-      .where(eq(schema.subscriptions.status, 'active'));
+      .from(this.schema.subscriptions)
+      .innerJoin(
+        this.schema.users,
+        eq(this.schema.users.id, this.schema.subscriptions.userId),
+      )
+      .where(eq(this.schema.subscriptions.status, 'active'));
     return activeSubscriptions.value;
   }
 
   async getRecentUsers(adminEmail: string, limit: number, offset: number) {
     const [totalCount] = await this.db
       .select({ value: count() })
-      .from(schema.users)
-      .where(ne(schema.users.email, adminEmail));
+      .from(this.schema.users)
+      .where(ne(this.schema.users.email, adminEmail));
 
     const usersData = await this.db
       .select({
-        id: schema.users.id,
-        name: schema.users.name,
-        email: schema.users.email,
-        role: schema.users.role,
-        createdAt: schema.users.createdAt,
-        plan: schema.subscriptions.plan,
-        validUntil: schema.subscriptions.validUntil,
+        id: this.schema.users.id,
+        name: this.schema.users.name,
+        email: this.schema.users.email,
+        role: this.schema.users.role,
+        createdAt: this.schema.users.createdAt,
+        plan: this.schema.subscriptions.plan,
+        validUntil: this.schema.subscriptions.validUntil,
       })
-      .from(schema.users)
+      .from(this.schema.users)
       .leftJoin(
-        schema.subscriptions,
-        eq(schema.users.id, schema.subscriptions.userId),
+        this.schema.subscriptions,
+        eq(this.schema.users.id, this.schema.subscriptions.userId),
       )
-      .where(ne(schema.users.email, adminEmail))
-      .orderBy(desc(schema.users.createdAt))
+      .where(ne(this.schema.users.email, adminEmail))
+      .orderBy(desc(this.schema.users.createdAt))
       .limit(limit)
       .offset(offset);
 
@@ -63,6 +75,7 @@ export class DrizzleAdminRepository implements IAdminRepository {
   }
 
   async deleteUser(id: string): Promise<void> {
-    await this.db.delete(schema.users).where(eq(schema.users.id, id));
+    await this.db.delete(this.schema.users).where(eq(this.schema.users.id, id));
   }
 }
+

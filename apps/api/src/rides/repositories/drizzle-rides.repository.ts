@@ -1,9 +1,7 @@
 import { Injectable, Inject, Logger, BadRequestException } from '@nestjs/common';
-import { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { eq, and, gte, lte, sql, desc, or, like, ne, lt } from 'drizzle-orm';
-import * as schema from '@mdc/database';
-
 import { DRIZZLE } from '../../database/database.provider';
+import type { DrizzleClient } from '../../database/database.provider';
 import {
   IRidesRepository,
   FindAllFilters,
@@ -19,8 +17,16 @@ export class DrizzleRidesRepository implements IRidesRepository {
 
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: LibSQLDatabase<typeof schema>,
+    private readonly drizzle: DrizzleClient,
   ) {}
+
+  private get db() {
+    return this.drizzle.db;
+  }
+
+  private get schema() {
+    return this.drizzle.schema;
+  }
 
   async findAll(
     userId: string,
@@ -28,24 +34,24 @@ export class DrizzleRidesRepository implements IRidesRepository {
     cursor?: string,
     filters?: FindAllFilters,
   ): Promise<{ rides: RideWithClient[]; total: number; nextCursor?: string; hasMore: boolean }> {
-    const conditions = [eq(schema.rides.userId, userId)];
+    const conditions = [eq(this.schema.rides.userId, userId)];
 
     if (filters?.status)
-      conditions.push(eq(schema.rides.status, filters.status));
+      conditions.push(eq(this.schema.rides.status, filters.status));
     if (filters?.paymentStatus)
-      conditions.push(eq(schema.rides.paymentStatus, filters.paymentStatus));
+      conditions.push(eq(this.schema.rides.paymentStatus, filters.paymentStatus));
     if (filters?.clientId && filters.clientId !== 'all')
-      conditions.push(eq(schema.rides.clientId, filters.clientId));
+      conditions.push(eq(this.schema.rides.clientId, filters.clientId));
     if (filters?.startDate)
-      conditions.push(gte(schema.rides.rideDate, filters.startDate));
+      conditions.push(gte(this.schema.rides.rideDate, filters.startDate));
     if (filters?.endDate)
-      conditions.push(lte(schema.rides.rideDate, filters.endDate));
+      conditions.push(lte(this.schema.rides.rideDate, filters.endDate));
 
     if (filters?.search) {
       const searchCondition = or(
-        like(schema.clients.name, `%${filters.search}%`),
-        like(schema.rides.notes, `%${filters.search}%`),
-        like(schema.rides.location, `%${filters.search}%`),
+        like(this.schema.clients.name, `%${filters.search}%`),
+        like(this.schema.rides.notes, `%${filters.search}%`),
+        like(this.schema.rides.location, `%${filters.search}%`),
       );
       if (searchCondition) conditions.push(searchCondition);
     }
@@ -65,15 +71,15 @@ export class DrizzleRidesRepository implements IRidesRepository {
         this.logger.debug(`Cursor recebido descodificado: rideDate=${parsedCursor.rideDate}, createdAt=${parsedCursor.createdAt}, id=${parsedCursor.id}`);
 
         const cursorCondition = or(
-          lt(schema.rides.rideDate, cursorRideDate),
+          lt(this.schema.rides.rideDate, cursorRideDate),
           and(
-            eq(schema.rides.rideDate, cursorRideDate),
-            lt(schema.rides.createdAt, cursorCreatedAt)
+            eq(this.schema.rides.rideDate, cursorRideDate),
+            lt(this.schema.rides.createdAt, cursorCreatedAt)
           ),
           and(
-            eq(schema.rides.rideDate, cursorRideDate),
-            eq(schema.rides.createdAt, cursorCreatedAt),
-            lt(schema.rides.id, parsedCursor.id)
+            eq(this.schema.rides.rideDate, cursorRideDate),
+            eq(this.schema.rides.createdAt, cursorCreatedAt),
+            lt(this.schema.rides.id, parsedCursor.id)
           )
         );
 
@@ -88,35 +94,35 @@ export class DrizzleRidesRepository implements IRidesRepository {
 
     const query = this.db
       .select({
-        id: schema.rides.id,
-        value: schema.rides.value,
-        notes: schema.rides.notes,
-        status: schema.rides.status,
-        paymentStatus: schema.rides.paymentStatus,
-        paidWithBalance: schema.rides.paidWithBalance,
-        debtValue: schema.rides.debtValue,
-        rideDate: schema.rides.rideDate,
-        createdAt: schema.rides.createdAt,
-        location: schema.rides.location,
-        photo: schema.rides.photo,
+        id: this.schema.rides.id,
+        value: this.schema.rides.value,
+        notes: this.schema.rides.notes,
+        status: this.schema.rides.status,
+        paymentStatus: this.schema.rides.paymentStatus,
+        paidWithBalance: this.schema.rides.paidWithBalance,
+        debtValue: this.schema.rides.debtValue,
+        rideDate: this.schema.rides.rideDate,
+        createdAt: this.schema.rides.createdAt,
+        location: this.schema.rides.location,
+        photo: this.schema.rides.photo,
         client: {
-          id: schema.clients.id,
-          name: schema.clients.name,
+          id: this.schema.clients.id,
+          name: this.schema.clients.name,
         },
       })
-      .from(schema.rides)
-      .leftJoin(schema.clients, eq(schema.rides.clientId, schema.clients.id))
+      .from(this.schema.rides)
+      .leftJoin(this.schema.clients, eq(this.schema.rides.clientId, this.schema.clients.id))
       .where(and(...conditions))
       .orderBy(
-        desc(schema.rides.rideDate),
-        desc(schema.rides.createdAt),
-        desc(schema.rides.id),
+        desc(this.schema.rides.rideDate),
+        desc(this.schema.rides.createdAt),
+        desc(this.schema.rides.id),
       )
       .limit(limit + 1); // Buscamos um a mais para saber se tem próxima página
 
     const countQuery = this.db
       .select({ count: sql<number>`count(*)` })
-      .from(schema.rides)
+      .from(this.schema.rides)
       .where(and(...conditions));
 
     const [results, countResult] = await Promise.all([query, countQuery]);
@@ -146,7 +152,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
 
   async create(data: CreateRideDto): Promise<Ride> {
     const results = await this.db
-      .insert(schema.rides)
+      .insert(this.schema.rides)
       .values(data as any)
       .returning();
 
@@ -162,9 +168,9 @@ export class DrizzleRidesRepository implements IRidesRepository {
     },
   ): Promise<Ride> {
     const results = await this.db
-      .update(schema.rides)
+      .update(this.schema.rides)
       .set(data)
-      .where(and(eq(schema.rides.id, id), eq(schema.rides.userId, userId)))
+      .where(and(eq(this.schema.rides.id, id), eq(this.schema.rides.userId, userId)))
       .returning();
 
     return results[0];
@@ -173,18 +179,18 @@ export class DrizzleRidesRepository implements IRidesRepository {
   async getFrequentClients(userId: string) {
     const results = await this.db
       .select({
-        id: schema.clients.id,
-        name: schema.clients.name,
-        isPinned: schema.clients.isPinned,
+        id: this.schema.clients.id,
+        name: this.schema.clients.name,
+        isPinned: this.schema.clients.isPinned,
       })
-      .from(schema.clients)
+      .from(this.schema.clients)
       .where(
         and(
-          eq(schema.clients.userId, userId),
-          eq(schema.clients.isPinned, true),
+          eq(this.schema.clients.userId, userId),
+          eq(this.schema.clients.isPinned, true),
         ),
       )
-      .orderBy(desc(schema.clients.createdAt))
+      .orderBy(desc(this.schema.clients.createdAt))
       .limit(10);
 
     return results;
@@ -192,9 +198,9 @@ export class DrizzleRidesRepository implements IRidesRepository {
 
   async update(userId: string, id: string, data: UpdateRideDto): Promise<Ride> {
     const results = await this.db
-      .update(schema.rides)
+      .update(this.schema.rides)
       .set(data as any)
-      .where(and(eq(schema.rides.id, id), eq(schema.rides.userId, userId)))
+      .where(and(eq(this.schema.rides.id, id), eq(this.schema.rides.userId, userId)))
       .returning();
 
     return results[0];
@@ -203,16 +209,16 @@ export class DrizzleRidesRepository implements IRidesRepository {
   async countAll(userId: string): Promise<number> {
     const result = await this.db
       .select({ count: sql<number>`count(*)` })
-      .from(schema.rides)
-      .where(eq(schema.rides.userId, userId));
+      .from(this.schema.rides)
+      .where(eq(this.schema.rides.userId, userId));
 
     return result[0].count;
   }
 
   async delete(userId: string, id: string): Promise<Ride | undefined> {
     const result = await this.db
-      .delete(schema.rides)
-      .where(and(eq(schema.rides.id, id), eq(schema.rides.userId, userId)))
+      .delete(this.schema.rides)
+      .where(and(eq(this.schema.rides.id, id), eq(this.schema.rides.userId, userId)))
       .returning();
 
     return result[0];
@@ -225,8 +231,8 @@ export class DrizzleRidesRepository implements IRidesRepository {
     cursor?: string,
   ): Promise<{ rides: Ride[]; total: number; nextCursor?: string; hasMore: boolean }> {
     const conditions = [
-      eq(schema.rides.userId, userId),
-      eq(schema.rides.clientId, clientId),
+      eq(this.schema.rides.userId, userId),
+      eq(this.schema.rides.clientId, clientId),
     ];
 
     if (cursor) {
@@ -242,15 +248,15 @@ export class DrizzleRidesRepository implements IRidesRepository {
         const cursorCreatedAt = new Date(parsedCursor.createdAt);
 
         const cursorCondition = or(
-          lt(schema.rides.rideDate, cursorRideDate),
+          lt(this.schema.rides.rideDate, cursorRideDate),
           and(
-            eq(schema.rides.rideDate, cursorRideDate),
-            lt(schema.rides.createdAt, cursorCreatedAt)
+            eq(this.schema.rides.rideDate, cursorRideDate),
+            lt(this.schema.rides.createdAt, cursorCreatedAt)
           ),
           and(
-            eq(schema.rides.rideDate, cursorRideDate),
-            eq(schema.rides.createdAt, cursorCreatedAt),
-            lt(schema.rides.id, parsedCursor.id)
+            eq(this.schema.rides.rideDate, cursorRideDate),
+            eq(this.schema.rides.createdAt, cursorCreatedAt),
+            lt(this.schema.rides.id, parsedCursor.id)
           )
         );
 
@@ -260,24 +266,24 @@ export class DrizzleRidesRepository implements IRidesRepository {
       } catch (err) {
         // Fallback for old simple-date cursors if they exist, or just throw
         this.logger.warn(`Failed to decode cursor for findByClient: ${cursor}. Using fallback.`);
-        conditions.push(lt(schema.rides.createdAt, new Date(cursor)));
+        conditions.push(lt(this.schema.rides.createdAt, new Date(cursor)));
       }
     }
 
     const query = this.db
       .select()
-      .from(schema.rides)
+      .from(this.schema.rides)
       .where(and(...conditions))
       .orderBy(
-        desc(schema.rides.rideDate),
-        desc(schema.rides.createdAt),
-        desc(schema.rides.id),
+        desc(this.schema.rides.rideDate),
+        desc(this.schema.rides.createdAt),
+        desc(this.schema.rides.id),
       )
       .limit(limit + 1);
 
     const countQuery = this.db
       .select({ count: sql<number>`count(*)` })
-      .from(schema.rides)
+      .from(this.schema.rides)
       .where(and(...conditions));
 
     const [results, countResult] = await Promise.all([query, countQuery]);
@@ -311,50 +317,50 @@ export class DrizzleRidesRepository implements IRidesRepository {
     clientId?: string,
   ): Promise<{ count: number; totalValue: number; rides: RideWithClient[] }> {
     const conditions = [
-      eq(schema.rides.userId, userId),
-      gte(schema.rides.rideDate, start),
-      lte(schema.rides.rideDate, end),
+      eq(this.schema.rides.userId, userId),
+      gte(this.schema.rides.rideDate, start),
+      lte(this.schema.rides.rideDate, end),
     ];
 
     if (clientId && clientId !== 'all') {
-      conditions.push(eq(schema.rides.clientId, clientId));
+      conditions.push(eq(this.schema.rides.clientId, clientId));
     }
 
     // Busca agregados no SQL (muito mais rápido)
     const statsResult = await this.db
       .select({
         count: sql<number>`count(*)`,
-        total: sql<number>`sum(${schema.rides.value})`,
+        total: sql<number>`sum(${this.schema.rides.value})`,
       })
-      .from(schema.rides)
+      .from(this.schema.rides)
       .where(and(...conditions));
 
     // Busca as corridas (limitamos a 50 para evitar sobrecarga no dashboard, 
     // já que o dashboard financeiro costuma exibir apenas o resumo ou as últimas)
     const results = await this.db
       .select({
-        id: schema.rides.id,
-        value: schema.rides.value,
-        notes: schema.rides.notes,
-        status: schema.rides.status,
-        paymentStatus: schema.rides.paymentStatus,
-        paidWithBalance: schema.rides.paidWithBalance,
-        debtValue: schema.rides.debtValue,
-        rideDate: schema.rides.rideDate,
-        createdAt: schema.rides.createdAt,
-        location: schema.rides.location,
-        photo: schema.rides.photo,
+        id: this.schema.rides.id,
+        value: this.schema.rides.value,
+        notes: this.schema.rides.notes,
+        status: this.schema.rides.status,
+        paymentStatus: this.schema.rides.paymentStatus,
+        paidWithBalance: this.schema.rides.paidWithBalance,
+        debtValue: this.schema.rides.debtValue,
+        rideDate: this.schema.rides.rideDate,
+        createdAt: this.schema.rides.createdAt,
+        location: this.schema.rides.location,
+        photo: this.schema.rides.photo,
         client: {
-          id: schema.clients.id,
-          name: schema.clients.name,
+          id: this.schema.clients.id,
+          name: this.schema.clients.name,
         },
       })
-      .from(schema.rides)
-      .leftJoin(schema.clients, eq(schema.rides.clientId, schema.clients.id))
+      .from(this.schema.rides)
+      .leftJoin(this.schema.clients, eq(this.schema.rides.clientId, this.schema.clients.id))
       .where(and(...conditions))
       .orderBy(
-        desc(schema.rides.rideDate),
-        desc(schema.rides.createdAt),
+        desc(this.schema.rides.rideDate),
+        desc(this.schema.rides.createdAt),
       )
       .limit(50);
 
@@ -368,16 +374,16 @@ export class DrizzleRidesRepository implements IRidesRepository {
   async getPendingDebtStats(clientId: string, userId: string): Promise<{ totalDebt: number; pendingRidesCount: number }> {
     const result = await this.db
       .select({
-        total: sql<number>`SUM(${schema.rides.value})`,
+        total: sql<number>`SUM(${this.schema.rides.value})`,
         count: sql<number>`COUNT(*)`
       })
-      .from(schema.rides)
+      .from(this.schema.rides)
       .where(
         and(
-          eq(schema.rides.clientId, clientId),
-          eq(schema.rides.userId, userId),
-          eq(schema.rides.paymentStatus, 'PENDING'),
-          ne(schema.rides.status, 'CANCELLED')
+          eq(this.schema.rides.clientId, clientId),
+          eq(this.schema.rides.userId, userId),
+          eq(this.schema.rides.paymentStatus, 'PENDING'),
+          ne(this.schema.rides.status, 'CANCELLED')
         )
       );
 
@@ -389,24 +395,24 @@ export class DrizzleRidesRepository implements IRidesRepository {
 
   async markAllAsPaidForClient(clientId: string, userId: string): Promise<number> {
     const result = await this.db
-      .update(schema.rides)
+      .update(this.schema.rides)
       .set({ paymentStatus: 'PAID' })
       .where(
         and(
-          eq(schema.rides.clientId, clientId),
-          eq(schema.rides.userId, userId),
-          eq(schema.rides.paymentStatus, 'PENDING'),
-          ne(schema.rides.status, 'CANCELLED')
+          eq(this.schema.rides.clientId, clientId),
+          eq(this.schema.rides.userId, userId),
+          eq(this.schema.rides.paymentStatus, 'PENDING'),
+          ne(this.schema.rides.status, 'CANCELLED')
         )
       )
-      .returning({ updatedId: schema.rides.id });
+      .returning({ updatedId: this.schema.rides.id });
       
     return result.length;
   }
 
   async deleteAll(userId: string): Promise<void> {
     await this.db
-      .delete(schema.rides)
-      .where(eq(schema.rides.userId, userId));
+      .delete(this.schema.rides)
+      .where(eq(this.schema.rides.userId, userId));
   }
 }

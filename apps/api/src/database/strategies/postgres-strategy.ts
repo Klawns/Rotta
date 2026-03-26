@@ -1,7 +1,7 @@
 import { DatabaseStrategy } from '../interfaces/database-strategy.interface';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { ConfigService } from '@nestjs/config';
-import * as schema from '@mdc/database';
+import { postgresSchema as schema } from '@mdc/database';
 import { Pool } from 'pg';
 
 export class PostgresStrategy implements DatabaseStrategy {
@@ -24,6 +24,7 @@ export class PostgresStrategy implements DatabaseStrategy {
       host,
       port,
       database,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     });
 
     return drizzle(pool, { schema });

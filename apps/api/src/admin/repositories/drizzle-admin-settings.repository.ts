@@ -1,9 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { eq } from 'drizzle-orm';
-import * as schema from '@mdc/database';
-
 import { DRIZZLE } from '../../database/database.provider';
+import type { DrizzleClient } from '../../database/database.provider';
 import {
   IAdminSettingsRepository,
   PricingPlan,
@@ -13,11 +11,19 @@ import {
 export class DrizzleAdminSettingsRepository implements IAdminSettingsRepository {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: LibSQLDatabase<typeof schema>,
+    private readonly drizzle: DrizzleClient,
   ) {}
 
+  private get db() {
+    return this.drizzle.db;
+  }
+
+  private get schema() {
+    return this.drizzle.schema;
+  }
+
   async getPlans(): Promise<PricingPlan[]> {
-    return this.db.select().from(schema.pricingPlans);
+    return this.db.select().from(this.schema.pricingPlans);
   }
 
   async updatePlan(id: string, data: any): Promise<void> {
@@ -25,18 +31,18 @@ export class DrizzleAdminSettingsRepository implements IAdminSettingsRepository 
       data.features = JSON.stringify(data.features);
     }
     await this.db
-      .update(schema.pricingPlans)
+      .update(this.schema.pricingPlans)
       .set({
         ...data,
         updatedAt: new Date(),
       })
-      .where(eq(schema.pricingPlans.id, id));
+      .where(eq(this.schema.pricingPlans.id, id));
   }
 
   async getConfigs(): Promise<Record<string, string>> {
-    const configs = await this.db.select().from(schema.systemConfigs);
+    const configs = await this.db.select().from(this.schema.systemConfigs);
     return configs.reduce(
-      (acc, curr) => {
+      (acc: Record<string, string>, curr: any) => {
         acc[curr.key] = curr.value;
         return acc;
       },
@@ -51,19 +57,19 @@ export class DrizzleAdminSettingsRepository implements IAdminSettingsRepository 
   ): Promise<void> {
     const [existing] = await this.db
       .select()
-      .from(schema.systemConfigs)
-      .where(eq(schema.systemConfigs.key, key));
+      .from(this.schema.systemConfigs)
+      .where(eq(this.schema.systemConfigs.key, key));
     if (existing) {
       await this.db
-        .update(schema.systemConfigs)
+        .update(this.schema.systemConfigs)
         .set({
           value,
           description: description || existing.description,
           updatedAt: new Date(),
         })
-        .where(eq(schema.systemConfigs.key, key));
+        .where(eq(this.schema.systemConfigs.key, key));
     } else {
-      await this.db.insert(schema.systemConfigs).values({
+      await this.db.insert(this.schema.systemConfigs).values({
         key,
         value,
         description,
@@ -73,9 +79,9 @@ export class DrizzleAdminSettingsRepository implements IAdminSettingsRepository 
 
   async seedInitialData(): Promise<void> {
     // Seed Plans if empty
-    const plans = await this.db.select().from(schema.pricingPlans);
+    const plans = await this.db.select().from(this.schema.pricingPlans);
     if (plans.length === 0) {
-      await this.db.insert(schema.pricingPlans).values([
+      await this.db.insert(this.schema.pricingPlans).values([
         {
           id: 'starter',
           name: 'Starter',

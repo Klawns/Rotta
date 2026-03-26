@@ -18,7 +18,7 @@ export class ClientMapper {
       phone: entity.phone ?? null,
       address: entity.address ?? null,
       isPinned: !!entity.isPinned,
-      balance: entity.balance ?? 0,
+      balance: Number(entity.balance) || 0,
       createdAt: new Date(entity.createdAt),
     };
   }

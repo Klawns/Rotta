@@ -3,16 +3,24 @@ import { ConfigService } from '@nestjs/config';
 import { SqliteStrategy } from './strategies/sqlite-strategy';
 import { PostgresStrategy } from './strategies/postgres-strategy';
 import { DatabaseStrategy } from './interfaces/database-strategy.interface';
+import { postgresSchema, sqliteSchema } from '@mdc/database';
 
 export const DRIZZLE = 'DRIZZLE';
+
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface DrizzleClient {
+  db: any;
+  schema: any;
+  dialect: 'postgres' | 'sqlite';
+}
 
 const logger = new Logger('DatabaseProvider');
 
 export const databaseProvider: FactoryProvider = {
   provide: DRIZZLE,
   inject: [ConfigService],
-  useFactory: async (configService: ConfigService) => {
-    const provider = configService.get<string>('DB_PROVIDER', 'sqlite').toLowerCase();
+  useFactory: async (configService: ConfigService): Promise<DrizzleClient> => {
+    const provider = configService.get<string>('DB_PROVIDER', 'sqlite').toLowerCase() as 'postgres' | 'sqlite';
     let strategy: DatabaseStrategy;
 
     logger.log(`Using Database Provider: ${provider.toUpperCase()}`);
@@ -24,7 +32,12 @@ export const databaseProvider: FactoryProvider = {
     }
 
     try {
-      return await strategy.connect();
+      const db = await strategy.connect();
+      return {
+        db,
+        schema: (provider === 'postgres' ? postgresSchema : sqliteSchema) as any,
+        dialect: provider,
+      };
     } catch (error) {
       logger.error(`Failed to connect to ${provider} database: ${error.message}`);
       
@@ -32,7 +45,12 @@ export const databaseProvider: FactoryProvider = {
       if (provider === 'postgres' && configService.get<boolean>('DB_FALLBACK_TO_SQLITE', false)) {
         logger.warn('Attempting fallback to SQLite...');
         strategy = new SqliteStrategy(configService);
-        return await strategy.connect();
+        const db = await strategy.connect();
+        return {
+          db,
+          schema: sqliteSchema as any,
+          dialect: 'sqlite',
+        };
       }
       
       throw error;

@@ -69,6 +69,7 @@ describe('RidesService', () => {
       location: 'Central Park',
       status: 'COMPLETED',
       paymentStatus: 'PAID',
+      useBalance: false,
     });
     expect(result).toEqual({ id: 'ride-123', value: 25.5 });
     expect(repoMock.create).toHaveBeenCalled();
@@ -88,6 +89,7 @@ describe('RidesService', () => {
         location: 'Downtown',
         status: 'COMPLETED',
         paymentStatus: 'PAID',
+        useBalance: false,
       }),
     ).rejects.toThrow(
       'Limite de 20 corridas do plano gratuito atingido. Faça o upgrade para continuar.',
@@ -107,6 +109,7 @@ describe('RidesService', () => {
       location: 'Uptown',
       status: 'COMPLETED',
       paymentStatus: 'PAID',
+      useBalance: false,
     });
     expect(result).toEqual({ id: 'ride-123', value: 25.5 });
     expect(repoMock.create).toHaveBeenCalled();

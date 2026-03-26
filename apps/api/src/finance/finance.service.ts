@@ -1,17 +1,26 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { LibSQLDatabase } from 'drizzle-orm/libsql';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { eq, and, gte, lte, sql, desc, or } from 'drizzle-orm';
-import * as schema from '@mdc/database';
 import { DRIZZLE } from '../database/database.provider';
+import type { DrizzleClient } from '../database/database.provider';
 import { getDatesFromPeriod, getDaysArray } from '../common/utils/date.util';
 import { GetFinanceStatsDto } from './dto/finance.dto';
 
 @Injectable()
 export class FinanceService {
+  private readonly logger = new Logger(FinanceService.name);
+
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: LibSQLDatabase<typeof schema>,
+    private readonly drizzle: DrizzleClient,
   ) {}
+
+  private get db() {
+    return this.drizzle.db;
+  }
+
+  private get schema() {
+    return this.drizzle.schema;
+  }
 
   async getDashboard(userId: string, query: GetFinanceStatsDto) {
     const { startDate, endDate } = getDatesFromPeriod(query.period, query.start, query.end);
@@ -43,18 +52,18 @@ export class FinanceService {
 
   private async getSummary(userId: string, start: Date, end: Date, period: string, clientId?: string) {
     const conditions = [
-      eq(schema.rides.userId, userId),
-      gte(schema.rides.rideDate, start),
-      lte(schema.rides.rideDate, end),
+      eq(this.schema.rides.userId, userId),
+      gte(this.schema.rides.rideDate, start),
+      lte(this.schema.rides.rideDate, end),
     ];
-    if (clientId) conditions.push(eq(schema.rides.clientId, clientId));
+    if (clientId) conditions.push(eq(this.schema.rides.clientId, clientId));
 
     const stats = await this.db
       .select({
         count: sql<number>`count(*)`,
-        total: sql<number>`coalesce(sum(${schema.rides.value}), 0)`,
+        total: sql<number>`coalesce(sum(${this.schema.rides.value}), 0)`,
       })
-      .from(schema.rides)
+      .from(this.schema.rides)
       .where(and(...conditions));
 
     const currentTotal = Number(stats[0]?.total || 0);
@@ -78,24 +87,24 @@ export class FinanceService {
 
   private async getTrends(userId: string, start: Date, end: Date, clientId?: string) {
     const conditions = [
-      eq(schema.rides.userId, userId),
-      gte(schema.rides.rideDate, start),
-      lte(schema.rides.rideDate, end),
+      eq(this.schema.rides.userId, userId),
+      gte(this.schema.rides.rideDate, start),
+      lte(this.schema.rides.rideDate, end),
     ];
-    if (clientId) conditions.push(eq(schema.rides.clientId, clientId));
+    if (clientId) conditions.push(eq(this.schema.rides.clientId, clientId));
 
     const rides = await this.db
       .select({
-        rideDate: schema.rides.rideDate,
-        value: schema.rides.value,
+        rideDate: this.schema.rides.rideDate,
+        value: this.schema.rides.value,
       })
-      .from(schema.rides)
+      .from(this.schema.rides)
       .where(and(...conditions));
 
     // Agrupar por data local (YYYY-MM-DD)
     const trendMap = new Map<string, number>();
     
-    rides.forEach(ride => {
+    rides.forEach((ride: any) => {
       if (!ride.rideDate) return;
       const d = new Date(ride.rideDate);
       const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -114,24 +123,24 @@ export class FinanceService {
   private async getByClient(userId: string, start: Date, end: Date) {
     const results = await this.db
       .select({
-        clientId: schema.rides.clientId,
-        clientName: schema.clients.name,
-        value: sql<number>`sum(${schema.rides.value})`,
+        clientId: this.schema.rides.clientId,
+        clientName: this.schema.clients.name,
+        value: sql<number>`sum(${this.schema.rides.value})`,
       })
-      .from(schema.rides)
-      .leftJoin(schema.clients, eq(schema.rides.clientId, schema.clients.id))
+      .from(this.schema.rides)
+      .leftJoin(this.schema.clients, eq(this.schema.rides.clientId, this.schema.clients.id))
       .where(
         and(
-          eq(schema.rides.userId, userId),
-          gte(schema.rides.rideDate, start),
-          lte(schema.rides.rideDate, end),
+          eq(this.schema.rides.userId, userId),
+          gte(this.schema.rides.rideDate, start),
+          lte(this.schema.rides.rideDate, end),
         )
       )
-      .groupBy(schema.rides.clientId, schema.clients.name)
-      .orderBy(desc(sql`sum(${schema.rides.value})`))
+      .groupBy(this.schema.rides.clientId, this.schema.clients.name)
+      .orderBy(desc(sql`sum(${this.schema.rides.value})`))
       .limit(5);
 
-    return results.map(r => ({
+    return results.map((r: any) => ({
       clientId: r.clientId,
       clientName: r.clientName || 'Cliente Removido',
       value: Number(r.value || 0),
@@ -140,22 +149,22 @@ export class FinanceService {
 
   private async getByStatus(userId: string, start: Date, end: Date, clientId?: string) {
     const conditions = [
-      eq(schema.rides.userId, userId),
-      gte(schema.rides.rideDate, start),
-      lte(schema.rides.rideDate, end),
+      eq(this.schema.rides.userId, userId),
+      gte(this.schema.rides.rideDate, start),
+      lte(this.schema.rides.rideDate, end),
     ];
-    if (clientId) conditions.push(eq(schema.rides.clientId, clientId));
+    if (clientId) conditions.push(eq(this.schema.rides.clientId, clientId));
 
     const results = await this.db
       .select({
-        status: schema.rides.paymentStatus,
-        value: sql<number>`sum(${schema.rides.value})`,
+        status: this.schema.rides.paymentStatus,
+        value: sql<number>`sum(${this.schema.rides.value})`,
       })
-      .from(schema.rides)
+      .from(this.schema.rides)
       .where(and(...conditions))
-      .groupBy(schema.rides.paymentStatus);
+      .groupBy(this.schema.rides.paymentStatus);
 
-    return results.map(r => ({
+    return results.map((r: any) => ({
       status: r.status as 'PAID' | 'PENDING',
       value: Number(r.value || 0),
     }));
@@ -163,25 +172,25 @@ export class FinanceService {
 
   private async getRecentRides(userId: string, start: Date, end: Date, clientId?: string) {
     const conditions = [
-      eq(schema.rides.userId, userId),
-      gte(schema.rides.rideDate, start),
-      lte(schema.rides.rideDate, end),
+      eq(this.schema.rides.userId, userId),
+      gte(this.schema.rides.rideDate, start),
+      lte(this.schema.rides.rideDate, end),
     ];
-    if (clientId) conditions.push(eq(schema.rides.clientId, clientId));
+    if (clientId) conditions.push(eq(this.schema.rides.clientId, clientId));
 
     return this.db
       .select({
-        id: schema.rides.id,
-        value: schema.rides.value,
-        rideDate: schema.rides.rideDate,
-        paymentStatus: schema.rides.paymentStatus,
-        location: schema.rides.location,
-        clientName: schema.clients.name,
+        id: this.schema.rides.id,
+        value: this.schema.rides.value,
+        rideDate: this.schema.rides.rideDate,
+        paymentStatus: this.schema.rides.paymentStatus,
+        location: this.schema.rides.location,
+        clientName: this.schema.clients.name,
       })
-      .from(schema.rides)
-      .leftJoin(schema.clients, eq(schema.rides.clientId, schema.clients.id))
+      .from(this.schema.rides)
+      .leftJoin(this.schema.clients, eq(this.schema.rides.clientId, this.schema.clients.id))
       .where(and(...conditions))
-      .orderBy(desc(schema.rides.rideDate))
+      .orderBy(desc(this.schema.rides.rideDate))
       .limit(10);
   }
 
@@ -193,17 +202,17 @@ export class FinanceService {
     const prevEnd = new Date(start.getTime() - 1);
 
     const conditions = [
-      eq(schema.rides.userId, userId),
-      gte(schema.rides.rideDate, prevStart),
-      lte(schema.rides.rideDate, prevEnd),
+      eq(this.schema.rides.userId, userId),
+      gte(this.schema.rides.rideDate, prevStart),
+      lte(this.schema.rides.rideDate, prevEnd),
     ];
-    if (clientId) conditions.push(eq(schema.rides.clientId, clientId));
+    if (clientId) conditions.push(eq(this.schema.rides.clientId, clientId));
 
     const stats = await this.db
       .select({
-        total: sql<number>`coalesce(sum(${schema.rides.value}), 0)`,
+        total: sql<number>`coalesce(sum(${this.schema.rides.value}), 0)`,
       })
-      .from(schema.rides)
+      .from(this.schema.rides)
       .where(and(...conditions));
 
     const prevTotal = Number(stats[0]?.total || 0);
@@ -215,17 +224,17 @@ export class FinanceService {
 
   private async getCurrentTotal(userId: string, start: Date, end: Date, clientId?: string) {
     const conditions = [
-      eq(schema.rides.userId, userId),
-      gte(schema.rides.rideDate, start),
-      lte(schema.rides.rideDate, end),
+      eq(this.schema.rides.userId, userId),
+      gte(this.schema.rides.rideDate, start),
+      lte(this.schema.rides.rideDate, end),
     ];
-    if (clientId) conditions.push(eq(schema.rides.clientId, clientId));
+    if (clientId) conditions.push(eq(this.schema.rides.clientId, clientId));
 
     const stats = await this.db
       .select({
-        total: sql<number>`coalesce(sum(${schema.rides.value}), 0)`,
+        total: sql<number>`coalesce(sum(${this.schema.rides.value}), 0)`,
       })
-      .from(schema.rides)
+      .from(this.schema.rides)
       .where(and(...conditions));
 
     return Number(stats[0]?.total || 0);

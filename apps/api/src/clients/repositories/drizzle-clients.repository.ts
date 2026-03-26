@@ -1,10 +1,9 @@
-  import { Injectable, Inject } from '@nestjs/common';
-import { LibSQLDatabase } from 'drizzle-orm/libsql';
-import { eq, and, or, like, sql, desc, asc, lt, gt } from 'drizzle-orm';
+import { Injectable, Inject, Logger } from '@nestjs/common';
+import { eq, and, or, like, sql, desc, lt, gt, count } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-import * as schema from '@mdc/database';
 
 import { DRIZZLE } from '../../database/database.provider';
+import type { DrizzleClient } from '../../database/database.provider';
 import {
   IClientsRepository,
   Client,
@@ -13,10 +12,20 @@ import {
 
 @Injectable()
 export class DrizzleClientsRepository implements IClientsRepository {
+  private readonly logger = new Logger(DrizzleClientsRepository.name);
+
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: LibSQLDatabase<typeof schema>,
+    private readonly drizzle: DrizzleClient,
   ) {}
+
+  private get db() {
+    return this.drizzle.db;
+  }
+
+  private get schema() {
+    return this.drizzle.schema;
+  }
 
   async findAll(
     userId: string,
@@ -24,10 +33,10 @@ export class DrizzleClientsRepository implements IClientsRepository {
     cursor?: string,
     search?: string,
   ): Promise<{ clients: Client[]; total: number; nextCursor?: string; hasMore: boolean }> {
-    const conditions = [eq(schema.clients.userId, userId)];
+    const conditions = [eq(this.schema.clients.userId, userId)];
 
     if (search) {
-      conditions.push(like(schema.clients.name, `%${search}%`));
+      conditions.push(like(this.schema.clients.name, `%${search}%`));
     }
 
     if (cursor) {
@@ -40,17 +49,17 @@ export class DrizzleClientsRepository implements IClientsRepository {
         }
 
         const cursorCondition = or(
-          lt(schema.clients.isPinned, parsedCursor.isPinned),
+          lt(this.schema.clients.isPinned, parsedCursor.isPinned),
           and(
-            eq(schema.clients.isPinned, parsedCursor.isPinned),
+            eq(this.schema.clients.isPinned, parsedCursor.isPinned),
             or(
-              gt(sql`lower(${schema.clients.name})`, sql`lower(${parsedCursor.name})`),
+              gt(sql`lower(${this.schema.clients.name})`, sql`lower(${parsedCursor.name})`),
               and(
-                eq(sql`lower(${schema.clients.name})`, sql`lower(${parsedCursor.name})`),
-                gt(schema.clients.id, parsedCursor.id)
-              )
-            )
-          )
+                eq(sql`lower(${this.schema.clients.name})`, sql`lower(${parsedCursor.name})`),
+                gt(this.schema.clients.id, parsedCursor.id),
+              ),
+            ),
+          ),
         );
 
         if (cursorCondition) {
@@ -63,14 +72,14 @@ export class DrizzleClientsRepository implements IClientsRepository {
 
     const query = this.db
       .select()
-      .from(schema.clients)
+      .from(this.schema.clients)
       .where(and(...conditions))
-      .orderBy(desc(schema.clients.isPinned), sql`lower(${schema.clients.name}) asc`, schema.clients.id)
+      .orderBy(desc(this.schema.clients.isPinned), sql`lower(${this.schema.clients.name}) asc`, this.schema.clients.id)
       .limit(limit + 1);
 
     const countQuery = this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.clients)
+      .select({ value: count() })
+      .from(this.schema.clients)
       .where(and(...conditions));
 
     const [results, countResult] = await Promise.all([query, countQuery]);
@@ -91,15 +100,15 @@ export class DrizzleClientsRepository implements IClientsRepository {
 
     return {
       clients: items,
-      total: Number(countResult[0]?.count || 0),
+      total: countResult[0]?.value || 0,
       nextCursor: nextCursorHash,
-      hasMore
+      hasMore,
     };
   }
 
   async create(data: CreateClientDto): Promise<Client> {
     const results = await this.db
-      .insert(schema.clients)
+      .insert(this.schema.clients)
       .values({
         ...data,
         id: data.id || randomUUID(),
@@ -112,8 +121,8 @@ export class DrizzleClientsRepository implements IClientsRepository {
   async findOne(userId: string, id: string): Promise<Client | undefined> {
     const results = await this.db
       .select()
-      .from(schema.clients)
-      .where(and(eq(schema.clients.id, id), eq(schema.clients.userId, userId)))
+      .from(this.schema.clients)
+      .where(and(eq(this.schema.clients.id, id), eq(this.schema.clients.userId, userId)))
       .limit(1);
 
     return results[0];
@@ -125,9 +134,9 @@ export class DrizzleClientsRepository implements IClientsRepository {
     data: Partial<CreateClientDto>,
   ): Promise<Client> {
     const results = await this.db
-      .update(schema.clients)
+      .update(this.schema.clients)
       .set(data)
-      .where(and(eq(schema.clients.id, id), eq(schema.clients.userId, userId)))
+      .where(and(eq(this.schema.clients.id, id), eq(this.schema.clients.userId, userId)))
       .returning();
 
     return results[0];
@@ -135,13 +144,14 @@ export class DrizzleClientsRepository implements IClientsRepository {
 
   async delete(userId: string, id: string): Promise<void> {
     await this.db
-      .delete(schema.clients)
-      .where(and(eq(schema.clients.id, id), eq(schema.clients.userId, userId)));
+      .delete(this.schema.clients)
+      .where(and(eq(this.schema.clients.id, id), eq(this.schema.clients.userId, userId)));
   }
 
   async deleteAll(userId: string): Promise<void> {
     await this.db
-      .delete(schema.clients)
-      .where(eq(schema.clients.userId, userId));
+      .delete(this.schema.clients)
+      .where(eq(this.schema.clients.userId, userId));
   }
 }
+

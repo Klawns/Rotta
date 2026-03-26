@@ -11,7 +11,7 @@ export class RideMapper {
     
     return {
       id: entity.id,
-      value: entity.value,
+      value: Number(entity.value),
       location: entity.location ?? null,
       notes: entity.notes ?? null,
       photo: entity.photo ?? null,
@@ -19,8 +19,8 @@ export class RideMapper {
       paymentStatus: entity.paymentStatus as any,
       rideDate: entity.rideDate ? new Date(entity.rideDate) : null,
       createdAt: new Date(entity.createdAt),
-      paidWithBalance: entity.paidWithBalance ?? 0,
-      debtValue: entity.debtValue ?? 0,
+      paidWithBalance: Number(entity.paidWithBalance ?? 0),
+      debtValue: Number(entity.debtValue ?? 0),
       client: isWithClient && entity.client ? {
         id: entity.client.id,
         name: entity.client.name,

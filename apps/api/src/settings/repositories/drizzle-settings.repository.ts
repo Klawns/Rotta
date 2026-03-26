@@ -1,10 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-import * as schema from '@mdc/database';
 
 import { DRIZZLE } from '../../database/database.provider';
+import type { DrizzleClient } from '../../database/database.provider';
 import {
   ISettingsRepository,
   RidePreset,
@@ -16,21 +15,29 @@ import {
 export class DrizzleSettingsRepository implements ISettingsRepository {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: LibSQLDatabase<typeof schema>,
+    private readonly drizzle: DrizzleClient,
   ) {}
+
+  private get db() {
+    return this.drizzle.db;
+  }
+
+  private get schema() {
+    return this.drizzle.schema;
+  }
 
   async getRidePresets(userId: string): Promise<RidePreset[]> {
     return this.db
       .select()
-      .from(schema.ridePresets)
-      .where(eq(schema.ridePresets.userId, userId));
+      .from(this.schema.ridePresets)
+      .where(eq(this.schema.ridePresets.userId, userId));
   }
 
   async createRidePreset(
     data: Omit<CreateRidePresetDto, 'id'> & { id?: string },
   ): Promise<RidePreset> {
     const results = await this.db
-      .insert(schema.ridePresets)
+      .insert(this.schema.ridePresets)
       .values({
         ...data,
         id: data.id || randomUUID(),
@@ -42,11 +49,11 @@ export class DrizzleSettingsRepository implements ISettingsRepository {
 
   async deleteRidePreset(userId: string, id: string): Promise<void> {
     await this.db
-      .delete(schema.ridePresets)
+      .delete(this.schema.ridePresets)
       .where(
         and(
-          eq(schema.ridePresets.id, id),
-          eq(schema.ridePresets.userId, userId),
+          eq(this.schema.ridePresets.id, id),
+          eq(this.schema.ridePresets.userId, userId),
         ),
       );
   }
@@ -57,12 +64,12 @@ export class DrizzleSettingsRepository implements ISettingsRepository {
     data: UpdateRidePresetDto,
   ): Promise<RidePreset[]> {
     return this.db
-      .update(schema.ridePresets)
+      .update(this.schema.ridePresets)
       .set(data as any)
       .where(
         and(
-          eq(schema.ridePresets.id, id),
-          eq(schema.ridePresets.userId, userId),
+          eq(this.schema.ridePresets.id, id),
+          eq(this.schema.ridePresets.userId, userId),
         ),
       )
       .returning();

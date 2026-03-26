@@ -1,7 +1,7 @@
 import { DatabaseStrategy } from '../interfaces/database-strategy.interface';
 import { drizzle } from 'drizzle-orm/libsql';
 import { ConfigService } from '@nestjs/config';
-import * as schema from '@mdc/database';
+import { sqliteSchema as schema } from '@mdc/database';
 
 export class SqliteStrategy implements DatabaseStrategy {
   constructor(private readonly configService: ConfigService) {}
