@@ -25,7 +25,7 @@ function RegisterContent() {
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full max-w-md z-10"
             >
-                <div className="glass-card p-8 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl">
+                <div className="auth-card p-8 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl">
                     <div className="mb-8 text-center">
                         <motion.div
                             initial={{ scale: 0.8 }}
@@ -62,7 +62,7 @@ function RegisterContent() {
 
                     <div className="mt-12 pt-8 border-t border-white/5 text-center text-slate-400 text-sm">
                         Já tem uma conta?{" "}
-                        <Link href="/login" className="text-violet-400 font-bold hover:text-violet-300 transition-colors">
+                        <Link href="/login" className="text-blue-400 font-bold hover:text-blue-300 transition-colors">
                             Entrar agora
                         </Link>
                     </div>

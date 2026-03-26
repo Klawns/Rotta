@@ -24,7 +24,7 @@ export default function LoginPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full max-w-md z-10"
             >
-                <div className="glass-card p-8 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl">
+                <div className="auth-card p-8 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl">
                     <div className="mb-8 text-center">
                         <motion.div
                             initial={{ scale: 0.8 }}
