@@ -56,8 +56,7 @@ export function DashboardDesktopView({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch min-h-0">
                 <RecentActivities 
                     key={`activities-${period}`}
-                    rides={stats.rides}
-                    isLoading={isLoading}
+                    period={period}
                     onEditRide={handleEditRide}
                     onDeleteRide={setRideToDelete}
                 />

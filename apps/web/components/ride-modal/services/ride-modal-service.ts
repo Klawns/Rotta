@@ -28,4 +28,9 @@ export const rideModalService = {
     async updateRide(id: string, payload: UpdateRideDTO): Promise<Ride> {
         return ridesService.updateRide(id, payload);
     },
+
+    async getClientBalance(clientId: string): Promise<{ clientBalance: number }> {
+        const response = await apiClient.get<{ clientBalance: number }>(`/clients/${clientId}/balance`);
+        return response;
+    },
 };

@@ -19,7 +19,7 @@
   overflow-x: hidden;
 }
 
-.glass-card {
+.deep-night-bg .glass-card {
   background: var(--deep-card);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);

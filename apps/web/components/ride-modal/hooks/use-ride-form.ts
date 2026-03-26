@@ -29,8 +29,7 @@ export function useRideForm({ isOpen, onClose, onSuccess, clientId, rideToEdit }
 
     const clients = useMemo(() => clientsData?.clients || [], [clientsData]);
     const isLoadingData = isLoadingClients || isLoadingPresets;
-    
-    // Form states
+
     const [selectedClientId, setSelectedClientId] = useState(clientId || "");
     const [value, setValue] = useState<string>("");
     const [location, setLocation] = useState("");
@@ -39,6 +38,15 @@ export function useRideForm({ isOpen, onClose, onSuccess, clientId, rideToEdit }
     const [rideDate, setRideDate] = useState("");
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("PAID");
     const [isCustomValue, setIsCustomValue] = useState(false);
+    const [useBalance, setUseBalance] = useState(false);
+
+    // Query para saldo do cliente selecionado
+    const { data: clientBalanceData } = useQuery({
+        queryKey: ["client-balance", selectedClientId],
+        queryFn: () => rideModalService.getClientBalance(selectedClientId),
+        enabled: isOpen && !!selectedClientId,
+        staleTime: 30000,
+    });
     
     // UI Phase states
     const [currentStep, setCurrentStep] = useState(1);
@@ -57,6 +65,7 @@ export function useRideForm({ isOpen, onClose, onSuccess, clientId, rideToEdit }
         setIsCustomValue(false);
         setPhoto(null);
         setPaymentStatus("PAID");
+        setUseBalance(false);
         setCurrentStep(clientId ? 2 : 1);
     }, [clientId]);
 
@@ -77,6 +86,21 @@ export function useRideForm({ isOpen, onClose, onSuccess, clientId, rideToEdit }
             }
         }
     }, [isOpen, clientId, rideToEdit, user, resetForm]);
+
+    // Auto-seleção de status de pagamento baseado no uso de saldo
+    useEffect(() => {
+        if (useBalance && value) {
+            const rideVal = Number(value);
+            const balance = clientBalanceData?.clientBalance || 0;
+            const debt = Math.max(0, rideVal - balance);
+            
+            if (debt > 0) {
+                setPaymentStatus('PENDING');
+            } else {
+                setPaymentStatus('PAID');
+            }
+        }
+    }, [useBalance, value, clientBalanceData]);
 
     const handleCreateClient = async () => {
         if (!newClientName) return;
@@ -135,6 +159,7 @@ export function useRideForm({ isOpen, onClose, onSuccess, clientId, rideToEdit }
                 status: 'COMPLETED' as RideStatus,
                 paymentStatus,
                 rideDate: rideDate ? toISOFromLocalInput(rideDate) : null,
+                useBalance: useBalance,
             };
 
             if (rideToEdit) {
@@ -217,6 +242,11 @@ export function useRideForm({ isOpen, onClose, onSuccess, clientId, rideToEdit }
         }
     };
 
+    const availableBalance = clientBalanceData?.clientBalance || 0;
+    const rideValueNum = Number(value) || 0;
+    const paidWithBalance = useBalance ? Math.min(availableBalance, rideValueNum) : 0;
+    const debtValue = Math.max(0, rideValueNum - paidWithBalance);
+
     return {
         // Data
         clients,
@@ -241,12 +271,19 @@ export function useRideForm({ isOpen, onClose, onSuccess, clientId, rideToEdit }
         isCustomValue,
         setIsCustomValue,
         
+        // Calculated
+        paidWithBalance,
+        debtValue,
+
         // UI Navigation
         currentStep,
         setCurrentStep,
         isSubmitting,
         nextStep,
         prevStep,
+        useBalance,
+        setUseBalance,
+        availableBalance,
         
         // Client creation
         newClientName,

@@ -11,6 +11,7 @@ export interface Client {
     id: string;
     name: string;
     isPinned?: boolean;
+    balance?: number;
 }
 
 export interface ClientBalance {
@@ -19,6 +20,7 @@ export interface ClientBalance {
     remainingBalance: number;
     pendingRides: number;
     unusedPayments: number;
+    clientBalance: number;
 }
 
 export interface FrequentClient extends Client {
@@ -42,6 +44,8 @@ export interface RideResponseDTO {
     paymentStatus: PaymentStatus;
     rideDate: string;
     createdAt: string;
+    paidWithBalance?: number;
+    debtValue?: number;
     location?: string | null;
     photo?: string | null;
     client: {
@@ -79,6 +83,7 @@ export interface CreateRideDTO {
     status: RideStatus;
     paymentStatus: PaymentStatus;
     rideDate?: string | null;
+    useBalance?: boolean;
 }
 
 export type UpdateRideDTO = Partial<CreateRideDTO>;

@@ -81,7 +81,10 @@ export class PDFService {
         // Stats Summary
         const totalValue = rides.reduce((sum, r) => sum + r.value, 0);
         const totalPaid = rides.filter(r => r.paymentStatus === 'PAID').reduce((sum, r) => sum + r.value, 0);
-        const totalPending = rides.filter(r => r.paymentStatus === 'PENDING').reduce((sum, r) => sum + r.value, 0);
+        const totalPending = rides.reduce((sum, r) => {
+            if (r.paymentStatus !== 'PENDING' || r.status === 'CANCELLED') return sum;
+            return sum + (r.debtValue !== undefined ? r.debtValue : r.value);
+        }, 0);
         const totalRides = rides.length;
 
         doc.setDrawColor(226, 232, 240); // Slate 200
@@ -113,13 +116,20 @@ export class PDFService {
         currentY += 10;
 
         // Table
-        const tableData = rides.map(ride => [
-            format(new Date(ride.rideDate || ride.createdAt), "dd/MM/yy HH:mm"),
-            ride.clientName || ride.client?.name || "---",
-            ride.location || "---",
-            formatCurrency(ride.value),
-            ride.paymentStatus === 'PAID' ? "Pago" : "Pendente"
-        ]);
+        const tableData = rides.map(ride => {
+            const hasBalance = (ride.paidWithBalance ?? 0) > 0;
+            const displayValue = hasBalance 
+                ? `${formatCurrency(ride.value)} (-${formatCurrency(ride.paidWithBalance)})`
+                : formatCurrency(ride.value);
+
+            return [
+                format(new Date(ride.rideDate || ride.createdAt), "dd/MM/yy HH:mm"),
+                ride.clientName || ride.client?.name || "---",
+                ride.location || "---",
+                displayValue,
+                ride.paymentStatus === 'PAID' ? "Pago" : "Pendente"
+            ];
+        });
 
         autoTable(doc, {
             startY: currentY,
@@ -148,7 +158,7 @@ export class PDFService {
         doc.save(fileName);
     }
 
-    static async generateClientDebtReport(client: { name: string; id: string }, rides: any[], payments: any[], balance: { totalDebt: number; totalPaid: number; remainingBalance: number }, options: { userName: string; pixKey?: string }) {
+    static async generateClientDebtReport(client: { name: string; id: string }, rides: any[], payments: any[], balance: { totalDebt: number; totalPaid: number; remainingBalance: number; clientBalance: number }, options: { userName: string; pixKey?: string }) {
         const doc = new jsPDF();
         const { userName, pixKey } = options;
 
@@ -227,7 +237,12 @@ export class PDFService {
         currentY += 7;
         doc.setFont("helvetica", "bold");
         doc.setTextColor(220, 38, 38); // Red 600
-        doc.text(`Saldo restante: ${formatCurrency(balance.remainingBalance)}`, 14, currentY);
+        doc.text(`Dívida em haver: ${formatCurrency(balance.remainingBalance)}`, 14, currentY);
+        
+        currentY += 7;
+        doc.setTextColor(5, 150, 105); // Emerald 600
+        doc.text(`Crédito disponível (Saldo): ${formatCurrency(balance.clientBalance)}`, 14, currentY);
+        
         doc.setFont("helvetica", "normal");
         doc.setTextColor(30, 41, 59);
 
@@ -266,11 +281,18 @@ export class PDFService {
             doc.text("Corridas Pendentes:", 14, currentY);
             currentY += 7;
 
-            const rideTableData = pendingRides.map(ride => [
-                format(new Date(ride.rideDate || ride.createdAt), "dd/MM/yy HH:mm"),
-                ride.location || "---",
-                formatCurrency(ride.value)
-            ]);
+            const rideTableData = pendingRides.map(ride => {
+                const isPartial = (ride.paidWithBalance ?? 0) > 0;
+                const debtVal = ride.debtValue !== undefined ? ride.debtValue : ride.value;
+                
+                return [
+                    format(new Date(ride.rideDate || ride.createdAt), "dd/MM/yy HH:mm"),
+                    ride.location || "---",
+                    isPartial 
+                        ? `${formatCurrency(debtVal)} (Saldo: -${formatCurrency(ride.paidWithBalance)})` 
+                        : formatCurrency(debtVal)
+                ];
+            });
 
             autoTable(doc, {
                 startY: currentY,

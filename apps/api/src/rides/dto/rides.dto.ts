@@ -9,6 +9,7 @@ export const createRideSchema = z.object({
   status: z.enum(['PENDING', 'COMPLETED', 'CANCELLED']).optional().default('COMPLETED'),
   paymentStatus: z.enum(['PENDING', 'PAID']).optional().default('PAID'),
   rideDate: z.string().optional().nullable(),
+  useBalance: z.boolean().optional().default(false),
 });
 
 export type CreateRideDto = z.infer<typeof createRideSchema>;

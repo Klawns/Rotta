@@ -1,12 +1,18 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { RidesService } from './rides.service';
 import { RidesController } from './rides.controller';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { CacheModule } from '../cache/cache.module';
 import { DrizzleRidesRepository } from './repositories/drizzle-rides.repository';
 import { IRidesRepository } from './interfaces/rides-repository.interface';
+import { ClientsModule } from '../clients/clients.module';
 
 @Module({
-  imports: [SubscriptionsModule],
+  imports: [
+    SubscriptionsModule,
+    CacheModule,
+    forwardRef(() => ClientsModule),
+  ],
   providers: [
     RidesService,
     {

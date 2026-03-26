@@ -19,6 +19,8 @@ export class RideMapper {
       paymentStatus: entity.paymentStatus as any,
       rideDate: entity.rideDate ? new Date(entity.rideDate) : null,
       createdAt: new Date(entity.createdAt),
+      paidWithBalance: entity.paidWithBalance ?? 0,
+      debtValue: entity.debtValue ?? 0,
       client: isWithClient && entity.client ? {
         id: entity.client.id,
         name: entity.client.name,

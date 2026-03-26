@@ -54,12 +54,15 @@ export function useExportClientDebt() {
       [{ v: "Total em Corridas", s: labelStyle }, { v: balance.totalDebt, t: 'n', s: currencyStyle }],
       [{ v: "Total Pago (Parcial)", s: labelStyle }, { v: balance.totalPaid, t: 'n', s: currencyStyle }],
       [{ v: "Saldo Devedor Atual", s: { ...labelStyle, font: { ...labelStyle.font, color: { rgb: "DC2626" } } } }, { v: balance.remainingBalance, t: 'n', s: { ...currencyStyle, font: { bold: true, color: { rgb: "DC2626" } } } }],
+      [{ v: "Crédito Disponível (Saldo)", s: { ...labelStyle, font: { ...labelStyle.font, color: { rgb: "10B981" } } } }, { v: balance.clientBalance, t: 'n', s: { ...currencyStyle, font: { bold: true, color: { rgb: "10B981" } } } }],
       [],
-      [{ v: "HISTÓRICO DE CORRIDAS PENDENTES", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }],
+      [{ v: "HISTÓRICO DE CORRIDAS", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }],
       [
         { v: "Data", s: headerStyle },
-        { v: "ID Corrida", s: headerStyle },
-        { v: "Valor", s: headerStyle },
+        { v: "Local", s: headerStyle },
+        { v: "Valor Orig.", s: headerStyle },
+        { v: "Saldo Usado", s: headerStyle },
+        { v: "Dívida Gerada", s: headerStyle },
         { v: "Status", s: headerStyle }
       ]
     ];
@@ -69,8 +72,10 @@ export function useExportClientDebt() {
     // Vou incluir todas as enviadas para o hook.
     const rideRows = rides.map(ride => [
       { v: ride.rideDate ? format(new Date(ride.rideDate), "dd/MM/yy HH:mm") : "---" },
-      { v: String(ride.id).split("-")[0] },
+      { v: ride.location || "---" },
       { v: ride.value, t: 'n', s: currencyStyle },
+      { v: ride.paidWithBalance || 0, t: 'n', s: { ...currencyStyle, font: { color: { rgb: (ride.paidWithBalance || 0) > 0 ? "10B981" : "94A3B8" } } } },
+      { v: ride.debtValue !== undefined ? ride.debtValue : (ride.paymentStatus === 'PENDING' ? ride.value : 0), t: 'n', s: { ...currencyStyle, font: { color: { rgb: "DC2626" }, bold: true } } },
       { v: ride.paymentStatus === 'PAID' ? 'Pago' : 'Pendente', s: { font: { color: { rgb: ride.paymentStatus === 'PAID' ? "10B981" : "F59E0B" }, bold: true } } }
     ]);
 
@@ -80,8 +85,10 @@ export function useExportClientDebt() {
     // Definir larguras de colunas
     ws["!cols"] = [
       { wch: 18 }, // Data
-      { wch: 15 }, // ID
-      { wch: 15 }, // Valor
+      { wch: 25 }, // Local
+      { wch: 15 }, // Valor Orig
+      { wch: 15 }, // Saldo Usado
+      { wch: 15 }, // Divida
       { wch: 12 }  // Status
     ];
 

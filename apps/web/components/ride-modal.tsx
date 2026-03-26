@@ -92,8 +92,8 @@ export function RideModal(props: RideModalProps) {
 
                                 {form.currentStep === 3 && (
                                     <StepPaymentStatus 
-                                        paymentStatus={form.paymentStatus}
-                                        setPaymentStatus={form.setPaymentStatus}
+                                        {...form}
+                                        rideValue={Number(form.value)}
                                     />
                                 )}
 

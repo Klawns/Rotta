@@ -1,9 +1,10 @@
 "use client";
-
+import React from "react";
 import { motion } from "framer-motion";
 import { User, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Client, PaymentStatus } from "@/types/rides";
+import { PaymentComposition } from "@/components/ui/payment-composition";
 
 interface StepReviewProps {
     clients: Client[];
@@ -15,6 +16,9 @@ interface StepReviewProps {
     rideDate?: string;
     notes?: string;
     photo?: string | null;
+    paidWithBalance?: number;
+    debtValue?: number;
+    useBalance?: boolean;
 }
 
 export function StepReview({
@@ -26,7 +30,10 @@ export function StepReview({
     location,
     rideDate,
     notes,
-    photo
+    photo,
+    paidWithBalance = 0,
+    debtValue,
+    useBalance = false
 }: StepReviewProps) {
     const selectedClient = clients.find((c) => c.id === selectedClientId);
 
@@ -52,11 +59,16 @@ export function StepReview({
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 py-2 relative z-10">
-                    <div className="p-4 rounded-3xl bg-secondary/20 border border-border-subtle shadow-inner">
-                        <p className="text-[9px] font-bold text-text-secondary uppercase tracking-widest leading-none mb-2.5 opacity-70">Valor Total</p>
-                        <p className="text-3xl font-display font-extrabold text-text-primary tracking-tighter">
-                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value))}
-                        </p>
+                    <div className="p-4 rounded-3xl bg-secondary/20 border border-border-subtle shadow-inner flex flex-col justify-center">
+                        <p className="text-[9px] font-bold text-text-secondary uppercase tracking-widest leading-none mb-2.5 opacity-70">Valor da Corrida</p>
+                        <PaymentComposition 
+                            totalValue={Number(value)}
+                            paidWithBalance={paidWithBalance}
+                            debtValue={debtValue}
+                            size="md"
+                            showLabel={false}
+                            align="start"
+                        />
                     </div>
                     <div className="p-4 rounded-3xl bg-secondary/20 border border-border-subtle shadow-inner">
                         <p className="text-[9px] font-bold text-text-secondary uppercase tracking-widest leading-none mb-2.5 opacity-70">Pagamento</p>

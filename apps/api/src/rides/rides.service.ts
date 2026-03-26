@@ -2,6 +2,9 @@ import { Injectable, Inject, ForbiddenException, NotFoundException } from '@nest
 import { randomUUID } from 'crypto';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { IRidesRepository } from './interfaces/rides-repository.interface';
+import { IClientsRepository } from '../clients/interfaces/clients-repository.interface';
+import { IBalanceTransactionsRepository } from '../clients/interfaces/balance-transactions-repository.interface';
+import { IClientPaymentsRepository } from '../clients/interfaces/client-payments-repository.interface';
 import { AppLogger } from '../common/utils/logger.singleton';
 import { getDatesFromPeriod } from '../common/utils/date.util';
 import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
@@ -18,6 +21,12 @@ export class RidesService {
     private readonly ridesRepository: IRidesRepository,
     private subscriptionsService: SubscriptionsService,
     @Inject(CACHE_PROVIDER) private readonly cache: ICacheProvider,
+    @Inject(IClientsRepository)
+    private readonly clientsRepository: IClientsRepository,
+    @Inject(IBalanceTransactionsRepository)
+    private readonly balanceTransactionsRepository: IBalanceTransactionsRepository,
+    @Inject(IClientPaymentsRepository)
+    private readonly clientPaymentsRepository: IClientPaymentsRepository,
   ) {}
 
   private async invalidateUserCache(userId: string) {
@@ -76,18 +85,63 @@ export class RidesService {
       );
     }
 
+    let paidWithBalance = 0;
+    const rideTotal = data.value;
+
+    // Lógica de uso de saldo
+    if (data.useBalance) {
+      const client = await this.clientsRepository.findOne(userId, data.clientId);
+      const currentBalance = Number(client?.balance || 0);
+
+      if (currentBalance > 0) {
+        paidWithBalance = Math.min(currentBalance, rideTotal);
+        
+        // Deduzir do saldo do cliente
+        await this.clientsRepository.update(userId, data.clientId, {
+          balance: currentBalance - paidWithBalance,
+        });
+
+        // Registrar transação de débito
+        await this.balanceTransactionsRepository.create({
+          id: randomUUID(),
+          clientId: data.clientId,
+          userId,
+          amount: paidWithBalance,
+          type: 'DEBIT',
+          origin: 'RIDE_USAGE',
+          description: `Uso de saldo para a corrida.`,
+        });
+
+        // Criar registro de pagamento parcial correspondente ao uso do saldo
+        // Isso é importante para manter compatibilidade com o histórico de pagamentos
+        await this.clientPaymentsRepository.create({
+          id: randomUUID(),
+          clientId: data.clientId,
+          userId,
+          amount: paidWithBalance,
+          notes: `Pago com saldo (Abatimento: ${paidWithBalance})`,
+          status: 'UNUSED', // Marcamos como UNUSED para que o cálculo de dívida o considere se necessário
+        });
+      }
+    }
+
+    const debtValue = rideTotal - paidWithBalance;
+    const finalPaymentStatus = debtValue > 0 ? 'PENDING' : 'PAID';
+
     const result = await this.ridesRepository.create({
       id: randomUUID(),
       clientId: data.clientId,
-      value: data.value,
+      value: rideTotal,
+      paidWithBalance,
+      debtValue,
       location: data.location,
       notes: data.notes,
       status: data.status || 'COMPLETED',
-      paymentStatus: data.paymentStatus || 'PAID',
+      paymentStatus: finalPaymentStatus,
       rideDate: data.rideDate ? new Date(data.rideDate) : new Date(),
       photo: data.photo,
       userId,
-    });
+    } as any);
 
     if (result) {
       await this.subscriptionsService.incrementRideCount(userId);

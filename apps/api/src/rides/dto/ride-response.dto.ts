@@ -10,6 +10,8 @@ export const rideResponseSchema = z.object({
   paymentStatus: z.enum(['PENDING', 'PAID']),
   rideDate: z.date().nullable(),
   createdAt: z.date(),
+  paidWithBalance: z.number(),
+  debtValue: z.number(),
   client: z.object({
     id: z.string(),
     name: z.string(),

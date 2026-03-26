@@ -5,6 +5,7 @@ import { Clock, MapPin, FileText, Camera, Pencil, Trash2 } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Ride } from "../types";
 import { DashboardCompactRidesContainer } from "@/components/ui/dashboard-compact-rides-container";
+import { PaymentComposition } from "@/components/ui/payment-composition";
 
 interface RecentRidesListProps {
     rides: Ride[];
@@ -90,9 +91,13 @@ export function RecentRidesList({
                             </div>
                             
                             <div className="flex flex-col items-end gap-2 pr-2">
-                                <span className="text-base font-display font-extrabold text-text-primary tracking-tighter">
-                                    {formatCurrency(r.value)}
-                                </span>
+                                <PaymentComposition 
+                                    totalValue={r.value}
+                                    paidWithBalance={r.paidWithBalance}
+                                    debtValue={r.debtValue}
+                                    compact={true}
+                                    className="items-end"
+                                />
                                 <span className={cn(
                                     "text-[9px] px-2.5 py-1 rounded-lg font-display font-bold uppercase tracking-widest border text-center shadow-sm",
                                     r.paymentStatus === 'PAID'

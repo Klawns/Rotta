@@ -7,6 +7,7 @@ import { formatCurrency, cn } from "@/lib/utils";
 import { HybridInfiniteList } from "@/components/ui/hybrid-infinite-list";
 
 import { Client, Ride, ClientBalance } from "@/types/rides";
+import { PaymentComposition } from "@/components/ui/payment-composition";
 
 interface ClientDetailsDrawerProps {
     client: Client | null;
@@ -156,14 +157,23 @@ export function ClientDetailsDrawer({
                                         <span className="text-icon-brand/80 font-bold uppercase text-[10px] tracking-wider">Total Pago (Parcial)</span>
                                         <span className="text-icon-brand font-black">- {formatCurrency(balance.totalPaid)}</span>
                                     </div>
-                                    <div className="flex justify-between items-center pt-4 border-t border-border-strong">
-                                        <span className="font-black text-text-primary text-xs uppercase tracking-widest opacity-60">Saldo devedor</span>
-                                        <span className={cn(
-                                            "font-black text-2xl tracking-tighter",
-                                            balance.remainingBalance > 0 ? "text-icon-warning" : "text-icon-success"
-                                        )}>
-                                            {formatCurrency(balance.remainingBalance)}
-                                        </span>
+                                    {/* Crédito e Saldo Devedor agrupados abaixo */}
+                                    <div className="flex flex-col gap-3 pt-4 border-t border-border-strong bg-card/30 p-4 rounded-2xl border border-border-subtle">
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-black text-destructive text-[10px] uppercase tracking-widest">Saldo devedor</span>
+                                            <span className="font-black text-xl text-destructive tracking-tight">
+                                                {formatCurrency(balance.remainingBalance)}
+                                            </span>
+                                        </div>
+                                        
+                                        {balance.clientBalance > 0 && (
+                                            <div className="flex justify-between items-center pt-3 border-t border-border-strong/50">
+                                                <span className="font-black text-icon-success text-[10px] uppercase tracking-widest">Crédito Disponível</span>
+                                                <span className="font-black text-xl text-icon-success tracking-tight">
+                                                    {formatCurrency(balance.clientBalance)}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {balance.remainingBalance > 0 && (
@@ -214,9 +224,17 @@ export function ClientDetailsDrawer({
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="text-right flex items-center gap-3">
-                                            <p className="font-extrabold text-text-primary text-lg tracking-tight">{formatCurrency(ride.value)}</p>
-                                            <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="text-right flex flex-col items-end justify-center min-w-[80px]">
+                                            <PaymentComposition 
+                                                size="sm" 
+                                                totalValue={ride.value}
+                                                paidWithBalance={ride.paidWithBalance}
+                                                debtValue={ride.debtValue}
+                                                showLabel={false}
+                                                compact={true}
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 bg-card-background/90 backdrop-blur-sm p-1 rounded-lg">
                                                 <button
                                                     onClick={() => onEditRide(ride)}
                                                     className="p-2 bg-icon-info/10 hover:bg-icon-info text-icon-info hover:text-white rounded-lg transition-all active:scale-90 border border-icon-info/10"
@@ -233,8 +251,7 @@ export function ClientDetailsDrawer({
                                                 </button>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
                             />
                         </section>
                     </div>

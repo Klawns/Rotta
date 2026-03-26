@@ -1,8 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Bike, User, Clock, Calendar, MessageSquare, Trash2, ChevronRight, Settings2 } from "lucide-react";
+import { Bike, User, Clock, Calendar, MessageSquare, Trash2, ChevronRight, Settings2, Wallet } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Ride } from "@/types/rides";
+import { PaymentComposition } from "@/components/ui/payment-composition";
 
 interface RideCardProps {
     ride: Ride;
@@ -27,7 +28,14 @@ export const RideCard = React.memo(({ ride, index, onEdit, onDelete, onTogglePay
                 <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between sm:justify-start gap-2 mb-1">
                         <div className="flex items-center gap-2 min-w-0">
-                            <h4 className="font-display font-extrabold text-text-primary text-base sm:text-lg truncate tracking-tight">Corrida #{ride.id.split("-")[0]}</h4>
+                            <h4 className="font-display font-extrabold text-text-primary text-base sm:text-lg truncate tracking-tight flex items-center gap-2">
+                                Corrida #{ride.id.split("-")[0]}
+                                {Number(ride.paidWithBalance ?? 0) > 0 && (
+                                    <div className="p-1.5 bg-brand/10 border border-brand/20 rounded-lg text-brand" title="Uso de Saldo">
+                                        <Wallet size={12} strokeWidth={3} />
+                                    </div>
+                                )}
+                            </h4>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -44,19 +52,26 @@ export const RideCard = React.memo(({ ride, index, onEdit, onDelete, onTogglePay
                             </button>
                         </div>
                         
-                        {/* Mobile Price & Status Stack */}
-                        <div className="sm:hidden flex flex-col items-end gap-1.5 shrink-0">
-                            <p className="text-lg font-display font-extrabold text-text-primary leading-none tracking-tighter">{formatCurrency(ride.value)}</p>
+                        <div className="sm:hidden flex flex-col items-end shrink-0 pt-0.5">
+                            <PaymentComposition 
+                                size="sm" 
+                                totalValue={ride.value}
+                                paidWithBalance={ride.paidWithBalance}
+                                debtValue={ride.debtValue}
+                                showLabel={false}
+                                compact={true}
+                            />
+
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onTogglePayment(ride);
                                 }}
                                 className={cn(
-                                    "text-[8px] font-bold uppercase tracking-[0.15em] px-2 py-0.5 rounded-full border",
+                                    "text-[8px] font-bold uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border mt-2",
                                     ride.paymentStatus === 'PAID' 
                                         ? "bg-icon-success/10 text-icon-success border-icon-success/20" 
-                                        : "bg-icon-warning/10 text-icon-warning border-icon-warning/20"
+                                        : "bg-icon-warning/20 text-text-primary border-icon-warning/40 shadow-sm"
                                 )}
                             >
                                 {ride.paymentStatus === 'PAID' ? 'Pago' : 'Pendente'}
@@ -71,9 +86,14 @@ export const RideCard = React.memo(({ ride, index, onEdit, onDelete, onTogglePay
                     </div>
                 </div>
 
-                {/* Desktop Price */}
+                {/* Desktop Price & Composition */}
                 <div className="hidden sm:flex text-right flex-col items-end shrink-0 outline-none">
-                    <p className="text-2xl font-display font-extrabold text-text-primary leading-none tracking-tighter">{formatCurrency(ride.value)}</p>
+                    <PaymentComposition 
+                        totalValue={ride.value}
+                        paidWithBalance={ride.paidWithBalance}
+                        debtValue={ride.debtValue}
+                        compact={true}
+                    />
                 </div>
             </div>
 
