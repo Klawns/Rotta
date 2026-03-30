@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument -- Jest execution-context mocks are intentionally partial. */
 import {
+  BadRequestException,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -116,5 +117,20 @@ describe('GoogleCallbackGuard', () => {
     });
 
     parentCanActivate.mockRestore();
+  });
+
+  it('should translate passport callback errors into bad request errors', () => {
+    expect(() =>
+      guard.handleRequest(
+        new Error('Failed to obtain access token'),
+        undefined,
+      ),
+    ).toThrow(BadRequestException);
+  });
+
+  it('should reject callbacks without authenticated users', () => {
+    expect(() => guard.handleRequest(null, undefined, 'invalid state')).toThrow(
+      UnauthorizedException,
+    );
   });
 });

@@ -1,6 +1,8 @@
 import {
+  BadRequestException,
   ExecutionContext,
   Injectable,
+  Logger,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -22,6 +24,8 @@ type GoogleCallbackRequest = {
 
 @Injectable()
 export class GoogleCallbackGuard extends AuthGuard('google') {
+  private readonly logger = new Logger(GoogleCallbackGuard.name);
+
   constructor(
     private readonly googleOAuthStateService: GoogleOAuthStateService,
     private readonly configService: ConfigService,
@@ -57,5 +61,38 @@ export class GoogleCallbackGuard extends AuthGuard('google') {
     request.googleOAuthFlow = flow;
 
     return super.canActivate(context) as Promise<boolean>;
+  }
+
+  handleRequest<TUser = unknown>(
+    err: unknown,
+    user: TUser,
+    info?: unknown,
+  ): TUser {
+    if (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(
+        `Falha ao concluir o callback do Google. Verifique GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e GOOGLE_CALLBACK_URL. Motivo: ${message}`,
+        err instanceof Error ? err.stack : undefined,
+      );
+
+      throw new BadRequestException('Falha ao concluir autenticação com Google.');
+    }
+
+    if (!user) {
+      const message =
+        info instanceof Error
+          ? info.message
+          : typeof info === 'string'
+            ? info
+            : 'usuario ausente no retorno do Passport';
+
+      this.logger.warn(
+        `Google OAuth rejeitado sem usuario autenticado. Motivo: ${message}`,
+      );
+
+      throw new UnauthorizedException('Falha ao autenticar com Google.');
+    }
+
+    return user;
   }
 }
