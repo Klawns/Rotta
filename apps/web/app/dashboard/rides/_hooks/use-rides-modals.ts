@@ -1,17 +1,21 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { parseApiError } from "@/lib/api-error";
 import { ridesService } from "@/services/rides-service";
 import { Ride } from "@/types/rides";
 
 interface UseRidesModalsProps {
-    onSuccess: () => Promise<void>;
+    onSuccess: () => Promise<unknown> | void;
 }
 
 export function useRidesModals({ onSuccess }: UseRidesModalsProps) {
     const [isRideModalOpen, setIsRideModalOpen] = useState(false);
-    const [selectedQuickClient, setSelectedQuickClient] = useState<{ id: string, name: string } | null>(null);
+    const [selectedQuickClient, setSelectedQuickClient] = useState<{
+        id: string;
+        name: string;
+    } | null>(null);
     const [rideToEdit, setRideToEdit] = useState<Ride | null>(null);
     const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -23,28 +27,33 @@ export function useRidesModals({ onSuccess }: UseRidesModalsProps) {
     }, []);
 
     const handleDeleteRide = useCallback(async () => {
-        if (!rideToDelete) return;
+        if (!rideToDelete) {
+            return;
+        }
 
         setIsDeleting(true);
+
         try {
             await ridesService.deleteRide(rideToDelete.id);
             toast({
-                title: "Corrida excluída",
+                title: "Corrida excluida",
                 description: "A corrida foi removida com sucesso.",
             });
             await onSuccess();
             setRideToDelete(null);
-        } catch (err) {
-            console.error("Erro ao excluir corrida", err);
+        } catch (error) {
             toast({
                 title: "Erro ao excluir",
-                description: "Não foi possível excluir a corrida. Tente novamente.",
+                description: parseApiError(
+                    error,
+                    "Nao foi possivel excluir a corrida. Tente novamente.",
+                ),
                 variant: "destructive",
             });
         } finally {
             setIsDeleting(false);
         }
-    }, [rideToDelete, toast, onSuccess]);
+    }, [onSuccess, rideToDelete, toast]);
 
     const openCreateModal = useCallback(() => {
         setRideToEdit(null);
@@ -78,6 +87,6 @@ export function useRidesModals({ onSuccess }: UseRidesModalsProps) {
         handleDeleteRide,
         openCreateModal,
         openQuickCreateModal,
-        closeRideModal
+        closeRideModal,
     };
 }

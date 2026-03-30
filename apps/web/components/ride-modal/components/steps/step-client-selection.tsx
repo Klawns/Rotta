@@ -17,6 +17,13 @@ interface StepClientSelectionProps {
     setNewClientName: (name: string) => void;
     handleCreateClient: () => Promise<void>;
     isLoadingData: boolean;
+    isSubmittingClient?: boolean;
+}
+
+type ClientGridItem = Client | { kind: "create" };
+
+function isCreateButton(item: ClientGridItem): item is { kind: "create" } {
+    return "kind" in item;
 }
 
 export function StepClientSelection({
@@ -29,8 +36,14 @@ export function StepClientSelection({
     newClientName,
     setNewClientName,
     handleCreateClient,
-    isLoadingData
+    isLoadingData,
+    isSubmittingClient = false,
 }: StepClientSelectionProps) {
+    const gridItems: ClientGridItem[] = [
+        ...[...clients.filter(Boolean)].sort((a, b) => (a.isPinned === b.isPinned ? 0 : a.isPinned ? -1 : 1)),
+        { kind: "create" },
+    ];
+
     return (
         <motion.div
             key="step1"
@@ -47,17 +60,14 @@ export function StepClientSelection({
             </div>
 
             <DashboardClientGridContainer
-                items={[
-                    ...[...clients.filter(Boolean)].sort((a, b) => (a.isPinned === b.isPinned ? 0 : a.isPinned ? -1 : 1)),
-                    { isNewButton: true } as any
-                ]}
+                items={gridItems}
                 maxHeight="40vh"
                 gap={16}
                 isLoading={isLoadingData}
                 renderItem={(row) => (
                     <div className="grid grid-cols-3 gap-4 w-full">
-                        {row.map((item: any) => {
-                            if ('isNewButton' in item) {
+                        {row.map((item) => {
+                            if (isCreateButton(item)) {
                                 return (
                                     <button
                                         key="new-button"
@@ -71,7 +81,7 @@ export function StepClientSelection({
                                 );
                             }
 
-                            const client = item as Client;
+                            const client = item;
                             const isSelected = selectedClientId === client.id;
 
                             return (
@@ -149,10 +159,10 @@ export function StepClientSelection({
                             <button
                                 type="button"
                                 onClick={handleCreateClient}
-                                disabled={!newClientName || isLoadingData}
+                                disabled={!newClientName || isSubmittingClient}
                                  className="w-full bg-button-primary hover:bg-button-primary-hover text-button-primary-foreground font-bold py-4 rounded-2xl shadow-lg shadow-button-shadow active:scale-95 transition-all disabled:opacity-50 uppercase tracking-widest text-xs"
                             >
-                                {isLoadingData ? "CADASTRANDO..." : "CADASTRAR E CONTINUAR"}
+                                {isSubmittingClient ? "CADASTRANDO..." : "CADASTRAR E CONTINUAR"}
                             </button>
                         </div>
                     </motion.div>

@@ -1,97 +1,155 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-
-import { api, apiClient } from "@/services/api";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { authKeys } from "@/lib/query-keys";
+import { authService } from "@/services/auth-service";
+import { apiClient } from "@/services/api";
+import { useCurrentUserQuery } from "@/hooks/auth/use-current-user-query";
+import { resetAuthQueryCache } from "@/hooks/auth/reset-auth-query-cache";
+import { useSessionResumeRevalidation } from "@/hooks/auth/use-session-resume-revalidation";
+import { useUnauthorizedRedirect } from "@/hooks/auth/use-unauthorized-redirect";
+import { resolveSessionMode, setSessionMode } from "@/services/api-session";
 
 export interface User {
-    id: string;
-    email: string;
-    name: string;
-    role: "admin" | "user";
-    taxId?: string;
-    cellphone?: string;
-    hasSeenTutorial: boolean;
-    subscription?: {
-        plan: "starter" | "premium" | "lifetime";
-        status: "active" | "inactive" | "canceled" | "trial" | "expired";
-        validUntil: string | null;
-        rideCount?: number;
-    } | null;
+  id: string;
+  email: string;
+  name: string;
+  role: "admin" | "user";
+  taxId?: string;
+  cellphone?: string;
+  hasSeenTutorial: boolean;
+  subscription?: {
+    plan: "starter" | "premium" | "lifetime";
+    status: "active" | "inactive" | "canceled" | "trial" | "expired" | "invalid";
+    trialStartedAt?: string | null;
+    trialEndsAt?: string | null;
+    trialDaysRemaining?: number;
+    isTrialExpiringSoon?: boolean;
+    validUntil: string | null;
+    rideCount?: number;
+  } | null;
 }
 
 interface AuthContextType {
-    user: User | null;
-    isAuthenticated: boolean;
-    login: (user: User, redirectTo?: string) => void;
-    updateUser: (user: User) => void;
-    logout: () => void;
-    verify: () => Promise<User | null>;
-    isLoading: boolean;
+  user: User | null;
+  isAuthenticated: boolean;
+  login: (user: User, redirectTo?: string) => void;
+  updateUser: (user: User) => void;
+  logout: () => void;
+  verify: () => Promise<User | null>;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const router = useRouter();
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+  const [isSessionModeReady, setIsSessionModeReady] = useState(false);
+  const sessionMode = resolveSessionMode(pathname);
+  const { data: user = null, isLoading: isUserLoading, refetch } =
+    useCurrentUserQuery({
+      enabled: isSessionModeReady,
+    });
 
-    const fetchProfile = async () => {
-        try {
-            const data = await apiClient.get<User>("/auth/me", { _skipRedirect: true } as any);
-            setUser(data);
-            return data;
-        } catch (error) {
-            setUser(null);
-            return null;
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  useLayoutEffect(() => {
+    setIsSessionModeReady(false);
+    setSessionMode(sessionMode);
+    queryClient.removeQueries({ queryKey: authKeys.user(), exact: true });
+    setIsSessionModeReady(true);
+  }, [queryClient, sessionMode]);
 
-    useEffect(() => {
-        fetchProfile();
-    }, []);
+  const isLoading = !isSessionModeReady || isUserLoading;
 
-    const login = (userData: User, redirectTo?: string) => {
-        setUser(userData);
-        // Usamos window.location.href para garantir que o Safari sincronize os cookies 
-        // antes do Middleware interceptar a próxima requisição.
-        window.location.href = redirectTo || "/dashboard";
-    };
+  const logoutMutation = useMutation({
+    mutationFn: () => apiClient.post("/auth/logout"),
+    onSettled: () => {
+      authService.resetRedirectLock();
+      resetAuthQueryCache(queryClient);
+      router.replace("/login");
+    },
+  });
 
-    const updateUser = (userData: User) => {
-        setUser(userData);
-    };
+  useEffect(() => {
+    if (user) {
+      authService.resetRedirectLock();
+    }
+  }, [user]);
 
-    const logout = async () => {
-        try {
-            await apiClient.post("/auth/logout");
-        } catch (error) {
-            console.error("Erro ao fazer logout:", error);
-        } finally {
-            setUser(null);
-            router.push("/login");
-        }
-    };
+  useUnauthorizedRedirect({
+    pathname,
+    search: searchParams.toString(),
+    queryClient,
+    replace: router.replace,
+  });
 
-    const verify = async () => {
-        return fetchProfile();
-    };
+  const login = useCallback(
+    (userData: User, redirectTo?: string) => {
+      authService.resetRedirectLock();
+      queryClient.setQueryData(authKeys.user(), userData);
+      router.replace(redirectTo || "/dashboard");
+    },
+    [queryClient, router],
+  );
 
-    return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, updateUser, logout, verify, isLoading }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  const updateUser = useCallback(
+    (userData: User) => {
+      queryClient.setQueryData(authKeys.user(), userData);
+    },
+    [queryClient],
+  );
+
+  const logout = useCallback(() => {
+    logoutMutation.mutate();
+  }, [logoutMutation]);
+
+  const verify = useCallback(async () => {
+    const { data } = await refetch();
+    return data ?? null;
+  }, [refetch]);
+
+  useSessionResumeRevalidation({
+    pathname,
+    sessionMode,
+    isSessionModeReady,
+    revalidate: verify,
+  });
+
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      login,
+      updateUser,
+      logout,
+      verify,
+      isLoading,
+    }),
+    [user, login, updateUser, logout, verify, isLoading],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth deve ser usado dentro de um AuthProvider");
-    }
-    return context;
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth deve ser usado dentro de um AuthProvider");
+  }
+
+  return context;
 };

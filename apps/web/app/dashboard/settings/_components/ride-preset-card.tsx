@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { MapPin, Pencil, Trash2, Tag } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { RidePreset } from "@/types/settings";
 
 interface RidePresetCardProps {
-    preset: any;
-    onEdit: (preset: any) => void;
-    onDelete: (id: string) => void;
+    preset: RidePreset;
+    onEdit: (preset: RidePreset) => void;
+    onDelete: (id: string) => Promise<boolean>;
 }
 
 export function RidePresetCard({ preset, onEdit, onDelete }: RidePresetCardProps) {

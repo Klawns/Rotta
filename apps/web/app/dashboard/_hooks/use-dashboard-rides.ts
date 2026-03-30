@@ -1,63 +1,39 @@
 "use client";
 
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { api, apiClient } from "@/services/api";
-import { Ride } from "@/types/rides";
+import { useCallback } from "react";
+import { useDashboardRideDialogState } from "./use-dashboard-ride-dialog-state";
+import { useDeleteDashboardRide } from "./use-delete-dashboard-ride";
 
 interface UseDashboardRidesProps {
     onRideDeleted?: () => void;
 }
 
-/**
- * Hook especializado para ações relacionadas a corridas (edição e exclusão).
- */
 export function useDashboardRides({ onRideDeleted }: UseDashboardRidesProps = {}) {
-    const { toast } = useToast();
-    const [isRideModalOpen, setIsRideModalOpen] = useState(false);
-    const [rideToEdit, setRideToEdit] = useState<Ride | null>(null);
-    const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
-    const [isDeletingRide, setIsDeletingRide] = useState(false);
+    const dialogs = useDashboardRideDialogState();
+    const { deleteRide, isDeletingRide } = useDeleteDashboardRide({
+        onDeleted: onRideDeleted,
+        onSuccess: () => {
+            dialogs.setRideToDelete(null);
+        },
+    });
 
-    const handleEditRide = (ride: Ride) => {
-        setRideToEdit(ride);
-        setIsRideModalOpen(true);
-    };
-
-    const handleDeleteRide = async () => {
-        if (!rideToDelete) return;
-        
-        setIsDeletingRide(true);
-        try {
-            await apiClient.delete(`/rides/${rideToDelete.id}`);
-            toast({ title: "Corrida excluída com sucesso" });
-            
-            if (onRideDeleted) {
-                onRideDeleted();
-            }
-            
-            setRideToDelete(null);
-        } catch (err) {
-            console.error("[DashboardRides] Erro ao excluir corrida:", err);
-            toast({ 
-                title: "Erro ao excluir corrida", 
-                description: "Não foi possível completar a ação. Tente novamente.",
-                variant: "destructive" 
-            });
-        } finally {
-            setIsDeletingRide(false);
+    const handleDeleteRide = useCallback(async () => {
+        if (!dialogs.rideToDelete) {
+            return;
         }
-    };
+
+        deleteRide(dialogs.rideToDelete.id);
+    }, [deleteRide, dialogs.rideToDelete]);
 
     return {
-        isRideModalOpen,
-        setIsRideModalOpen,
-        rideToEdit,
-        setRideToEdit,
-        rideToDelete,
-        setRideToDelete,
+        isRideModalOpen: dialogs.isRideModalOpen,
+        setIsRideModalOpen: dialogs.setIsRideModalOpen,
+        rideToEdit: dialogs.rideToEdit,
+        setRideToEdit: dialogs.setRideToEdit,
+        rideToDelete: dialogs.rideToDelete,
+        setRideToDelete: dialogs.setRideToDelete,
         isDeletingRide,
-        handleEditRide,
-        handleDeleteRide
+        handleEditRide: dialogs.handleEditRide,
+        handleDeleteRide,
     };
 }

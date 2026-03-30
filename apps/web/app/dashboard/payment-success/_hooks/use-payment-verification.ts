@@ -19,56 +19,89 @@ export function usePaymentVerification({
     const [attempts, setAttempts] = useState(0);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isMounted = useRef(true);
+    const checkPaymentStatusRef = useRef<() => Promise<void>>(async () => {});
+
+    const clearPendingTimeout = useCallback(() => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+    }, []);
+
+    const scheduleVerification = useCallback((delayMs: number) => {
+        clearPendingTimeout();
+        timeoutRef.current = setTimeout(() => {
+            void checkPaymentStatusRef.current();
+        }, delayMs);
+    }, [clearPendingTimeout]);
 
     const checkPaymentStatus = useCallback(async () => {
         try {
             const refreshedUser = await verify();
 
-            if (!isMounted.current) return;
+            if (!isMounted.current) {
+                return;
+            }
 
-            // Se o plano não for mais starter e estiver ativo, sucesso!
             if (
                 refreshedUser?.subscription?.plan !== "starter" &&
                 refreshedUser?.subscription?.status === "active"
             ) {
+                clearPendingTimeout();
                 setStatus("success");
                 return;
             }
 
-            // Se ainda for starter, incrementa tentativas
             setAttempts((prev) => {
                 const nextAttempts = prev + 1;
+
                 if (nextAttempts < maxAttempts) {
-                    timeoutRef.current = setTimeout(checkPaymentStatus, intervalMs);
+                    scheduleVerification(intervalMs);
                 } else {
+                    clearPendingTimeout();
                     setStatus("delay");
                 }
+
                 return nextAttempts;
             });
-        } catch (err) {
-            console.error("Erro ao verificar status:", err);
-            if (isMounted.current) setStatus("error");
+        } catch {
+            if (!isMounted.current) {
+                return;
+            }
+
+            clearPendingTimeout();
+            setStatus("error");
         }
-    }, [verify, maxAttempts, intervalMs]);
+    }, [verify, maxAttempts, intervalMs, clearPendingTimeout, scheduleVerification]);
+
+    useEffect(() => {
+        checkPaymentStatusRef.current = checkPaymentStatus;
+    }, [checkPaymentStatus]);
+
+    const retry = useCallback(() => {
+        if (!isMounted.current) {
+            return;
+        }
+
+        setAttempts(0);
+        setStatus("verifying");
+        scheduleVerification(initialDelayMs);
+    }, [initialDelayMs, scheduleVerification]);
 
     useEffect(() => {
         isMounted.current = true;
-        timeoutRef.current = setTimeout(checkPaymentStatus, initialDelayMs);
+        scheduleVerification(initialDelayMs);
 
         return () => {
             isMounted.current = false;
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            clearPendingTimeout();
         };
-    }, [checkPaymentStatus, initialDelayMs]);
+    }, [initialDelayMs, scheduleVerification, clearPendingTimeout]);
 
     return {
         status,
         attempts,
         maxAttempts,
-        retry: () => {
-            setAttempts(0);
-            setStatus("verifying");
-            checkPaymentStatus();
-        },
+        retry,
     };
 }

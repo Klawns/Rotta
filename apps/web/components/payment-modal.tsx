@@ -1,140 +1,189 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { X, DollarSign, CheckCircle2 } from "lucide-react";
-import { api, apiClient } from "@/services/api";
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { CheckCircle2, DollarSign, X } from 'lucide-react';
+import { toast } from 'sonner';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from "@/components/ui/dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { parseApiError } from '@/lib/api-error';
+import { clientKeys, financeKeys, rideKeys } from '@/lib/query-keys';
+import { clientsService } from '@/services/clients-service';
+import { type CreateClientPaymentInput } from '@/types/client-payments';
 
 interface PaymentModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSuccess: () => void;
-    clientId: string;
-    clientName: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  clientId: string;
+  clientName: string;
 }
 
-export function PaymentModal({ isOpen, onClose, onSuccess, clientId, clientName }: PaymentModalProps) {
-    const [amount, setAmount] = useState<string>("");
-    const [notes, setNotes] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
+interface PaymentModalFormProps extends Omit<PaymentModalProps, 'isOpen'> {}
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!clientId || !amount) return;
+function PaymentModalForm({
+  onClose,
+  onSuccess,
+  clientId,
+  clientName,
+}: PaymentModalFormProps) {
+  const [amount, setAmount] = useState('');
+  const [notes, setNotes] = useState('');
+  const queryClient = useQueryClient();
 
-        setIsSubmitting(true);
-        try {
-            await apiClient.post(`/clients/${clientId}/payments`, {
-                amount: Number(amount),
-                notes: notes || undefined,
-            });
+  const mutation = useMutation({
+    mutationFn: (payload: CreateClientPaymentInput) =>
+      clientsService.addClientPayment(clientId, payload),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: clientKeys.all }),
+        queryClient.invalidateQueries({ queryKey: rideKeys.all }),
+        queryClient.invalidateQueries({ queryKey: financeKeys.all }),
+      ]);
 
-            setAmount("");
-            setNotes("");
-            onSuccess();
-            onClose();
-        } catch (err) {
-            alert("Erro ao registrar pagamento. Tente novamente.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+      toast.success('Pagamento registrado com sucesso.');
+      onSuccess();
+      onClose();
+    },
+    onError: (error) => {
+      toast.error(
+        parseApiError(error, 'Erro ao registrar pagamento. Tente novamente.'),
+      );
+    },
+  });
 
-    return (
-        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent showCloseButton={false} className="bg-modal-background border-border p-0 overflow-hidden sm:rounded-[2.5rem] w-[calc(100%-2rem)] max-w-lg sm:max-w-[480px] gap-0 shadow-2xl">
-                <DialogHeader className="sr-only">
-                    <DialogTitle>Registrar Pagamento Parcial</DialogTitle>
-                    <DialogDescription>
-                        Informe o valor pago pelo cliente {clientName}.
-                    </DialogDescription>
-                </DialogHeader>
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-                <div className="flex flex-col relative">
-                    <button
-                        onClick={onClose}
-                        className="absolute right-6 top-6 sm:right-10 sm:top-10 z-20 p-2.5 bg-secondary/10 hover:bg-secondary/20 rounded-xl text-text-secondary hover:text-text-primary transition-all active:scale-95 group border border-border-subtle shadow-lg"
-                        title="Fechar"
-                    >
-                        <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-                    </button>
+    if (!clientId || !amount) {
+      return;
+    }
 
-                    <div className="px-6 sm:px-10 pt-8 sm:pt-12 pb-8">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="h-12 w-12 bg-icon-info/10 rounded-2xl flex items-center justify-center text-icon-info font-black shadow-inner border border-icon-info/10">
-                                <DollarSign size={24} />
-                            </div>
-                            <div>
-                                <h2 className="text-xl sm:text-2xl font-black text-text-primary tracking-tighter leading-none">
-                                    Registrar Pagamento
-                                </h2>
-                                <p className="text-text-secondary text-[10px] sm:text-xs mt-1.5 uppercase tracking-[0.2em] font-bold opacity-70">
-                                    Pagamento Parcial / Antecipado
-                                </p>
-                            </div>
-                        </div>
+    mutation.mutate({
+      amount: Number(amount),
+      notes: notes.trim() || undefined,
+    });
+  };
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="space-y-3 bg-background/30 p-4 rounded-2xl border border-border-subtle mb-6">
-                                <p className="text-[9px] font-black text-text-secondary uppercase tracking-widest leading-none mb-0.5">Cliente</p>
-                                <p className="text-text-primary font-bold">{clientName}</p>
-                            </div>
+  return (
+    <div className="relative flex flex-col">
+      <button
+        onClick={onClose}
+        className="group absolute right-6 top-6 z-20 rounded-xl border border-border-subtle bg-secondary/10 p-2.5 text-text-secondary shadow-lg transition-all hover:bg-secondary/20 hover:text-text-primary sm:right-10 sm:top-10"
+        title="Fechar"
+      >
+        <X size={20} className="transition-transform duration-300 group-hover:rotate-90" />
+      </button>
 
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] pl-1">
-                                    Valor do Pagamento
-                                </label>
-                                <div className="relative group">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary font-black text-base">R$</span>
-                                    <input
-                                        autoFocus
-                                        type="number"
-                                        step="0.01"
-                                        value={amount}
-                                        onChange={(e) => setAmount(e.target.value)}
-                                        placeholder="0,00"
-                                        className="w-full bg-background/50 border border-border-subtle rounded-2xl py-4 pl-12 pr-4 text-text-primary text-xl font-black focus:outline-none focus:border-primary/50 transition-all placeholder:text-text-muted"
-                                    />
-                                </div>
-                            </div>
+      <div className="px-6 pt-8 pb-8 sm:px-10 sm:pt-12">
+        <div className="mb-8 flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-icon-info/10 bg-icon-info/10 font-black text-icon-info shadow-inner">
+            <DollarSign size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black leading-none tracking-tighter text-text-primary sm:text-2xl">
+              Registrar Pagamento
+            </h2>
+            <p className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary opacity-70 sm:text-xs">
+              Pagamento Parcial / Antecipado
+            </p>
+          </div>
+        </div>
 
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] pl-1">
-                                    Observações (opcional)
-                                </label>
-                                <textarea
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="Ex: Pagou em dinheiro, via Pix..."
-                                    rows={3}
-                                    className="w-full bg-background/50 border border-border-subtle rounded-[2rem] py-5 px-6 text-text-primary focus:outline-none focus:border-primary/50 transition-all resize-none placeholder:text-text-muted text-sm font-bold"
-                                />
-                            </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="mb-6 space-y-3 rounded-2xl border border-border-subtle bg-background/30 p-4">
+            <p className="mb-0.5 text-[9px] font-black uppercase tracking-widest leading-none text-text-secondary">
+              Cliente
+            </p>
+            <p className="font-bold text-text-primary">{clientName}</p>
+          </div>
 
-                            <button
-                                type="submit"
-                                disabled={isSubmitting || !amount}
-                                className="w-full h-14 bg-button-primary hover:bg-button-primary-hover text-button-primary-foreground font-black rounded-2xl shadow-lg shadow-button-shadow flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-50 mt-4"
-                            >
-                                {isSubmitting ? (
-                                    <div className="h-6 w-6 border-[3px] border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></div>
-                                ) : (
-                                    <>
-                                        CONFIRMAR PAGAMENTO
-                                        <CheckCircle2 size={24} />
-                                    </>
-                                )}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
-    );
+          <div className="space-y-4">
+            <label className="pl-1 text-[10px] font-black uppercase tracking-[0.2em] text-text-secondary">
+              Valor do Pagamento
+            </label>
+            <div className="group relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base font-black text-text-secondary">
+                R$
+              </span>
+              <input
+                autoFocus
+                type="number"
+                step="0.01"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                placeholder="0,00"
+                className="w-full rounded-2xl border border-border-subtle bg-background/50 py-4 pl-12 pr-4 text-xl font-black text-text-primary transition-all placeholder:text-text-muted focus:border-primary/50 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <label className="pl-1 text-[10px] font-black uppercase tracking-[0.2em] text-text-secondary">
+              Observações (opcional)
+            </label>
+            <textarea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Ex: Pagou em dinheiro, via Pix..."
+              rows={3}
+              className="w-full resize-none rounded-[2rem] border border-border-subtle bg-background/50 py-5 px-6 text-sm font-bold text-text-primary transition-all placeholder:text-text-muted focus:border-primary/50 focus:outline-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={mutation.isPending || !amount}
+            className="mt-4 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-button-primary font-black text-button-primary-foreground shadow-lg shadow-button-shadow transition-all active:scale-[0.98] hover:bg-button-primary-hover disabled:opacity-50"
+          >
+            {mutation.isPending ? (
+              <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-primary-foreground/30 border-t-primary-foreground" />
+            ) : (
+              <>
+                CONFIRMAR PAGAMENTO
+                <CheckCircle2 size={24} />
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export function PaymentModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  clientId,
+  clientName,
+}: PaymentModalProps) {
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        className="w-[calc(100%-2rem)] max-w-lg gap-0 overflow-hidden border-border bg-modal-background p-0 shadow-2xl sm:max-w-[480px] sm:rounded-[2.5rem]"
+      >
+        <DialogHeader className="sr-only">
+          <DialogTitle>Registrar Pagamento Parcial</DialogTitle>
+          <DialogDescription>
+            Informe o valor pago pelo cliente {clientName}.
+          </DialogDescription>
+        </DialogHeader>
+
+        <PaymentModalForm
+          key={`${clientId || 'empty'}:${isOpen ? 'open' : 'closed'}`}
+          onClose={onClose}
+          onSuccess={onSuccess}
+          clientId={clientId}
+          clientName={clientName}
+        />
+      </DialogContent>
+    </Dialog>
+  );
 }

@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { ClientDetailsDrawer } from "@/components/client-details-drawer";
 
 // Services & Types
-import { Client, Ride } from "@/types/rides";
+import { Client } from "@/types/rides";
 
 // Hooks
 import { useClients } from "./_hooks/use-clients";
 import { useClientActions } from "./_hooks/use-client-actions";
 import { useClientDetailsData } from "./_hooks/use-client-details-data";
+import { useClientsPageState } from "./_hooks/use-clients-page-state";
 
 // Components
 import { ClientHeader } from "./_components/client-header";
@@ -23,49 +23,20 @@ export default function ClientsPage() {
         hasNextPage, isFetchingNextPage, fetchNextPage, total, fetchClients 
     } = useClients();
     
-    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+    const state = useClientsPageState();
     
     const {
         rides, balance, isLoading: isDetailsLoading,
         hasNextPage: hasNextRidesPage,
         isFetchingNextPage: isFetchingNextRidesPage,
         fetchNextPage: fetchNextRidesPage,
-        rideTotal,
         refreshDetails, generatePDF, generateExcel
-    } = useClientDetailsData(selectedClient);
+    } = useClientDetailsData(state.selectedClient);
 
     const {
         isSettling, isDeleting, isDeletingRide,
         togglePin, closeDebt, deleteClient, deleteRide
     } = useClientActions();
-
-    // Modal Visibility States
-    const [isRideModalOpen, setIsRideModalOpen] = useState(false);
-    const [isClientModalOpen, setIsClientModalOpen] = useState(false);
-    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-    const [isCloseDebtConfirmOpen, setIsCloseDebtConfirmOpen] = useState(false);
-    
-    // Editing/Deleting States
-    const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
-    const [rideToEdit, setRideToEdit] = useState<any | null>(null);
-    const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
-
-    // Handlers
-    const handleNewClient = () => {
-        setClientToEdit(null);
-        setIsClientModalOpen(true);
-    };
-
-    const handleEditClient = (client: Client) => {
-        setClientToEdit(client);
-        setIsClientModalOpen(true);
-    };
-
-    const handleEditRide = (ride: any) => {
-        setRideToEdit(ride);
-        setIsRideModalOpen(true);
-    };
 
     const handlePinClient = async (client: Client) => {
         const success = await togglePin(client.id, !!client.isPinned);
@@ -73,36 +44,36 @@ export default function ClientsPage() {
     };
 
     const onConfirmDeleteClient = async () => {
-        if (!selectedClient) return;
-        const success = await deleteClient(selectedClient.id);
+        if (!state.selectedClient) return;
+        const success = await deleteClient(state.selectedClient.id);
         if (success) {
-            setSelectedClient(null);
+            state.setSelectedClient(null);
             fetchClients();
-            setIsDeleteConfirmOpen(false);
+            state.setIsDeleteConfirmOpen(false);
         }
     };
 
     const onConfirmCloseDebt = async () => {
-        if (!selectedClient) return;
-        const success = await closeDebt(selectedClient.id);
+        if (!state.selectedClient) return;
+        const success = await closeDebt(state.selectedClient.id);
         if (success) {
             refreshDetails();
-            setIsCloseDebtConfirmOpen(false);
+            state.setIsCloseDebtConfirmOpen(false);
         }
     };
 
     const onConfirmDeleteRide = async () => {
-        if (!rideToDelete) return;
-        const success = await deleteRide(rideToDelete.id);
+        if (!state.rideToDelete) return;
+        const success = await deleteRide(state.rideToDelete.id);
         if (success) {
-            setRideToDelete(null);
+            state.setRideToDelete(null);
             refreshDetails();
         }
     };
 
     return (
         <div className="space-y-8 pb-20">
-            <ClientHeader onNewClient={handleNewClient} />
+            <ClientHeader onNewClient={state.openNewClientModal} />
 
             <ClientListSection 
                 clients={clients}
@@ -114,17 +85,14 @@ export default function ClientsPage() {
                 isFetchingNextPage={isFetchingNextPage}
                 onLoadMore={fetchNextPage}
                 total={total}
-                onEdit={handleEditClient}
+                onEdit={state.openEditClientModal}
                 onPin={handlePinClient}
-                onQuickRide={(client) => {
-                    setSelectedClient(client);
-                    setIsRideModalOpen(true);
-                }}
-                onViewHistory={setSelectedClient}
+                onQuickRide={state.openQuickRideModal}
+                onViewHistory={state.openClientHistory}
             />
 
             <ClientDetailsDrawer
-                client={selectedClient}
+                client={state.selectedClient}
                 rides={rides}
                 balance={balance}
                 isLoading={isDetailsLoading}
@@ -133,42 +101,36 @@ export default function ClientsPage() {
                 fetchNextPage={fetchNextRidesPage}
                 isSettling={isSettling}
                 isDeleting={isDeleting}
-                onClose={() => setSelectedClient(null)}
-                onNewRide={() => setIsRideModalOpen(true)}
-                onCloseDebt={() => setIsCloseDebtConfirmOpen(true)}
-                onAddPayment={() => setIsPaymentModalOpen(true)}
+                onClose={() => state.setSelectedClient(null)}
+                onNewRide={() => state.setIsRideModalOpen(true)}
+                onCloseDebt={() => state.setIsCloseDebtConfirmOpen(true)}
+                onAddPayment={() => state.setIsPaymentModalOpen(true)}
                 onGeneratePDF={generatePDF}
                 onGenerateExcel={generateExcel}
-                onDeleteClient={() => setIsDeleteConfirmOpen(true)}
-                onEditRide={handleEditRide}
-                onDeleteRide={(ride) => setRideToDelete(ride as unknown as Ride)}
+                onDeleteClient={() => state.setIsDeleteConfirmOpen(true)}
+                onEditRide={state.openEditRideModal}
+                onDeleteRide={state.setRideToDelete}
             />
 
             <ClientModals 
-                selectedClient={selectedClient}
-                clientToEdit={clientToEdit}
-                rideToEdit={rideToEdit}
-                rideToDelete={rideToDelete}
-                isClientModalOpen={isClientModalOpen}
-                isRideModalOpen={isRideModalOpen}
-                isPaymentModalOpen={isPaymentModalOpen}
-                isDeleteConfirmOpen={isDeleteConfirmOpen}
-                isCloseDebtConfirmOpen={isCloseDebtConfirmOpen}
+                selectedClient={state.selectedClient}
+                clientToEdit={state.clientToEdit}
+                rideToEdit={state.rideToEdit}
+                rideToDelete={state.rideToDelete}
+                isClientModalOpen={state.isClientModalOpen}
+                isRideModalOpen={state.isRideModalOpen}
+                isPaymentModalOpen={state.isPaymentModalOpen}
+                isDeleteConfirmOpen={state.isDeleteConfirmOpen}
+                isCloseDebtConfirmOpen={state.isCloseDebtConfirmOpen}
                 isSettling={isSettling}
                 isDeleting={isDeleting}
                 isDeletingRide={isDeletingRide}
-                onCloseClientModal={() => {
-                    setIsClientModalOpen(false);
-                    setClientToEdit(null);
-                }}
-                onCloseRideModal={() => {
-                    setIsRideModalOpen(false);
-                    setRideToEdit(null);
-                }}
-                onClosePaymentModal={() => setIsPaymentModalOpen(false)}
-                onCloseDeleteConfirm={() => setIsDeleteConfirmOpen(false)}
-                onCloseCloseDebtConfirm={() => setIsCloseDebtConfirmOpen(false)}
-                onCloseDeleteRideConfirm={() => setRideToDelete(null)}
+                onCloseClientModal={state.closeClientModal}
+                onCloseRideModal={state.closeRideModal}
+                onClosePaymentModal={() => state.setIsPaymentModalOpen(false)}
+                onCloseDeleteConfirm={() => state.setIsDeleteConfirmOpen(false)}
+                onCloseCloseDebtConfirm={() => state.setIsCloseDebtConfirmOpen(false)}
+                onCloseDeleteRideConfirm={() => state.setRideToDelete(null)}
                 onConfirmDeleteClient={onConfirmDeleteClient}
                 onConfirmCloseDebt={onConfirmCloseDebt}
                 onConfirmDeleteRide={onConfirmDeleteRide}

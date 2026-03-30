@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, FileText, Camera, Trash2 } from "lucide-react";
 
@@ -101,7 +102,14 @@ export function StepExtraInfo({
                                             className="relative pt-4"
                                         >
                                             <div className="relative w-full aspect-video rounded-[1.75rem] overflow-hidden border border-icon-info/30 group shadow-lg">
-                                                <img src={photo} alt="Preview" className="w-full h-full object-cover" />
+                                                <Image
+                                                    src={photo}
+                                                    alt="Preview"
+                                                    fill
+                                                    unoptimized
+                                                    sizes="(max-width: 768px) 100vw, 50vw"
+                                                    className="object-cover"
+                                                />
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                     <button
                                                         type="button"

@@ -4,38 +4,12 @@ import { Check, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
-import { api, apiClient } from "@/services/api";
-
-interface Plan {
-    id: string;
-    name: string;
-    price: number;
-    interval?: string;
-    description: string;
-    features: string[];
-    cta: string;
-    highlight: boolean;
-}
+import { usePaymentPlans } from "@/hooks/use-payment-plans";
 
 export function Pricing() {
     const router = useRouter();
-    const [plans, setPlans] = useState<Plan[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        async function loadPlans() {
-            try {
-                const response = await apiClient.get<Plan[]>("/payments/plans");
-                setPlans(response || []);
-            } catch (error) {
-                console.error("Erro ao carregar planos:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        }
-        loadPlans();
-    }, []);
+    
+    const { data: plans = [], isLoading } = usePaymentPlans();
 
     const formatPrice = (priceInCents: number) => {
         if (priceInCents === 0) return "Grátis";

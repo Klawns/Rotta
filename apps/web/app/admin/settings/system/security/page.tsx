@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAdminPasswordChange } from "./_hooks/use-admin-password-change";
 
 export default function SecuritySettingsPage() {
     return (
@@ -13,9 +14,9 @@ export default function SecuritySettingsPage() {
         >
             <div className="max-w-2xl">
                 <div className="glass-card p-8 rounded-[2rem] border border-white/5 bg-gradient-to-br from-emerald-500/5 to-blue-500/5 relative overflow-hidden">
-                    <h2 className="text-2xl font-bold text-white mb-2">Segurança de Conta</h2>
+                    <h2 className="text-2xl font-bold text-white mb-2">Seguranca de Conta</h2>
                     <p className="text-slate-400 text-sm mb-8 leading-relaxed">
-                        Mantenha suas credenciais administrativas seguras, isso não altera o acesso via Provedores (Google).
+                        Mantenha suas credenciais administrativas seguras, isso nao altera o acesso via provedores externos.
                     </p>
                     <PasswordChangeForm />
                 </div>
@@ -25,29 +26,30 @@ export default function SecuritySettingsPage() {
 }
 
 function PasswordChangeForm() {
-    const [isLoading, setIsLoading] = useState(false);
-    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const { changePassword, isSubmitting } = useAdminPasswordChange();
+    const [message, setMessage] = useState<{
+        type: "success" | "error";
+        text: string;
+    } | null>(null);
+    const [form, setForm] = useState({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+    });
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsLoading(true);
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
         setMessage(null);
 
-        const formData = new FormData(e.currentTarget);
-        const data = Object.fromEntries(formData.entries());
+        const result = await changePassword(form);
+        setMessage(result);
 
-        try {
-            const { apiClient } = await import("@/services/api");
-            await apiClient.patch("/auth/change-password", data);
-            setMessage({ type: 'success', text: 'Senha alterada com sucesso!' });
-            (e.target as HTMLFormElement).reset();
-        } catch (err: any) {
-            setMessage({
-                type: 'error',
-                text: err.response?.data?.message || 'Erro ao alterar senha. Verifique os dados.'
+        if (result.type === "success") {
+            setForm({
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: "",
             });
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -59,8 +61,12 @@ function PasswordChangeForm() {
                     name="currentPassword"
                     type="password"
                     required
+                    value={form.currentPassword}
+                    onChange={(event) =>
+                        setForm((current) => ({ ...current, currentPassword: event.target.value }))
+                    }
                     className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-emerald-500/50 transition-all font-mono"
-                    placeholder="••••••••"
+                    placeholder="********"
                 />
             </div>
             <div className="space-y-2">
@@ -69,8 +75,12 @@ function PasswordChangeForm() {
                     name="newPassword"
                     type="password"
                     required
+                    value={form.newPassword}
+                    onChange={(event) =>
+                        setForm((current) => ({ ...current, newPassword: event.target.value }))
+                    }
                     className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-emerald-500/50 transition-all font-mono"
-                    placeholder="••••••••"
+                    placeholder="********"
                 />
             </div>
             <div className="space-y-2">
@@ -79,8 +89,12 @@ function PasswordChangeForm() {
                     name="confirmPassword"
                     type="password"
                     required
+                    value={form.confirmPassword}
+                    onChange={(event) =>
+                        setForm((current) => ({ ...current, confirmPassword: event.target.value }))
+                    }
                     className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-emerald-500/50 transition-all font-mono"
-                    placeholder="••••••••"
+                    placeholder="********"
                 />
             </div>
 
@@ -89,8 +103,10 @@ function PasswordChangeForm() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className={cn(
-                        "text-sm font-medium p-4 rounded-xl mt-4 border",
-                        message.type === 'success' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"
+                        "mt-4 rounded-xl border p-4 text-sm font-medium",
+                        message.type === "success"
+                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                            : "border-red-500/20 bg-red-500/10 text-red-400",
                     )}
                 >
                     {message.text}
@@ -99,10 +115,10 @@ function PasswordChangeForm() {
 
             <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 uppercase tracking-widest text-xs"
+                disabled={isSubmitting}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-500 disabled:opacity-50"
             >
-                {isLoading ? "Autenticando..." : "Atualizar Credenciais"}
+                {isSubmitting ? "Autenticando..." : "Atualizar Credenciais"}
             </button>
         </form>
     );

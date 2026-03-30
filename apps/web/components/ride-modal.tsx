@@ -79,6 +79,7 @@ export function RideModal(props: RideModalProps) {
                                 {form.currentStep === 1 && (
                                     <StepClientSelection 
                                         {...form}
+                                        isSubmittingClient={form.isSubmittingClient}
                                         onNext={form.nextStep}
                                     />
                                 )}

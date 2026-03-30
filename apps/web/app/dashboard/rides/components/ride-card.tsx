@@ -1,7 +1,8 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Bike, User, Clock, Calendar, MessageSquare, Trash2, ChevronRight, Settings2, Wallet } from "lucide-react";
-import { formatCurrency, cn } from "@/lib/utils";
+import { Bike, Clock, Calendar, MessageSquare, Trash2, ChevronRight, Settings2, Wallet } from "lucide-react";
+import { resolveRideDateValue } from "@/lib/date-utils";
+import { cn } from "@/lib/utils";
 import { Ride } from "@/types/rides";
 import { PaymentComposition } from "@/components/ui/payment-composition";
 
@@ -14,6 +15,8 @@ interface RideCardProps {
 }
 
 export const RideCard = React.memo(({ ride, index, onEdit, onDelete, onTogglePayment }: RideCardProps) => {
+    const rideDate = resolveRideDateValue(ride.rideDate, ride.createdAt);
+
     return (
         <motion.div
             animate={{ opacity: 1, x: 0 }}
@@ -101,16 +104,18 @@ export const RideCard = React.memo(({ ride, index, onEdit, onDelete, onTogglePay
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 text-text-secondary text-[10px] font-bold uppercase tracking-widest">
                         <Calendar size={14} className="text-icon-info/50" />
-                        {new Date(ride.rideDate || ride.createdAt).toLocaleDateString()}
+                        {rideDate?.toLocaleDateString("pt-BR") || "Data indisponivel"}
                     </div>
                     <div className="flex items-center gap-2 text-text-secondary text-[10px] font-bold uppercase tracking-widest border-l border-border-subtle pl-3 ml-1">
                         <Clock size={14} className="text-icon-info/50" />
-                        {new Date(ride.rideDate || ride.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {rideDate?.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' }) || "--:--"}
                     </div>
                     {ride.notes && (
                         <div className="flex items-center gap-2 bg-secondary/10 px-3 py-1.5 rounded-xl border border-border-subtle shadow-inner max-w-[150px] sm:max-w-none">
                             <MessageSquare size={14} className="text-text-secondary opacity-50 flex-shrink-0" />
-                            <p className="text-[10px] text-text-secondary italic font-medium truncate">"{ride.notes}"</p>
+                            <p className="text-[10px] text-text-secondary italic font-medium truncate">
+                                &ldquo;{ride.notes}&rdquo;
+                            </p>
                         </div>
                     )}
                 </div>

@@ -2,9 +2,12 @@
 import type { Metadata } from 'next'
 import { Inter, Montserrat, Outfit } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Suspense } from 'react'
 import './globals.css'
 import { AuthProvider } from '@/hooks/use-auth'
 import { ThemeProvider } from '@/components/providers/theme-provider'
+import { Toaster as RadixToaster } from '@/components/ui/toaster'
+import { Toaster as SonnerToaster } from '@/components/ui/sonner'
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat" });
@@ -40,9 +43,13 @@ export default function RootLayout({
       <body className={`${inter.variable} ${montserrat.variable} ${outfit.variable} font-sans antialiased scrollbar-hide`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <QueryProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
+            <Suspense fallback={null}>
+              <AuthProvider>
+                {children}
+                <RadixToaster />
+                <SonnerToaster richColors position="top-center" duration={2500} />
+              </AuthProvider>
+            </Suspense>
           </QueryProvider>
         </ThemeProvider>
         <Analytics />

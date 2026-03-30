@@ -10,8 +10,11 @@ export type PaymentStatus = 'PENDING' | 'PAID';
 export interface Client {
     id: string;
     name: string;
+    phone?: string | null;
+    address?: string | null;
     isPinned?: boolean;
     balance?: number;
+    createdAt?: string;
 }
 
 export interface ClientBalance {
@@ -27,11 +30,6 @@ export interface FrequentClient extends Client {
     isPinned: boolean;
 }
 
-export interface RidePreset {
-    id: string;
-    value: number;
-    location?: string;
-}
 
 // ===========================
 // Ride Response (API → Frontend)
@@ -112,9 +110,13 @@ export interface RidesParams {
 
 export interface InfinitePaginatedResponse<T> {
     items: T[];
-    total: number;
     nextCursor?: string;
-    hasMore: boolean;
+    hasNextPage: boolean;
+}
+
+export interface CursorMeta {
+    nextCursor?: string;
+    hasNextPage?: boolean;
 }
 
 // ===========================
@@ -139,3 +141,4 @@ export interface RideFormData {
     paymentStatus: PaymentStatus;
     isCustomValue: boolean;
 }
+export type { RidePreset } from './settings';

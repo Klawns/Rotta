@@ -1,3 +1,3 @@
-# Web App - Rotta (MDC)
+# Web App - Rotta
 
 Frontend do sistema Rotta construído com Next.js (App Router), Tailwind CSS e Framer Motion.

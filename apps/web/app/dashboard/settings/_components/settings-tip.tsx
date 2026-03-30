@@ -7,8 +7,9 @@ export function SettingsTip() {
             <div>
                 <h4 className="font-display font-bold text-text-primary text-sm">Dica Pro</h4>
                 <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-                    Organize seus atalhos por distância ou região. Por exemplo, crie um atalho "CENTRO" com valor R$ 15,00
-                    e outro "AIRPORT" com valor R$ 80,00. Isso agiliza seu dia a dia em até 80%!
+                    Organize seus atalhos por distância ou região. Por exemplo, crie um atalho &ldquo;CENTRO&rdquo; com
+                    valor R$ 15,00 e outro &ldquo;AIRPORT&rdquo; com valor R$ 80,00. Isso agiliza seu dia a dia em até
+                    80%!
                 </p>
             </div>
         </div>

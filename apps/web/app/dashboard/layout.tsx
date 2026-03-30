@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLayoutAuth } from "./_hooks/use-layout-auth";
 import { useLayoutSubscription } from "./_hooks/use-layout-subscription";
 import { useSidebarState } from "./_hooks/use-sidebar-state";
-import { ClientsProvider } from "@/providers/clients-provider";
 
 import { Sidebar } from "./_components/layout/sidebar";
 import { MobileHeader } from "./_components/layout/mobile-header";
@@ -21,7 +20,7 @@ import { PopupsManager } from "./_components/layout/popups-manager";
  * - UI Components -> Sidebar, MobileHeader, StatusBanners, PopupsManager
  */
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-    const { user, logout, isLoading, isAuthenticated, updateUser } = useAuth();
+    const { user, logout, isLoading, isAuthenticated } = useAuth();
     
     // 1. Hooks de Lógica Especializada
     useLayoutAuth({ user, isLoading, isAuthenticated });
@@ -38,13 +37,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     return (
-        <ClientsProvider>
-            <div className="min-h-screen bg-background text-foreground flex overflow-hidden">
+        <div className="min-h-screen bg-background text-foreground flex overflow-hidden">
                 {/* 2. Gerenciador de Modais e Popups */}
                 <PopupsManager 
                     user={user}
                     isLoading={isLoading}
-                    updateUser={updateUser}
                     showExpiringPopup={sub.showExpiringPopup}
                     daysRemaining={sub.daysRemaining}
                 />
@@ -63,6 +60,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <StatusBanners 
                         isExpired={sub.isExpired}
                         isExpiringSoon={sub.isExpiringSoon}
+                        daysRemaining={sub.daysRemaining}
+                        trial={sub.trial}
                     />
 
                     {/* 5. Header Visível apenas em Mobile */}
@@ -74,6 +73,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                 </main>
             </div>
-        </ClientsProvider>
     );
 }

@@ -7,7 +7,7 @@ import { Client, Ride } from "@/types/rides";
 interface ClientModalsProps {
     selectedClient: Client | null;
     clientToEdit: Client | null;
-    rideToEdit: any | null;
+    rideToEdit: Ride | null;
     rideToDelete: Ride | null;
     
     isClientModalOpen: boolean;
@@ -65,6 +65,7 @@ export function ClientModals({
     return (
         <>
             <ClientModal
+                key={`${clientToEdit?.id ?? 'new'}-${isClientModalOpen ? 'open' : 'closed'}`}
                 isOpen={isClientModalOpen}
                 onClose={onCloseClientModal}
                 onSuccess={onSuccessClient}
@@ -81,6 +82,7 @@ export function ClientModals({
             />
 
             <PaymentModal
+                key={`${selectedClient?.id ?? 'empty'}-${isPaymentModalOpen ? 'open' : 'closed'}`}
                 isOpen={isPaymentModalOpen}
                 onClose={onClosePaymentModal}
                 onSuccess={onSuccessPayment}

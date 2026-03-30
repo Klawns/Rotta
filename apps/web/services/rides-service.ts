@@ -1,155 +1,140 @@
-import { api, apiClient } from "@/services/api";
+import { ApiEnvelope, apiClient } from '@/services/api';
 import {
-    Ride,
-    CreateRideDTO,
-    UpdateRideDTO,
-    RideResponseDTO,
-    RidesParams,
-    FrequentClient
-} from "@/types/rides";
-import { RidesMapper } from "./rides-mapper";
+  CreateRideDTO,
+  CursorMeta,
+  FrequentClient,
+  Ride,
+  RideResponseDTO,
+  RidesParams,
+  UpdateRideDTO,
+} from '@/types/rides';
+import { RidesMapper } from './rides-mapper';
 
-export interface PaginatedResponse<T> {
-    data: T[];
-    meta: {
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-    };
+export interface RideStatsResponse {
+  count: number;
+  totalValue: number;
+  rides: Ride[];
 }
 
-export interface InfiniteResponse<T> {
-    items: T[];
-    total: number;
-    nextCursor?: string;
-    hasMore: boolean;
+interface RideStatsMeta extends Record<string, unknown> {
+  count?: number;
+  totalValue?: number;
 }
 
-/**
- * Service global de corridas.
- * Toda comunicação com a API de corridas passa por aqui.
- * Usa mappers para desacoplar DTOs da interface.
- */
+interface FlatRideStatsPayload {
+  count?: number;
+  totalValue?: number;
+  rides?: RideResponseDTO[];
+}
+
 export const ridesService = {
-    /**
-     * Busca todas as corridas com filtros e paginação.
-     */
-    async getRides(params: RidesParams, signal?: AbortSignal): Promise<{ data: Ride[]; meta: any }> {
-        const response = await apiClient.getPaginated("/rides", { params, signal });
-        const { data, meta } = response;
+  async getRides(
+    params: RidesParams,
+    signal?: AbortSignal,
+  ): Promise<ApiEnvelope<Ride[], CursorMeta>> {
+    const response = await apiClient.getPaginated<RideResponseDTO[], CursorMeta>(
+      '/rides',
+      { params, signal },
+    );
 
-        return {
-            data: RidesMapper.toDomainList(data || []),
-            meta
-        };
+    return {
+      data: RidesMapper.toDomainList(response.data || []),
+      meta: response.meta,
+    };
+  },
+
+  async getStats(
+    params: {
+      period: string;
+      start?: string;
+      end?: string;
+      clientId?: string;
     },
+    signal?: AbortSignal,
+  ): Promise<ApiEnvelope<RideStatsResponse>> {
+    const response = await apiClient.getPaginated<
+      FlatRideStatsPayload | RideResponseDTO[],
+      RideStatsMeta
+    >('/rides/stats', { params, signal });
 
-    /**
-     * Busca estatísticas de corridas de um período.
-     */
-    async getStats(params: {
-        period: string;
-        start?: string;
-        end?: string;
-        clientId?: string;
-    }, signal?: AbortSignal): Promise<{ data: any; meta: any }> {
-        const response = await apiClient.getPaginated("/rides/stats", { params, signal });
-        const { data, meta } = response;
-        
-        // O interceptor do backend separa o array 'rides' no 'data' 
-        // e coloca os campos de resumo (count, totalValue) no 'meta'.
-        // Precisamos remontar o objeto para o formato esperado pelo hook.
-        return {
-            data: {
-                count: meta?.count ?? 0,
-                totalValue: meta?.totalValue ?? 0,
-                rides: RidesMapper.toDomainList(Array.isArray(data) ? data : (data?.rides || []))
-            },
-            meta
-        };
-    },
+    const rawData = response.data;
+    const rawRides = Array.isArray(rawData) ? rawData : rawData?.rides || [];
+    const count = Array.isArray(rawData)
+      ? Number(response.meta?.count ?? 0)
+      : Number(rawData?.count ?? response.meta?.count ?? 0);
+    const totalValue = Array.isArray(rawData)
+      ? Number(response.meta?.totalValue ?? 0)
+      : Number(rawData?.totalValue ?? response.meta?.totalValue ?? 0);
 
-    /**
-     * Busca clientes frequentes (fixados).
-     */
-    async getFrequentClients(signal?: AbortSignal): Promise<FrequentClient[]> {
-        return apiClient.get("/rides/frequent-clients", { signal });
-    },
+    return {
+      data: {
+        count,
+        totalValue,
+        rides: RidesMapper.toDomainList(rawRides),
+      },
+      meta: response.meta,
+    };
+  },
 
-    /**
-     * Cria uma nova corrida.
-     */
-    async createRide(ride: CreateRideDTO): Promise<Ride> {
-        const data = await apiClient.post("/rides", ride);
-        return RidesMapper.toDomain(data);
-    },
+  async getFrequentClients(signal?: AbortSignal): Promise<FrequentClient[]> {
+    return apiClient.get('/rides/frequent-clients', { signal });
+  },
 
-    /**
-     * Atualiza uma corrida existente.
-     */
-    async updateRide(id: string, ride: UpdateRideDTO): Promise<Ride> {
-        const cleanedPayload = Object.fromEntries(
-            Object.entries(ride).filter(([_, v]) => v !== undefined)
-        );
+  async createRide(ride: CreateRideDTO): Promise<Ride> {
+    const data = await apiClient.post<RideResponseDTO>('/rides', ride);
+    return RidesMapper.toDomain(data);
+  },
 
-        console.log(`[ridesService] PATCH /rides/${id} - Payload:`, cleanedPayload);
+  async updateRide(id: string, ride: UpdateRideDTO): Promise<Ride> {
+    const cleanedPayload = Object.fromEntries(
+      Object.entries(ride).filter(([, value]) => value !== undefined),
+    );
 
-        const data = await apiClient.patch(`/rides/${id}`, cleanedPayload);
-        return RidesMapper.toDomain(data);
-    },
+    const data = await apiClient.patch<RideResponseDTO>(
+      `/rides/${id}`,
+      cleanedPayload,
+    );
+    return RidesMapper.toDomain(data);
+  },
 
-    /**
-     * Atualiza apenas status ou status de pagamento.
-     */
-    async updateRideStatus(
-        id: string,
-        dataPayload: { status?: string; paymentStatus?: string }
-    ): Promise<Ride> {
-        const data = await apiClient.patch(`/rides/${id}/status`, dataPayload);
-        return RidesMapper.toDomain(data);
-    },
+  async updateRideStatus(
+    id: string,
+    dataPayload: { status?: string; paymentStatus?: string },
+  ): Promise<Ride> {
+    const data = await apiClient.patch<RideResponseDTO>(
+      `/rides/${id}/status`,
+      dataPayload,
+    );
+    return RidesMapper.toDomain(data);
+  },
 
-    /**
-     * Remove uma corrida.
-     */
-    async deleteRide(id: string): Promise<void> {
-        return apiClient.delete(`/rides/${id}`);
-    },
+  async deleteRide(id: string): Promise<void> {
+    return apiClient.delete(`/rides/${id}`);
+  },
 
-    /**
-     * Busca o total de corridas do usuário.
-     */
-    async getRidesCount(signal?: AbortSignal): Promise<{ count: number }> {
-        return apiClient.get("/rides/count", { signal });
-    },
+  async deleteAllRides(): Promise<void> {
+    return apiClient.delete('/rides/all');
+  },
 
-    /**
-     * Busca corridas de um cliente específico.
-     */
-    async getRidesByClient(clientId: string, params?: { limit?: number; cursor?: string }, signal?: AbortSignal): Promise<{ data: Ride[]; meta: any }> {
-        const response = await apiClient.getPaginated(`/rides/client/${clientId}`, { params, signal });
-        const { data, meta } = response;
+  async getRidesCount(signal?: AbortSignal): Promise<{ count: number }> {
+    return apiClient.get('/rides/count', { signal });
+  },
 
-        return {
-            data: RidesMapper.toDomainList(data || []),
-            meta
-        };
-    },
+  async getRidesByClient(
+    clientId: string,
+    params?: { limit?: number; cursor?: string },
+    signal?: AbortSignal,
+  ): Promise<ApiEnvelope<Ride[], CursorMeta>> {
+    const response = await apiClient.getPaginated<RideResponseDTO[], CursorMeta>(
+      `/rides/client/${clientId}`,
+      { params, signal },
+    );
 
-    /**
-     * Busca presets de corrida salvos nas configurações.
-     */
-    async getRidePresets(signal?: AbortSignal) {
-        return apiClient.get("/settings/ride-presets", { signal });
-    },
-
-    /**
-     * Remove um preset de corrida.
-     */
-    async deleteRidePreset(presetId: string): Promise<void> {
-        return apiClient.delete(`/settings/ride-presets/${presetId}`);
-    },
+    return {
+      data: RidesMapper.toDomainList(response.data || []),
+      meta: response.meta,
+    };
+  },
 };
 
 export default ridesService;

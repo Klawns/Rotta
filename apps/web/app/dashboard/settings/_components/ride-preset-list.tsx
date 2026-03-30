@@ -1,12 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Info, LayoutGrid, Plus } from "lucide-react";
+import { LayoutGrid, Plus } from "lucide-react";
 import { RidePresetCard } from "./ride-preset-card";
+import { RidePreset } from "@/types/settings";
 
 interface RidePresetListProps {
-    presets: any[];
+    presets: RidePreset[];
     isLoading: boolean;
-    onEdit: (preset: any) => void;
-    onDelete: (id: string) => void;
+    onEdit: (preset: RidePreset) => void;
+    onDelete: (id: string) => Promise<boolean>;
     onAdd: () => void;
 }
 

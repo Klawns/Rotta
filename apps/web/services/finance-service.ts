@@ -41,6 +41,38 @@ export interface FinanceDashboardData {
   recentRides: RecentRide[];
 }
 
+interface RawRecentRide extends Omit<RecentRide, "rideDate" | "value" | "clientName"> {
+  rideDate: unknown;
+  value: number | string | null;
+  clientName: string | null;
+}
+
+function normalizeRideDate(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString();
+  }
+
+  if (typeof value === "number") {
+    const parsedDate = new Date(value);
+    return Number.isNaN(parsedDate.getTime()) ? "" : parsedDate.toISOString();
+  }
+
+  return "";
+}
+
+function normalizeRecentRide(ride: RawRecentRide): RecentRide {
+  return {
+    ...ride,
+    value: Number(ride.value || 0),
+    rideDate: normalizeRideDate(ride.rideDate),
+    clientName: ride.clientName || "Cliente",
+  };
+}
+
 export const financeService = {
   async getDashboard(params: {
     period: string;
@@ -48,7 +80,14 @@ export const financeService = {
     end?: string;
     clientId?: string;
   }, signal?: AbortSignal): Promise<FinanceDashboardData> {
-    return apiClient.get("/finance/dashboard", { params, signal });
+    const data = await apiClient.get<
+      Omit<FinanceDashboardData, "recentRides"> & { recentRides: RawRecentRide[] }
+    >("/finance/dashboard", { params, signal });
+
+    return {
+      ...data,
+      recentRides: (data.recentRides || []).map(normalizeRecentRide),
+    };
   },
 };
 

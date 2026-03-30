@@ -1,0 +1,31 @@
+import jsPDF from 'jspdf';
+import { type PaymentStatus, type RideStatus } from '@/types/rides';
+
+export interface ExportOptions {
+  clients?: string[];
+  period: 'today' | 'week' | 'month' | 'year' | 'custom';
+  userName: string;
+  pixKey?: string;
+}
+
+export interface PDFReportRide {
+  id: string;
+  value: number;
+  paymentStatus?: PaymentStatus;
+  createdAt?: string;
+  rideDate?: string;
+  location?: string | null;
+  clientName?: string | null;
+  client?: {
+    name: string;
+  } | null;
+  status?: RideStatus;
+  paidWithBalance?: number;
+  debtValue?: number;
+}
+
+export type AutoTableDoc = jsPDF & {
+  lastAutoTable?: {
+    finalY: number;
+  };
+};

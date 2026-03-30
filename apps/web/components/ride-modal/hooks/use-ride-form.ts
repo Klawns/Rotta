@@ -1,302 +1,209 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { uploadImage } from "@/lib/upload";
-import { useAuth } from "@/hooks/use-auth";
-import { toLocalInputValue, toISOFromLocalInput } from "@/lib/date-utils";
-import { parseApiError } from "@/lib/api-error";
-import { Client, RidePreset, PaymentStatus, RideStatus, RideModalProps } from "@/types/rides";
-import { rideModalService } from "../services/ride-modal-service";
-import { toast } from "sonner";
+import { useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { toLocalInputValue } from '@/lib/date-utils';
+import { type RideModalProps } from '@/types/rides';
+import { useRideClientCreation } from './use-ride-client-creation';
+import { useRideFormData } from './use-ride-form-data';
+import { useRideFormState } from './use-ride-form-state';
+import { useRideFormSubmit } from './use-ride-form-submit';
 
-export function useRideForm({ isOpen, onClose, onSuccess, clientId, rideToEdit }: Partial<RideModalProps>) {
-    const { verify, user } = useAuth();
-    const queryClient = useQueryClient();
-    
-    // Queries para dados iniciais
-    const { data: clientsData, isLoading: isLoadingClients } = useQuery({
-        queryKey: ["clients"],
-        queryFn: () => rideModalService.getClients(),
-        enabled: isOpen && !!user && !clientId,
-    });
+export function useRideForm({
+  isOpen,
+  onClose,
+  onSuccess,
+  clientId,
+  rideToEdit,
+}: Partial<RideModalProps>) {
+  const { verify, user } = useAuth();
+  const form = useRideFormState({ clientId });
+  const {
+    currentStep,
+    handlePresetClick,
+    isCreatingClient,
+    isCustomValue,
+    location,
+    newClientName,
+    notes,
+    paymentStatus,
+    photo,
+    resetForm,
+    rideDate,
+    selectedClientId,
+    setCurrentStep,
+    setIsCreatingClient,
+    setIsCustomValue,
+    setLocation,
+    setNewClientName,
+    setNotes,
+    setPaymentStatus,
+    setPhoto,
+    setRideDate,
+    setSelectedClientId,
+    setUseBalance,
+    setValue,
+    useBalance,
+    value,
+  } = form;
 
-    const { data: presets = [], isLoading: isLoadingPresets } = useQuery({
-        queryKey: ["ride-presets"],
-        queryFn: () => rideModalService.getRidePresets(),
-        enabled: isOpen && !!user,
-    });
+  const data = useRideFormData({
+    isOpen,
+    userId: user?.id,
+    clientId,
+    selectedClientId,
+  });
 
-    const clients = useMemo(() => clientsData?.clients || [], [clientsData]);
-    const isLoadingData = isLoadingClients || isLoadingPresets;
-
-    const [selectedClientId, setSelectedClientId] = useState(clientId || "");
-    const [value, setValue] = useState<string>("");
-    const [location, setLocation] = useState("");
-    const [notes, setNotes] = useState("");
-    const [photo, setPhoto] = useState<string | null>(null);
-    const [rideDate, setRideDate] = useState("");
-    const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("PAID");
-    const [isCustomValue, setIsCustomValue] = useState(false);
-    const [useBalance, setUseBalance] = useState(false);
-
-    // Query para saldo do cliente selecionado
-    const { data: clientBalanceData } = useQuery({
-        queryKey: ["client-balance", selectedClientId],
-        queryFn: () => rideModalService.getClientBalance(selectedClientId),
-        enabled: isOpen && !!selectedClientId,
-        staleTime: 30000,
-    });
-    
-    // UI Phase states
-    const [currentStep, setCurrentStep] = useState(1);
-    
-    // Client creation states
-    const [newClientName, setNewClientName] = useState("");
-    const [isCreatingClient, setIsCreatingClient] = useState(false);
-    // clientPage e clientsPerPage removidos
-
-    const resetForm = useCallback(() => {
-        setSelectedClientId(clientId || "");
-        setValue("");
-        setLocation("");
-        setNotes("");
-        setRideDate("");
-        setIsCustomValue(false);
-        setPhoto(null);
-        setPaymentStatus("PAID");
-        setUseBalance(false);
-        setCurrentStep(clientId ? 2 : 1);
-    }, [clientId]);
-
-    useEffect(() => {
-        if (isOpen && user) {
-            if (rideToEdit) {
-                setSelectedClientId(rideToEdit.clientId || rideToEdit.client?.id || "");
-                setValue(rideToEdit.value.toString());
-                setLocation(rideToEdit.location || "");
-                setNotes(rideToEdit.notes || "");
-                setRideDate(toLocalInputValue(rideToEdit.rideDate || ""));
-                setPaymentStatus(rideToEdit.paymentStatus || "PAID");
-                setPhoto(rideToEdit.photo || null);
-                setIsCustomValue(true);
-                setCurrentStep(2);
-            } else {
-                resetForm();
-            }
-        }
-    }, [isOpen, clientId, rideToEdit, user, resetForm]);
-
-    // Auto-seleção de status de pagamento baseado no uso de saldo
-    useEffect(() => {
-        if (useBalance && value) {
-            const rideVal = Number(value);
-            const balance = clientBalanceData?.clientBalance || 0;
-            const debt = Math.max(0, rideVal - balance);
-            
-            if (debt > 0) {
-                setPaymentStatus('PENDING');
-            } else {
-                setPaymentStatus('PAID');
-            }
-        }
-    }, [useBalance, value, clientBalanceData]);
-
-    const handleCreateClient = async () => {
-        if (!newClientName) return;
-        setIsCreatingClient(true);
-        try {
-            const data = await rideModalService.createClient(newClientName);
-            // Invalida a query de clientes para que a lista seja atualizada
-            queryClient.invalidateQueries({ queryKey: ["clients"] });
-            setSelectedClientId(data.id);
-            setNewClientName("");
-            setIsCreatingClient(false);
-            setCurrentStep(2);
-            toast.success("Cliente cadastrado com sucesso");
-        } catch (err) {
-            toast.error(parseApiError(err, "Erro ao cadastrar cliente. Tente novamente."));
-            setIsCreatingClient(false);
-        }
-    };
-
-    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPhoto(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    // Mutação para salvar a corrida (Create ou Update)
-    const { mutateAsync: saveRide, isPending: isSubmitting } = useMutation({
-        mutationFn: async () => {
-            let uploadedPhotoUrl = photo;
-
-            if (photo && photo.startsWith('data:image')) {
-                try {
-                    const response = await fetch(photo);
-                    const blob = await response.blob();
-                    const file = new File([blob], "ride-photo.jpg", { type: blob.type });
-
-                    const uploadRes = await uploadImage(file, 'rides');
-                    uploadedPhotoUrl = uploadRes.url;
-                } catch (uploadErr) {
-                    console.error("Falha ao subir imagem para o R2, continuando sem foto...", uploadErr);
-                    uploadedPhotoUrl = null;
-                }
-            }
-
-            const payload = {
-                clientId: selectedClientId,
-                value: Number(value),
-                location: location || "",
-                notes: notes || null,
-                photo: uploadedPhotoUrl || null,
-                status: 'COMPLETED' as RideStatus,
-                paymentStatus,
-                rideDate: rideDate ? toISOFromLocalInput(rideDate) : null,
-                useBalance: useBalance,
-            };
-
-            if (rideToEdit) {
-                return rideModalService.updateRide(rideToEdit.id, payload);
-            } else {
-                return rideModalService.createRide(payload);
-            }
-        },
-        onSuccess: async () => {
-            toast.success(rideToEdit ? "Corrida atualizada" : "Corrida registrada");
-            
-            // Invalida caches relacionados
-            queryClient.invalidateQueries({ queryKey: ["rides"] });
-            queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
-            queryClient.invalidateQueries({ queryKey: ["rides-count"] });
-            
-            await verify(); // Atualiza contador de assinatura no AuthContext
-            
-            if (!rideToEdit) resetForm();
-            onSuccess?.();
-            onClose?.();
-        },
-        onError: (err) => {
-            toast.error(parseApiError(err, `Erro ao ${rideToEdit ? 'atualizar' : 'registrar'} corrida.`));
-        }
-    });
-
-    const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
-        e?.preventDefault();
-
-        if (!selectedClientId || !value) {
-            toast.error("Informe o cliente e o valor da corrida.");
-            return;
-        }
-
-        await saveRide();
-    };
-
-    const handlePresetClick = (preset: RidePreset) => {
-        setValue(preset.value.toString());
-        setLocation(preset.location || "");
-        setIsCustomValue(false);
-    };
-
-    const nextStep = () => {
-        if (currentStep === 1 && !selectedClientId) return;
-        if (currentStep === 2 && !value) return;
-        setCurrentStep(prev => Math.min(prev + 1, 5));
+  useEffect(() => {
+    if (!isOpen || !user) {
+      return;
     }
 
-    const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+    if (rideToEdit) {
+      setSelectedClientId(rideToEdit.clientId || rideToEdit.client?.id || '');
+      setValue(rideToEdit.value.toString());
+      setLocation(rideToEdit.location || '');
+      setNotes(rideToEdit.notes || '');
+      setRideDate(toLocalInputValue(rideToEdit.rideDate || ''));
+      setPaymentStatus(rideToEdit.paymentStatus || 'PAID');
+      setPhoto(rideToEdit.photo || null);
+      setIsCustomValue(true);
+      setCurrentStep(2);
+      return;
+    }
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            const target = e.target as HTMLElement;
-            const isTextArea = target.tagName.toLowerCase() === 'textarea';
-            
-            if (isTextArea) return;
+    resetForm();
+  }, [
+    isOpen,
+    resetForm,
+    rideToEdit,
+    setCurrentStep,
+    setIsCustomValue,
+    setLocation,
+    setNotes,
+    setPaymentStatus,
+    setPhoto,
+    setRideDate,
+    setSelectedClientId,
+    setValue,
+    user,
+  ]);
 
-            e.preventDefault();
+  useEffect(() => {
+    if (!useBalance || !value) {
+      return;
+    }
 
-            // Lógica para Criar Cliente se estiver com o mini-modal aberto
-            if (isCreatingClient && newClientName.trim()) {
-                handleCreateClient();
-                return;
-            }
+    const rideValue = Number(value);
+    const debt = Math.max(0, rideValue - data.clientBalance);
+    setPaymentStatus(debt > 0 ? 'PENDING' : 'PAID');
+  }, [data.clientBalance, setPaymentStatus, useBalance, value]);
 
-            const canNext =
-                (currentStep === 1 && !!selectedClientId) ||
-                (currentStep === 2 && !!value) ||
-                (currentStep > 2);
+  const clientCreation = useRideClientCreation({
+    newClientName,
+    setSelectedClientId,
+    setNewClientName,
+    setCurrentStep,
+  });
 
-            if (canNext) {
-                if (currentStep === 5) {
-                    handleSubmit();
-                } else {
-                    nextStep();
-                }
-            }
-        }
+  const submission = useRideFormSubmit({
+    draft: {
+      selectedClientId,
+      value,
+      location,
+      notes,
+      photo,
+      rideDate,
+      paymentStatus,
+      useBalance,
+    },
+    rideToEdit,
+    verify,
+    resetForm,
+    onSuccess,
+    onClose,
+  });
+
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhoto(reader.result as string);
     };
+    reader.readAsDataURL(file);
+  };
 
-    const availableBalance = clientBalanceData?.clientBalance || 0;
-    const rideValueNum = Number(value) || 0;
-    const paidWithBalance = useBalance ? Math.min(availableBalance, rideValueNum) : 0;
-    const debtValue = Math.max(0, rideValueNum - paidWithBalance);
+  const nextStep = () => {
+    if (currentStep === 1 && !selectedClientId) {
+      return;
+    }
 
-    return {
-        // Data
-        clients,
-        presets,
-        isLoadingData,
-        
-        // Form state
-        selectedClientId,
-        setSelectedClientId,
-        value,
-        setValue,
-        location,
-        setLocation,
-        notes,
-        setNotes,
-        photo,
-        setPhoto,
-        rideDate,
-        setRideDate,
-        paymentStatus,
-        setPaymentStatus,
-        isCustomValue,
-        setIsCustomValue,
-        
-        // Calculated
-        paidWithBalance,
-        debtValue,
+    if (currentStep === 2 && !value) {
+      return;
+    }
 
-        // UI Navigation
-        currentStep,
-        setCurrentStep,
-        isSubmitting,
-        nextStep,
-        prevStep,
-        useBalance,
-        setUseBalance,
-        availableBalance,
-        
-        // Client creation
-        newClientName,
-        setNewClientName,
-        isCreatingClient,
-        setIsCreatingClient,
-        
-        // Handlers
-        handleCreateClient,
-        handlePhotoChange,
-        handleSubmit,
-        handlePresetClick,
-        resetForm,
-        handleKeyDown
-    };
+    setCurrentStep((previous) => Math.min(previous + 1, 5));
+  };
+
+  const prevStep = () => setCurrentStep((previous) => Math.max(previous - 1, 1));
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key !== 'Enter') {
+      return;
+    }
+
+    const target = event.target as HTMLElement;
+    if (target.tagName.toLowerCase() === 'textarea') {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (isCreatingClient && newClientName.trim()) {
+      void clientCreation.handleCreateClient();
+      return;
+    }
+
+    const canAdvance =
+      (currentStep === 1 && !!selectedClientId) ||
+      (currentStep === 2 && !!value) ||
+      currentStep > 2;
+
+    if (!canAdvance) {
+      return;
+    }
+
+    if (currentStep === 5) {
+      void submission.handleSubmit();
+      return;
+    }
+
+    nextStep();
+  };
+
+  const rideValue = Number(value) || 0;
+  const paidWithBalance = useBalance ? Math.min(data.clientBalance, rideValue) : 0;
+  const debtValue = Math.max(0, rideValue - paidWithBalance);
+
+  return {
+    clients: data.clients,
+    presets: data.presets,
+    isLoadingData: data.isLoadingData,
+    ...form,
+    paidWithBalance,
+    debtValue,
+    isSubmitting: submission.isSubmitting,
+    isSubmittingClient: clientCreation.isSubmittingClient,
+    nextStep,
+    prevStep,
+    availableBalance: data.clientBalance,
+    handleCreateClient: clientCreation.handleCreateClient,
+    handlePhotoChange,
+    handleSubmit: submission.handleSubmit,
+    handleKeyDown,
+  };
 }

@@ -1,14 +1,23 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { clientsService } from "@/services/clients-service";
 import { clientKeys } from "@/lib/query-keys";
-import { Client } from "@/types/rides";
+import { clientsService } from "@/services/clients-service";
+
+function dedupeClients<T extends { id?: string | null }>(items: T[]) {
+    return Array.from(
+        new Map(
+            items
+                .filter((item): item is T & { id: string } => Boolean(item?.id))
+                .map((item) => [String(item.id), item]),
+        ).values(),
+    );
+}
 
 export function useClients() {
     const [search, setSearch] = useState("");
-    const limit = 16; // Aumentado conforme análise do usuário
+    const limit = 16;
     const filters = useMemo(() => ({ search, limit }), [search, limit]);
 
     const {
@@ -26,26 +35,14 @@ export function useClients() {
             cursor: pageParam as string | undefined
         }, signal),
         initialPageParam: undefined as string | undefined,
-        getNextPageParam: (lastPage) => lastPage.meta?.hasMore ? lastPage.meta.nextCursor : undefined,
-        staleTime: 300000, // 5 minutos
-        gcTime: 600000,   // 10 minutos
+        getNextPageParam: (lastPage) =>
+            lastPage.meta?.hasNextPage ? lastPage.meta.nextCursor : undefined,
+        staleTime: 300000,
+        gcTime: 600000,
     });
 
-    const allClients = data?.pages.flatMap(page => {
-        // Validação temporária durante transição V2
-        if (!Array.isArray(page.data)) {
-            console.error('Formato inválido em page.data', page);
-            return [];
-        }
-        return page.data;
-    }) || [];
-    // Deduplicação robusta por ID (garantindo string e removendo undefined)
-    const clients = Array.from(new Map(
-        allClients
-            .filter(c => c && c.id)
-            .map(c => [String(c.id), c])
-    ).values());
-    const total = data?.pages[0]?.meta?.total || 0;
+    const allClients = data?.pages.flatMap((page) => page.data || []) || [];
+    const clients = dedupeClients(allClients);
 
     return {
         clients,
@@ -56,7 +53,7 @@ export function useClients() {
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
-        total,
+        total: clients.length,
         limit,
         fetchClients: refetch
     };

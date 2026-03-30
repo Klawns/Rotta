@@ -4,6 +4,7 @@ import { FinanceStats, PeriodId, RecentRide, FinanceByStatus } from "../_types";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx-js-style";
+import { formatDateValue } from "@/lib/date-utils";
 
 export function useExportFinance() {
   const exportToCSV = (stats: FinanceStats, rides: RecentRide[], period: PeriodId, byStatus: FinanceByStatus[]) => {
@@ -73,7 +74,7 @@ export function useExportFinance() {
 
     // Preparar dados das corridas
     const rideRows = rides.map(ride => [
-      { v: ride.rideDate ? format(new Date(ride.rideDate), "dd/MM/yy HH:mm") : "---" },
+      { v: formatDateValue(ride.rideDate, "dd/MM/yy HH:mm") },
       { v: ride.clientName || "Cliente" },
       { v: ride.location || "---" },
       { v: ride.value, t: 'n', s: currencyStyle },

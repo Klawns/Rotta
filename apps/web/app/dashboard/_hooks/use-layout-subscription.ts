@@ -1,39 +1,40 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { User } from "@/hooks/use-auth";
+import { useMemo } from 'react';
+import { useFreeTrial } from '@/hooks/use-free-trial';
+import { type User } from '@/hooks/use-auth';
 
-/**
- * Hook especializado para calcular estados de assinatura (expiração, prazos, etc).
- */
 export function useLayoutSubscription(user: User | null) {
-    return useMemo(() => {
-        if (!user || user.role !== 'user' || !user.subscription) {
-            return {
-                isExpired: false,
-                isExpiringSoon: false,
-                daysRemaining: 0,
-                showExpiringPopup: false
-            };
-        }
+  const trial = useFreeTrial(user);
 
-        const { status, validUntil, plan } = user.subscription;
-        const isExpired = status === 'expired';
-        
-        const expirationDate = validUntil ? new Date(validUntil) : null;
-        const now = new Date();
-        const diffInMs = expirationDate ? expirationDate.getTime() - now.getTime() : 0;
-        const daysRemaining = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
+  return useMemo(() => {
+    const premiumExpirationDate =
+      !trial.isStarter && user?.subscription?.validUntil
+        ? new Date(user.subscription.validUntil)
+        : null;
+    const premiumDiffInMs = premiumExpirationDate
+      ? premiumExpirationDate.getTime() - Date.now()
+      : 0;
+    const premiumDaysRemaining =
+      premiumDiffInMs > 0
+        ? Math.ceil(premiumDiffInMs / (1000 * 60 * 60 * 24))
+        : 0;
 
-        // Regras de exibição de Banners e Popups
-        const isExpiringSoon = !isExpired && !!expirationDate && (diffInMs < 5 * 24 * 60 * 60 * 1000);
-        const showExpiringPopup = !isExpired && plan !== 'starter' && daysRemaining > 0 && daysRemaining <= 3;
-
-        return {
-            isExpired,
-            isExpiringSoon,
-            daysRemaining,
-            showExpiringPopup
-        };
-    }, [user]);
+    return {
+      isExpired: trial.isExpired,
+      isExpiringSoon: trial.isStarter
+        ? trial.isExpiringSoon
+        : Boolean(
+            premiumExpirationDate &&
+              premiumDiffInMs > 0 &&
+              premiumDiffInMs < 5 * 24 * 60 * 60 * 1000,
+          ),
+      daysRemaining: trial.isStarter ? trial.daysRemaining : premiumDaysRemaining,
+      showExpiringPopup:
+        !trial.isStarter &&
+        premiumDaysRemaining > 0 &&
+        premiumDaysRemaining <= 3,
+      trial,
+    };
+  }, [trial, user]);
 }

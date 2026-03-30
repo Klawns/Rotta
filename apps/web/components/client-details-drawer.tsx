@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, X, Bike, Trash2, Calendar, ChevronRight, FileText, DollarSign, Pencil } from "lucide-react";
-import { formatCurrency, cn } from "@/lib/utils";
-import { HybridInfiniteList } from "@/components/ui/hybrid-infinite-list";
-
-import { Client, Ride, ClientBalance } from "@/types/rides";
-import { PaymentComposition } from "@/components/ui/payment-composition";
+import { type Client, type Ride, type ClientBalance } from "@/types/rides";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
+import { ClientDetailsHeader } from "@/components/client-details-drawer/client-details-header";
+import { ClientFinancePanel } from "@/components/client-details-drawer/client-finance-panel";
+import { ClientRidesHistory } from "@/components/client-details-drawer/client-rides-history";
 
 interface ClientDetailsDrawerProps {
     client: Client | null;
@@ -52,16 +51,7 @@ export function ClientDetailsDrawer({
 }: ClientDetailsDrawerProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (client) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [client]);
+    useBodyScrollLock(!!client);
 
     if (!client) return null;
 
@@ -84,176 +74,30 @@ export function ClientDetailsDrawer({
                     className="bg-drawer-background border-l border-border w-full max-w-xl relative z-10 shadow-2xl h-screen overflow-y-auto scrollbar-hide"
                 >
                     <div className="p-8 lg:p-12 space-y-10">
-                        <header className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="p-4 bg-icon-info/10 rounded-2xl text-icon-info font-black shadow-inner border border-icon-info/10">
-                                    <User size={32} />
-                                </div>
-                                <div>
-                                    <h2 className="text-3xl font-bold text-text-primary tracking-tight">{client.name}</h2>
-                                    <p className="text-text-secondary text-sm font-medium">ID: {client.id.split("-")[0]}</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={onClose}
-                                className="p-2 hover:bg-secondary/10 rounded-xl text-text-secondary hover:text-text-primary transition-colors active:scale-95 border border-transparent hover:border-border-subtle"
-                            >
-                                <X size={24} />
-                            </button>
-                        </header>
+                        <ClientDetailsHeader client={client} onClose={onClose} />
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <button
-                                onClick={onNewRide}
-                                className="flex flex-col items-center gap-2 p-6 bg-button-primary hover:bg-button-primary-hover rounded-[2rem] text-button-primary-foreground transition-all group shadow-xl shadow-button-shadow active:scale-95"
-                            >
-                                <Bike size={24} className="group-hover:scale-110 transition-transform" />
-                                <span className="font-bold">Nova Corrida</span>
-                            </button>
-                            <button
-                                onClick={onDeleteClient}
-                                disabled={isDeleting}
-                                className="flex flex-col items-center gap-2 p-6 bg-button-destructive-subtle hover:bg-button-destructive text-icon-destructive hover:text-button-destructive-foreground rounded-[2rem] transition-all group border border-border-destructive/10 active:scale-95 disabled:opacity-50 shadow-lg shadow-destructive/5 hover:shadow-destructive/20"
-                            >
-                                <Trash2 size={24} className="group-hover:scale-110 transition-transform" />
-                                <span className="font-bold">{isDeleting ? "Excluindo..." : "Excluir Cliente"}</span>
-                            </button>
-                        </div>
+                        <ClientFinancePanel
+                            balance={balance}
+                            isSettling={isSettling}
+                            isDeleting={isDeleting}
+                            onNewRide={onNewRide}
+                            onDeleteClient={onDeleteClient}
+                            onAddPayment={onAddPayment}
+                            onGeneratePDF={onGeneratePDF}
+                            onGenerateExcel={onGenerateExcel}
+                            onCloseDebt={onCloseDebt}
+                        />
 
-                        <section className="bg-background/50 border border-border-subtle rounded-[2.5rem] p-8 space-y-6">
-                            <h3 className="text-sm font-black text-text-secondary uppercase tracking-widest text-center opacity-80">Controle Financeiro</h3>
-                            
-                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                                <button
-                                    onClick={onAddPayment}
-                                    className="flex flex-col items-center gap-3 p-6 bg-icon-brand/10 hover:bg-icon-brand text-icon-brand hover:text-white rounded-3xl transition-all group border border-icon-brand/10 active:scale-95 shadow-lg shadow-brand/0 hover:shadow-brand/20"
-                                >
-                                    <DollarSign size={24} className="group-hover:scale-110 transition-transform" />
-                                    <span className="font-black text-[10px] uppercase">Pagar Parcial</span>
-                                </button>
-                                <button
-                                    onClick={onGeneratePDF}
-                                    className="flex flex-col items-center gap-3 p-6 bg-icon-info/10 hover:bg-icon-info text-icon-info hover:text-white rounded-3xl transition-all group border border-icon-info/10 active:scale-95 shadow-lg shadow-info/0 hover:shadow-info/20"
-                                >
-                                    <FileText size={24} className="group-hover:scale-110 transition-transform" />
-                                    <span className="font-black text-[10px] uppercase">PDF</span>
-                                </button>
-                                <button
-                                    onClick={onGenerateExcel}
-                                    className="flex flex-col items-center gap-3 p-6 bg-icon-success/10 hover:bg-icon-success text-icon-success hover:text-white rounded-3xl transition-all group border border-icon-success/10 active:scale-95 shadow-lg shadow-success/0 hover:shadow-success/20"
-                                >
-                                    <FileText size={24} className="group-hover:scale-110 transition-transform" />
-                                    <span className="font-black text-[10px] uppercase">Planilha</span>
-                                </button>
-                            </div>
-
-                            {balance && (
-                                <div className="space-y-4 pt-4 border-t border-border-subtle">
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-text-secondary font-bold uppercase text-[10px] tracking-wider">Total em Corridas Pendentes</span>
-                                        <span className="text-text-primary font-black">{formatCurrency(balance.totalDebt)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-icon-brand/80 font-bold uppercase text-[10px] tracking-wider">Total Pago (Parcial)</span>
-                                        <span className="text-icon-brand font-black">- {formatCurrency(balance.totalPaid)}</span>
-                                    </div>
-                                    {/* Crédito e Saldo Devedor agrupados abaixo */}
-                                    <div className="flex flex-col gap-3 pt-4 border-t border-border-strong bg-card/30 p-4 rounded-2xl border border-border-subtle">
-                                        <div className="flex justify-between items-center">
-                                            <span className="font-black text-destructive text-[10px] uppercase tracking-widest">Saldo devedor</span>
-                                            <span className="font-black text-xl text-destructive tracking-tight">
-                                                {formatCurrency(balance.remainingBalance)}
-                                            </span>
-                                        </div>
-                                        
-                                        {balance.clientBalance > 0 && (
-                                            <div className="flex justify-between items-center pt-3 border-t border-border-strong/50">
-                                                <span className="font-black text-icon-success text-[10px] uppercase tracking-widest">Crédito Disponível</span>
-                                                <span className="font-black text-xl text-icon-success tracking-tight">
-                                                    {formatCurrency(balance.clientBalance)}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {balance.remainingBalance > 0 && (
-                                        <button
-                                            onClick={onCloseDebt}
-                                            disabled={isSettling}
-                                            className="w-full py-5 bg-button-primary text-button-primary-foreground hover:bg-button-primary-hover font-black rounded-2xl transition-all active:scale-95 disabled:opacity-50 mt-2 uppercase tracking-widest text-xs shadow-lg shadow-button-shadow"
-                                        >
-                                            {isSettling ? "PROCESSANDO..." : "QUITAR DÍVIDA TOTAL"}
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-                        </section>
-
-                        <section className="space-y-6">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-xl font-bold text-text-primary">Histórico de Corridas</h3>
-                                <span className="text-xs font-bold text-text-secondary uppercase bg-secondary/10 px-3 py-1 rounded-full border border-border-subtle">Recentes</span>
-                            </div>
-
-                            <HybridInfiniteList<Ride>
-                                items={rides}
-                                estimateSize={110}
-                                containerRef={scrollContainerRef}
-                                hasMore={hasNextPage}
-                                onLoadMore={fetchNextPage}
-                                isLoading={isLoading && rides.length === 0}
-                                isFetchingNextPage={isFetchingNextPage}
-                                gap={16}
-                                className="pb-10"
-                                renderItem={(ride: Ride) => (
-                                    <div key={ride.id} className="flex items-center gap-4 p-5 bg-card-background/50 rounded-2xl border border-border-subtle group hover:bg-card-background transition-colors shadow-sm hover:shadow-md">
-                                        <div className="p-3 bg-icon-info/10 rounded-xl text-icon-info border border-icon-info/10">
-                                            <Calendar size={20} />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="font-semibold text-text-primary truncate">ID: {String(ride.id).split("-")[0]}</h4>
-                                            <p className="text-[10px] text-text-secondary mt-0.5 font-medium">{new Date(ride.rideDate || ride.createdAt).toLocaleString()}</p>
-                                            <div className="flex gap-2 mt-2">
-                                                <span className={cn(
-                                                    "text-[8px] font-black uppercase px-2 py-0.5 rounded-full border",
-                                                    ride.paymentStatus === 'PAID' 
-                                                        ? "bg-icon-success/10 text-icon-success border-icon-success/10" 
-                                                        : "bg-icon-warning/10 text-icon-warning border-icon-warning/10"
-                                                )}>
-                                                    {ride.paymentStatus === 'PAID' ? 'Pago' : 'Pendente'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="text-right flex flex-col items-end justify-center min-w-[80px]">
-                                            <PaymentComposition 
-                                                size="sm" 
-                                                totalValue={ride.value}
-                                                paidWithBalance={ride.paidWithBalance}
-                                                debtValue={ride.debtValue}
-                                                showLabel={false}
-                                                compact={true}
-                                            />
-                                        </div>
-                                        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 bg-card-background/90 backdrop-blur-sm p-1 rounded-lg">
-                                                <button
-                                                    onClick={() => onEditRide(ride)}
-                                                    className="p-2 bg-icon-info/10 hover:bg-icon-info text-icon-info hover:text-white rounded-lg transition-all active:scale-90 border border-icon-info/10"
-                                                    title="Editar"
-                                                >
-                                                    <Pencil size={14} />
-                                                </button>
-                                                <button
-                                                    onClick={() => onDeleteRide(ride)}
-                                                    className="p-2 bg-icon-destructive/10 hover:bg-icon-destructive text-icon-destructive hover:text-white rounded-lg transition-all active:scale-90 border border-icon-destructive/10"
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                            />
-                        </section>
+                        <ClientRidesHistory
+                            rides={rides}
+                            isLoading={isLoading}
+                            isFetchingNextPage={isFetchingNextPage}
+                            hasNextPage={hasNextPage}
+                            fetchNextPage={fetchNextPage}
+                            containerRef={scrollContainerRef}
+                            onEditRide={onEditRide}
+                            onDeleteRide={onDeleteRide}
+                        />
                     </div>
                 </motion.div>
             </div>

@@ -1,61 +1,89 @@
 "use client";
 
+import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { useDashboardAuth } from "./use-dashboard-auth";
-import { usePaymentToast } from "./use-payment-toast";
-import { useDashboardUI } from "./use-dashboard-ui";
-import { useDashboardStats } from "./use-dashboard-stats";
+import { rideKeys } from "@/lib/query-keys";
+import { type Ride } from "@/types/rides";
+import { type Period } from "./dashboard-stats.types";
 import { useDashboardRides } from "./use-dashboard-rides";
+import { useDashboardStats } from "./use-dashboard-stats";
+import { useDashboardUI } from "./use-dashboard-ui";
+import { usePaymentToast } from "./use-payment-toast";
+import { useFreeTrial } from "@/hooks/use-free-trial";
 
-/**
- * Hook principal do Dashboard (Facade).
- * 
- * Este hook agora funciona como um HUB de composição, delegando responsabilidades
- * para hooks menores e especializados. Segue o princípio de responsabilidade única (SRP)
- * e facilita a manutenção e escalabilidade do código.
- */
+export interface DashboardDesktopStats {
+    period: Period;
+    setPeriod: (period: Period) => void;
+    count: number;
+    totalValue: number;
+    monthRides: Ride[];
+    isLoading: boolean;
+}
+
+export interface DashboardMobileStats {
+    period: Period;
+    count: number;
+    totalValue: number;
+}
+
+export interface DashboardRideActions {
+    editRide: (ride: Ride) => void;
+    requestRideDelete: (ride: Ride) => void;
+}
+
 export function useDashboard() {
     const { user } = useAuth();
+    const queryClient = useQueryClient();
+    const trial = useFreeTrial(user);
 
-    // 1. Efeitos Colaterais Independentes
-    useDashboardAuth({ user });
     usePaymentToast();
 
-    // 2. Estado da Interface e Dispositivo
-    const ui = useDashboardUI();
-
-    // 3. Gerenciamento de Dados e Estatísticas
-    const stats = useDashboardStats(user);
-
-    // 4. Ações e Lógica de Negócio (Corridas)
+    const { isMobile } = useDashboardUI();
+    const { period, setPeriod, stats, monthRides, isLoading } =
+        useDashboardStats(user);
+    const refreshDashboard = useCallback(async () => {
+        await queryClient.invalidateQueries({ queryKey: rideKeys.all });
+        await queryClient.refetchQueries({
+            queryKey: rideKeys.all,
+            type: "active",
+        });
+    }, [queryClient]);
     const rides = useDashboardRides({
-        onRideDeleted: stats.fetchStats // Atualiza os dados após exclusão bem-sucedida
+        onRideDeleted: refreshDashboard,
     });
 
     return {
-        // Auth
         user,
-
-        // Stats & Data
-        period: stats.period,
-        setPeriod: stats.setPeriod,
-        stats: stats.stats,
-        monthRides: stats.monthRides,
-        isLoading: stats.isLoading,
-        fetchStats: stats.fetchStats,
-
-        // UI & Device
-        isMobile: ui.isMobile,
-
-        // Ride Actions
-        isRideModalOpen: rides.isRideModalOpen,
-        setIsRideModalOpen: rides.setIsRideModalOpen,
-        rideToEdit: rides.rideToEdit,
-        setRideToEdit: rides.setRideToEdit,
-        rideToDelete: rides.rideToDelete,
-        setRideToDelete: rides.setRideToDelete,
-        isDeletingRide: rides.isDeletingRide,
-        handleEditRide: rides.handleEditRide,
-        handleDeleteRide: rides.handleDeleteRide
+        trial,
+        isMobile,
+        refreshDashboard,
+        desktopStats: {
+            period,
+            setPeriod,
+            count: stats.count,
+            totalValue: stats.totalValue,
+            monthRides,
+            isLoading,
+        } satisfies DashboardDesktopStats,
+        mobileStats: {
+            period,
+            count: stats.count,
+            totalValue: stats.totalValue,
+        } satisfies DashboardMobileStats,
+        rideActions: {
+            editRide: rides.handleEditRide,
+            requestRideDelete: rides.setRideToDelete,
+        } satisfies DashboardRideActions,
+        modals: {
+            isRideModalOpen: rides.isRideModalOpen,
+            setIsRideModalOpen: rides.setIsRideModalOpen,
+            rideToEdit: rides.rideToEdit,
+            setRideToEdit: rides.setRideToEdit,
+            rideToDelete: rides.rideToDelete,
+            setRideToDelete: rides.setRideToDelete,
+            isDeletingRide: rides.isDeletingRide,
+            confirmRideDelete: rides.handleDeleteRide,
+        },
     };
 }

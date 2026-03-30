@@ -1,124 +1,147 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { api, apiClient } from "@/services/api";
-import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { parseApiError } from "@/lib/api-error";
+import { settingsKeys } from "@/lib/query-keys";
+import { settingsService } from "@/services/settings-service";
+import { type RidePresetFormInput } from "@/types/settings";
+
+function toPresetPayload(input: RidePresetFormInput) {
+    return {
+        label: input.location,
+        value: Number(input.value),
+        location: input.location,
+    };
+}
 
 export function useRidePresets() {
     const { toast } = useToast();
     const { user } = useAuth();
-    const [presets, setPresets] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-    const [isUpdating, setIsUpdating] = useState(false);
+    const queryClient = useQueryClient();
 
-    const loadPresets = useCallback(async () => {
-        try {
-            const data = await apiClient.get<any[]>("/settings/ride-presets");
-            setPresets(data);
-        } catch (err) {
-            console.error("Erro ao carregar presets", err);
+    const presetsQuery = useQuery({
+        queryKey: settingsKeys.presets(),
+        queryFn: ({ signal }) => settingsService.getRidePresets(signal),
+        enabled: !!user,
+    });
+
+    const invalidatePresets = () =>
+        queryClient.invalidateQueries({ queryKey: settingsKeys.presets() });
+
+    const addPresetMutation = useMutation({
+        mutationFn: (newPreset: RidePresetFormInput) =>
+            settingsService.createRidePreset(toPresetPayload(newPreset)),
+        onSuccess: async () => {
+            await invalidatePresets();
             toast({
-                title: "Erro ao carregar",
-                description: "Não foi possível carregar seus atalhos.",
-                variant: "destructive"
+                title: "Atalho adicionado!",
+                description: "Seu novo botao ja esta disponivel no painel mobile.",
             });
-        } finally {
-            setIsLoading(false);
-        }
-    }, [toast]);
-
-    useEffect(() => {
-        if (user) {
-            loadPresets();
-        } else {
-            setIsLoading(false);
-        }
-    }, [user, loadPresets]);
-
-    const addPreset = async (newPreset: { value: string; location: string }) => {
-        if (!newPreset.value || !newPreset.location) {
-            toast({
-                title: "Campos obrigatórios",
-                description: "Preencha valor e localidade.",
-                variant: "destructive"
-            });
-            return false;
-        }
-
-        setIsSaving(true);
-        try {
-            const data = await apiClient.post("/settings/ride-presets", {
-                ...newPreset,
-                label: newPreset.location,
-                value: Number(newPreset.value)
-            });
-            setPresets(prev => [...prev, data]);
-            toast({
-                title: "Atalho adicionado! 🚀",
-                description: "Seu novo botão já está disponível no painel mobile.",
-            });
-            return true;
-        } catch (err) {
+        },
+        onError: (error) => {
             toast({
                 title: "Erro ao adicionar",
-                description: "Tente novamente mais tarde.",
-                variant: "destructive"
+                description: parseApiError(error, "Tente novamente mais tarde."),
+                variant: "destructive",
+            });
+        },
+    });
+
+    const deletePresetMutation = useMutation({
+        mutationFn: (id: string) => settingsService.deleteRidePreset(id),
+        onSuccess: async () => {
+            await invalidatePresets();
+            toast({
+                title: "Atalho removido",
+                description: "O botao foi excluido com sucesso.",
+            });
+        },
+        onError: (error) => {
+            toast({
+                title: "Erro ao remover",
+                description: parseApiError(error, "Tente novamente mais tarde."),
+                variant: "destructive",
+            });
+        },
+    });
+
+    const updatePresetMutation = useMutation({
+        mutationFn: ({
+            id,
+            value,
+            location,
+        }: {
+            id: string;
+            value: number;
+            location: string;
+        }) =>
+            settingsService.updateRidePreset(id, {
+                label: location,
+                value,
+                location,
+            }),
+        onSuccess: async () => {
+            await invalidatePresets();
+            toast({ title: "Atalho atualizado!" });
+        },
+        onError: (error) => {
+            toast({
+                title: "Erro ao atualizar",
+                description: parseApiError(error, "Tente novamente mais tarde."),
+                variant: "destructive",
+            });
+        },
+    });
+
+    const addPreset = async (newPreset: RidePresetFormInput) => {
+        if (!newPreset.value || !newPreset.location) {
+            toast({
+                title: "Campos obrigatorios",
+                description: "Preencha valor e localidade.",
+                variant: "destructive",
             });
             return false;
-        } finally {
-            setIsSaving(false);
+        }
+
+        try {
+            await addPresetMutation.mutateAsync(newPreset);
+            return true;
+        } catch {
+            return false;
         }
     };
 
     const deletePreset = async (id: string) => {
         try {
-            await apiClient.delete(`/settings/ride-presets/${id}`);
-            setPresets(prev => prev.filter(p => p.id !== id));
-            toast({
-                title: "Atalho removido",
-                description: "O botão foi excluído com sucesso.",
-            });
+            await deletePresetMutation.mutateAsync(id);
             return true;
-        } catch (err) {
-            toast({
-                title: "Erro ao remover",
-                description: "Tente novamente mais tarde.",
-                variant: "destructive"
-            });
+        } catch {
             return false;
         }
     };
 
-    const updatePreset = async (id: string, updateData: { value: number; location: string }) => {
-        setIsUpdating(true);
+    const updatePreset = async (
+        id: string,
+        updateData: { value: number; location: string },
+    ) => {
         try {
-            const data = await apiClient.patch(`/settings/ride-presets/${id}`, {
-                label: updateData.location,
-                value: updateData.value,
-                location: updateData.location
-            });
-
-            setPresets(prev => prev.map(p => p.id === data.id ? data : p));
-            toast({ title: "Atalho atualizado! ✏️" });
+            await updatePresetMutation.mutateAsync({ id, ...updateData });
             return true;
-        } catch (err) {
-            toast({ title: "Erro ao atualizar", variant: "destructive" });
+        } catch {
             return false;
-        } finally {
-            setIsUpdating(false);
         }
     };
 
     return {
-        presets,
-        isLoading,
-        isSaving,
-        isUpdating,
+        presets: presetsQuery.data ?? [],
+        isLoading: presetsQuery.isLoading,
+        isSaving: addPresetMutation.isPending,
+        isUpdating: updatePresetMutation.isPending,
         addPreset,
         deletePreset,
         updatePreset,
-        refreshPresets: loadPresets
+        refreshPresets: presetsQuery.refetch,
     };
 }

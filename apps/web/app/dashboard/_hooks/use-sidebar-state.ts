@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LayoutDashboard, Users, Bike, Wallet, Settings, Sparkles, Shield, LucideIcon } from "lucide-react";
 import { User } from "@/hooks/use-auth";
+import { getFreeTrialState } from "@/services/free-trial-service";
 
 export interface MenuItem {
     icon: LucideIcon;
@@ -10,6 +11,7 @@ export interface MenuItem {
     color: string;
     href: string;
     roles: string[];
+    disabled?: boolean;
 }
 
 const ALL_MENU_ITEMS: MenuItem[] = [
@@ -27,17 +29,19 @@ const ALL_MENU_ITEMS: MenuItem[] = [
  */
 export function useSidebarState(user: User | null) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const trial = getFreeTrialState(user);
 
     const filteredMenuItems = ALL_MENU_ITEMS.filter(item => {
-        const hasRole = item.roles.includes(user?.role || "user");
-        
-        // Regra adicional: se expirado, bloqueia acesso a quase tudo exceto Dashboard e Config
-        if (user?.role === 'user' && user.subscription?.status === 'expired') {
-            return hasRole && (item.href === '/dashboard' || item.href === '/dashboard/settings');
-        }
-        
-        return hasRole;
-    });
+        return item.roles.includes(user?.role || "user");
+    }).map((item) => ({
+        ...item,
+        disabled: Boolean(
+            user?.role === 'user' &&
+            trial.shouldLockFeatures &&
+            item.href !== '/dashboard' &&
+            item.href !== '/dashboard/settings',
+        ),
+    }));
 
     const toggleSidebar = () => setIsSidebarOpen(prev => !prev);
     const closeSidebar = () => setIsSidebarOpen(false);

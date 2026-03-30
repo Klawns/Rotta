@@ -7,7 +7,7 @@ interface InfiniteScrollTriggerProps {
     onIntersect: () => void;
     hasMore: boolean;
     isLoading: boolean;
-    error?: any;
+    error?: unknown;
     retry?: () => void;
 }
 

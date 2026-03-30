@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { InfiniteScrollTrigger } from "@/components/dashboard/mobile-dashboard/components/infinite-scroll-trigger";
 
 interface VirtualizedInfiniteListProps<T> {
@@ -11,7 +10,7 @@ interface VirtualizedInfiniteListProps<T> {
     hasMore: boolean;
     isLoading: boolean;
     onLoadMore: () => void;
-    error?: any;
+    error?: unknown;
     retry?: () => void;
     containerRef: React.RefObject<HTMLDivElement | null>;
     className?: string;
@@ -22,7 +21,6 @@ interface VirtualizedInfiniteListProps<T> {
 export function VirtualizedInfiniteList<T>({
     items,
     renderItem,
-    estimateSize,
     hasMore,
     isLoading,
     onLoadMore,
@@ -31,53 +29,21 @@ export function VirtualizedInfiniteList<T>({
     containerRef,
     className,
     gap = 8,
-    overscan = 12
 }: VirtualizedInfiniteListProps<T>) {
-    const count = items.length;
-    const prevCountRef = React.useRef(count);
-
-    const rowVirtualizer = useVirtualizer({
-        count,
-        getScrollElement: () => containerRef.current,
-        estimateSize: () => estimateSize + gap,
-        overscan,
-    });
-
-    // Sincronização explícita para evitar delays em mudanças de dados/paginação
-    React.useLayoutEffect(() => {
-        if (count !== prevCountRef.current) {
-            rowVirtualizer.measure();
-            prevCountRef.current = count;
-        }
-    }, [count, rowVirtualizer]);
-
-    const virtualItems = rowVirtualizer.getVirtualItems();
-
     return (
         <div className={className}>
             <div
                 style={{
-                    height: `${rowVirtualizer.getTotalSize()}px`,
-                    width: '100%',
-                    position: 'relative',
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: `${gap}px`,
+                    width: "100%",
                 }}
             >
-                {virtualItems.map((virtualRow) => (
-                    <div
-                        key={virtualRow.key}
-                        data-index={virtualRow.index}
-                        ref={rowVirtualizer.measureElement}
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            transform: `translateY(${virtualRow.start}px)`,
-                            paddingBottom: `${gap}px`,
-                        }}
-                    >
-                        {renderItem(items[virtualRow.index], virtualRow.index)}
-                    </div>
+                {items.map((item, index) => (
+                    <React.Fragment key={index}>
+                        {renderItem(item, index)}
+                    </React.Fragment>
                 ))}
             </div>
 

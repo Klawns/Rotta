@@ -1,41 +1,33 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useMemo } from 'react';
 
 /**
- * Hook para gerenciar a estratégia híbrida de renderização de listas.
- * Decide entre renderização direta (.map) ou virtualização baseada em um threshold.
- * Uma vez que a virtualização é ativada, ela permanece ativa para evitar flickering.
+ * Mantemos a regra simples e determinÃ­stica para evitar conflitos com o
+ * compiler do React. Se a lista cair abaixo do threshold, voltamos para o
+ * renderer direto.
  */
 export const VIRTUALIZATION_THRESHOLD = 100;
 
 interface UseHybridListOptions {
-    threshold?: number;
-    enabled?: boolean;
+  threshold?: number;
+  enabled?: boolean;
 }
 
-export function useHybridList<T>(data: T[], options: UseHybridListOptions = {}) {
-    const { threshold = VIRTUALIZATION_THRESHOLD, enabled = true } = options;
-    
-    // Estado para travar a virtualização uma vez que ela é ativada
-    const [isVirtualizationLocked, setIsVirtualizationLocked] = useState(false);
+export function useHybridList<T>(
+  data: T[],
+  options: UseHybridListOptions = {},
+) {
+  const { threshold = VIRTUALIZATION_THRESHOLD, enabled = true } = options;
 
-    // Verifica se a virtualização deve estar ativa agora
-    const shouldVirtualize = useMemo(() => {
-        if (!enabled) return false;
-        
-        // Se já travou em virtualizado, permanece virtualizado
-        if (isVirtualizationLocked) return true;
+  const shouldVirtualize = useMemo(() => {
+    if (!enabled) {
+      return false;
+    }
 
-        // Se ultrapassou o limite, trava e ativa
-        if (data.length > threshold) {
-            setIsVirtualizationLocked(true);
-            return true;
-        }
+    return data.length > threshold;
+  }, [data.length, enabled, threshold]);
 
-        return false;
-    }, [data.length, threshold, isVirtualizationLocked, enabled]);
-
-    return {
-        isVirtualizing: shouldVirtualize,
-        resetVirtualization: () => setIsVirtualizationLocked(false)
-    };
+  return {
+    isVirtualizing: shouldVirtualize,
+    resetVirtualization: () => undefined,
+  };
 }

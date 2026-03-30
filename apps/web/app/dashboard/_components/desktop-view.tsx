@@ -1,75 +1,108 @@
 "use client";
 
-import { User } from "@/hooks/use-auth";
+import { type User } from "@/hooks/use-auth";
+import { RidesChart } from "@/components/dashboard/rides-chart";
+import {
+    type DashboardDesktopStats,
+    type DashboardRideActions,
+} from "../_hooks/use-dashboard";
 import { DashboardHeader } from "./dashboard-header";
 import { DashboardStatsGrid } from "./dashboard-stats-grid";
 import { RecentActivities } from "./recent-activities";
 import { QuickActions } from "./quick-actions";
 import { FinanceCard } from "./finance-card";
-import { RidesChart } from "@/components/dashboard/rides-chart";
-import { Ride } from "@/types/rides";
+import { FeatureLockShell } from "./feature-lock-shell";
+import { TrialStatusCard } from "./trial-status-card";
+import type { FreeTrialState } from "@/services/free-trial-service";
 
 interface DashboardDesktopViewProps {
     user: User | null;
-    period: 'today' | 'week';
-    setPeriod: (period: 'today' | 'week') => void;
-    stats: {
-        count: number;
-        totalValue: number;
-        rides: Ride[];
-    };
-    monthRides: Ride[];
-    isLoading: boolean;
-    handleEditRide: (ride: Ride) => void;
-    setRideToDelete: (ride: Ride) => void;
+    stats: DashboardDesktopStats;
+    rides: DashboardRideActions;
+    trial: FreeTrialState;
 }
 
-/**
- * Visão otimizada para Desktop da página de Dashboard.
- * Orquestra diversos widgets e gráficos.
- */
 export function DashboardDesktopView({
     user,
-    period,
-    setPeriod,
     stats,
-    monthRides,
-    isLoading,
-    handleEditRide,
-    setRideToDelete
+    rides,
+    trial,
 }: DashboardDesktopViewProps) {
     return (
         <div className="space-y-8">
-            <DashboardHeader 
-                userName={user?.name || ""} 
-                period={period} 
-                setPeriod={setPeriod} 
+            <DashboardHeader
+                userName={user?.name || ""}
+                period={stats.period}
+                setPeriod={stats.setPeriod}
+                isLocked={trial.shouldLockFeatures}
             />
 
-            <DashboardStatsGrid 
-                count={stats.count} 
-                totalValue={stats.totalValue} 
-                period={period} 
-                isLoading={isLoading} 
-            />
+            <TrialStatusCard trial={trial} />
+
+            <FeatureLockShell
+                isLocked={trial.shouldLockFeatures}
+                title="Resumo bloqueado"
+                description="Assine para voltar a registrar corridas, consultar relatorios e usar os atalhos principais."
+                ctaHref={trial.ctaHref}
+                ctaLabel={trial.ctaLabel}
+            >
+                <DashboardStatsGrid
+                    count={stats.count}
+                    totalValue={stats.totalValue}
+                    period={stats.period}
+                    isLoading={stats.isLoading}
+                />
+            </FeatureLockShell>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch min-h-0">
-                <RecentActivities 
-                    key={`activities-${period}`}
-                    period={period}
-                    onEditRide={handleEditRide}
-                    onDeleteRide={setRideToDelete}
-                />
+                <FeatureLockShell
+                    isLocked={trial.shouldLockFeatures}
+                    title="Atividades bloqueadas"
+                    description="Suas corridas continuam visiveis no dashboard, mas novas interacoes dependem da assinatura."
+                    ctaHref={trial.ctaHref}
+                    ctaLabel={trial.ctaLabel}
+                >
+                    <RecentActivities
+                        key={`activities-${stats.period}`}
+                        period={stats.period}
+                        onEditRide={rides.editRide}
+                        onDeleteRide={rides.requestRideDelete}
+                    />
+                </FeatureLockShell>
 
-                <RidesChart 
-                    key={`chart-${period}`}
-                    rides={monthRides} 
-                    className="h-full" 
-                />
+                <FeatureLockShell
+                    isLocked={trial.shouldLockFeatures}
+                    title="Graficos bloqueados"
+                    description="Desbloqueie o plano pago para analisar a evolucao completa da sua operacao."
+                    ctaHref={trial.ctaHref}
+                    ctaLabel={trial.ctaLabel}
+                >
+                    <RidesChart
+                        key={`chart-${stats.period}`}
+                        rides={stats.monthRides}
+                        className="h-full"
+                    />
+                </FeatureLockShell>
 
-                <QuickActions />
+                <FeatureLockShell
+                    isLocked={trial.shouldLockFeatures}
+                    title="Acoes rapidas bloqueadas"
+                    description="Cadastros e registros continuam visiveis, mas exigem assinatura para voltar a operar."
+                    ctaHref={trial.ctaHref}
+                    ctaLabel={trial.ctaLabel}
+                >
+                    <QuickActions />
+                </FeatureLockShell>
 
-                <FinanceCard />
+                <FeatureLockShell
+                    isLocked={trial.shouldLockFeatures}
+                    title="Financeiro bloqueado"
+                    description="Os modulos financeiros permanecem aparentes para reforcar o valor do produto, mas estao bloqueados."
+                    ctaHref={trial.ctaHref}
+                    ctaLabel={trial.ctaLabel}
+                >
+                    <FinanceCard />
+                </FeatureLockShell>
             </div>
         </div>
     );

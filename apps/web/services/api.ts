@@ -1,170 +1,128 @@
-import axios from "axios";
+import axios, { AxiosRequestConfig } from 'axios';
+import {
+  isRetriableUnauthorized,
+  notifyUnauthorizedIfNeeded,
+  refreshSession,
+} from './api-auth';
+import { createRefreshQueue } from './api-refresh-queue';
+import { normalizeEnvelope, type ApiEnvelope, unwrapData } from './api-envelope';
+import { applySessionHeaders, setSessionMode } from './api-session';
+export type { ApiEnvelope } from './api-envelope';
+export { setSessionMode };
+
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    _skipRedirect?: boolean;
+    _retry?: boolean;
+  }
+}
 
 export const api = axios.create({
-    baseURL: typeof window !== 'undefined' ? "/api" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"),
-    withCredentials: true,
+  baseURL:
+    typeof window !== 'undefined'
+      ? '/api'
+      : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+  withCredentials: true,
 });
 
-// Interceptor de requisição para definir o modo da sessão
-api.interceptors.request.use((config) => {
-    if (typeof window !== "undefined") {
-        const path = window.location.pathname;
-        if (path.startsWith("/admin") || path.startsWith("/area-restrita")) {
-            config.headers["X-Session-Mode"] = "admin";
-        }
-    }
-    return config;
-});
+api.interceptors.request.use((config) => applySessionHeaders(config));
 
-// Fila para gerenciar múltiplas requisições durante o refresh do token
 let isRefreshing = false;
-let failedQueue: any[] = [];
+const refreshQueue = createRefreshQueue();
 
-const processQueue = (error: any, token: string | null = null) => {
-    failedQueue.forEach((prom) => {
-        if (error) {
-            prom.reject(error);
-        } else {
-            prom.resolve(token);
-        }
-    });
-
-    failedQueue = [];
-};
-
-// Interceptor para tratar erros globais e refresh de token
 api.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    async (error) => {
-        const originalRequest = error.config;
-
-        // Verifica se é 401 e se não é uma tentativa de retry do próprio refresh
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            // Se já estiver renovando, adiciona esta requisição à fila
-            if (isRefreshing) {
-                return new Promise(function (resolve, reject) {
-                    failedQueue.push({ resolve, reject });
-                })
-                    .then(() => {
-                        return api(originalRequest);
-                    })
-                    .catch((err) => {
-                        return Promise.reject(err);
-                    });
-            }
-
-            originalRequest._retry = true;
-            isRefreshing = true;
-
-            try {
-                console.log("[API] Iniciando refresh automático do token...");
-                // Usamos axios puro aqui para não entrar no interceptor da nossa própria instância da api
-                const refreshResponse = await axios.post(
-                    `${api.defaults.baseURL}/auth/refresh`,
-                    {},
-                    {
-                        withCredentials: true,
-                        // Evita que o axios lance erro no console para 401/403 durante o refresh
-                        validateStatus: (status) => status < 500
-                    }
-                );
-
-                if (refreshResponse.status !== 200) {
-                    throw { response: refreshResponse };
-                }
-
-                console.log("[API] Token renovado com sucesso. Processando fila de", failedQueue.length, "requisições...");
-                isRefreshing = false;
-                processQueue(null);
-
-                return api(originalRequest);
-            } catch (refreshError: any) {
-                // Só logamos erro real se não for 401 (que é apenas sessão expirada)
-                if (refreshError.response?.status !== 401) {
-                    console.error("[API] Falha ao renovar token:", refreshError);
-                }
-
-                console.log("[API] Falha no refresh, limpando fila...");
-                processQueue(refreshError, null);
-                isRefreshing = false;
-
-                // Redireciona para o login apenas se houver uma falha real no refresh 
-                // e não for uma requisição interna de sistema
-                if (
-                    typeof window !== "undefined" &&
-                    !window.location.pathname.includes("/login") &&
-                    !window.location.pathname.includes("/area-restrita") &&
-                    !originalRequest._skipRedirect
-                ) {
-                    const currentPath = window.location.pathname + window.location.search;
-                    window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
-                }
-                return Promise.reject(refreshError);
-            }
-        }
-
-        return Promise.reject(error);
+  (response) => response,
+  async (error) => {
+    if (!error.config) {
+      return Promise.reject(error);
     }
+
+    const originalRequest = error.config;
+
+    if (isRetriableUnauthorized(error.response?.status, originalRequest)) {
+      if (isRefreshing) {
+        return new Promise(function (resolve, reject) {
+          refreshQueue.enqueue({ resolve, reject });
+        })
+          .then(() => api(originalRequest))
+          .catch((refreshError) => Promise.reject(refreshError));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        await refreshSession(api.defaults.baseURL);
+
+        isRefreshing = false;
+        refreshQueue.process(null);
+
+        return api(originalRequest);
+      } catch (refreshError: unknown) {
+        refreshQueue.process(refreshError, null);
+        isRefreshing = false;
+
+        notifyUnauthorizedIfNeeded(originalRequest, refreshError);
+
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  },
 );
 
 export default api;
 
-/**
- * Cliente de API com unwrapping automático para o padrão V2.
- * O frontend deve consumir esses métodos no lugar de `api.get` direto.
- * Isso garante que `res.data.data` ou vazamentos do envelope `{ data, meta }` não se espalhem pelo código.
- */
 export const apiClient = {
-    async get<T = any>(url: string, config?: any): Promise<T> {
-        const response = await api.get(url, config);
-        // Desempacota { data, meta } se detectar padrão V2, caso contrário, retorna response.data
-        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-            return response.data.data as T;
-        }
-        return response.data as T;
-    },
+  async get<TData = unknown>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<TData> {
+    const response = await api.get(url, config);
+    return unwrapData<TData>(response.data);
+  },
 
-    async getPaginated<T = any>(url: string, config?: any): Promise<{ data: T; meta: any }> {
-        const response = await api.get(url, config);
-        // Garante que o formato V2 paginado retorne corretamente o envelope para hooks de scroll infinito/paginação
-        if (response.data && typeof response.data === 'object' && 'meta' in response.data) {
-            return response.data as { data: T; meta: any };
-        }
-        // Fallback defensivo para caso o backend não honre o contrato paginado
-        return { data: (typeof response.data !== 'undefined' ? response.data : []) as T, meta: {} };
-    },
+  async getPaginated<TData = unknown, TMeta = Record<string, unknown>>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiEnvelope<TData, TMeta>> {
+    const response = await api.get(url, config);
+    return normalizeEnvelope<TData, TMeta>(response.data, response.data as TData);
+  },
 
-    async post<T = any>(url: string, data?: any, config?: any): Promise<T> {
-        const response = await api.post(url, data, config);
-        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-            return response.data.data as T;
-        }
-        return response.data as T;
-    },
+  async post<TData = unknown>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<TData> {
+    const response = await api.post(url, data, config);
+    return unwrapData<TData>(response.data);
+  },
 
-    async put<T = any>(url: string, data?: any, config?: any): Promise<T> {
-        const response = await api.put(url, data, config);
-        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-            return response.data.data as T;
-        }
-        return response.data as T;
-    },
+  async put<TData = unknown>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<TData> {
+    const response = await api.put(url, data, config);
+    return unwrapData<TData>(response.data);
+  },
 
-    async patch<T = any>(url: string, data?: any, config?: any): Promise<T> {
-        const response = await api.patch(url, data, config);
-        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-            return response.data.data as T;
-        }
-        return response.data as T;
-    },
+  async patch<TData = unknown>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<TData> {
+    const response = await api.patch(url, data, config);
+    return unwrapData<TData>(response.data);
+  },
 
-    async delete<T = any>(url: string, config?: any): Promise<T> {
-        const response = await api.delete(url, config);
-        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-            return response.data.data as T;
-        }
-        return response.data as T;
-    }
+  async delete<TData = unknown>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<TData> {
+    const response = await api.delete(url, config);
+    return unwrapData<TData>(response.data);
+  },
 };

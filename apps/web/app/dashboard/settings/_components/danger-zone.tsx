@@ -1,23 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldAlert, Trash2, Users, Loader2, AlertTriangle } from "lucide-react";
+import { ShieldAlert, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useBulkDelete } from "../_hooks/use-bulk-delete";
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/confirm-modal";
-import { Progress } from "@/components/ui/progress";
+import { useBulkDelete } from "../_hooks/use-bulk-delete";
 
 export function DangerZone() {
-    const { 
-        deleteAllClients, 
-        isDeletingClients, 
-        clientsProgress,
-        deleteAllRides, 
+    const {
+        deleteAllClients,
+        isDeletingClients,
+        deleteAllRides,
         isDeletingRides,
-        ridesProgress 
     } = useBulkDelete();
-    
+
     const [isConfirmClientsOpen, setIsConfirmClientsOpen] = useState(false);
     const [isConfirmRidesOpen, setIsConfirmRidesOpen] = useState(false);
 
@@ -32,24 +29,22 @@ export function DangerZone() {
                     <ShieldAlert size={24} />
                     Zona de Perigo
                 </h3>
-                <p className="text-sm text-text-muted font-medium">Ações irreversíveis para gerenciar seus dados de forma definitiva.</p>
+                <p className="text-sm text-text-muted font-medium">Acoes irreversiveis para gerenciar seus dados de forma definitiva.</p>
             </div>
 
             <div className="grid gap-6">
-                {/* Delete All Clients */}
                 <div className="p-8 bg-card-background border border-destructive/10 rounded-[2.5rem] flex flex-col gap-6 transition-all hover:border-destructive/30 group relative overflow-hidden">
-                    
                     <div className="flex flex-col md:flex-row items-center justify-between gap-8 w-full">
                         <div className="space-y-3 relative z-10 text-center md:text-left">
                             <h4 className="text-xl font-display font-black text-text-primary uppercase tracking-tight">Excluir todos os clientes</h4>
                             <p className="text-text-secondary text-sm font-medium max-w-md leading-relaxed">
-                                Isso removerá permanentemente todos os dados de clientes cadastrados. <span className="text-destructive font-bold underline">Esta ação não pode ser desfeita.</span>
+                                Isso removera permanentemente todos os dados de clientes cadastrados. <span className="text-destructive font-bold underline">Esta acao nao pode ser desfeita.</span>
                             </p>
-                            
+
                             <div className="flex items-start gap-2 p-3 bg-destructive/5 rounded-xl border border-destructive/10 max-w-md">
                                 <AlertTriangle size={16} className="text-destructive shrink-0 mt-0.5" />
                                 <p className="text-[11px] text-destructive/80 font-bold leading-tight uppercase tracking-wide">
-                                    Aviso: Ao excluir clientes, todas as corridas e pagamentos vinculados a eles também serão apagados permanentemente.
+                                    Aviso: ao excluir clientes, todas as corridas e pagamentos vinculados a eles tambem serao apagados permanentemente.
                                 </p>
                             </div>
                         </div>
@@ -70,29 +65,21 @@ export function DangerZone() {
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: "auto" }}
                                 exit={{ opacity: 0, height: 0 }}
-                                className="space-y-3 relative z-10"
+                                className="flex items-center gap-2 text-[10px] font-display font-black text-destructive uppercase tracking-widest relative z-10"
                             >
-                                <div className="flex justify-between items-center text-[10px] font-display font-black text-destructive uppercase tracking-widest">
-                                    <span className="flex items-center gap-2">
-                                        <Loader2 className="animate-spin" size={12} />
-                                        Processando exclusão em massa...
-                                    </span>
-                                    <span>{clientsProgress}%</span>
-                                </div>
-                                <Progress value={clientsProgress} className="h-2 bg-destructive/10 transition-all" />
+                                <Loader2 className="animate-spin" size={12} />
+                                Processando exclusao em massa...
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
 
-                {/* Delete All Rides */}
                 <div className="p-8 bg-card-background border border-destructive/10 rounded-[2.5rem] flex flex-col gap-6 transition-all hover:border-destructive/30 group relative overflow-hidden">
-
                     <div className="flex flex-col md:flex-row items-center justify-between gap-8 w-full">
                         <div className="space-y-3 relative z-10 text-center md:text-left">
-                            <h4 className="text-xl font-display font-black text-text-primary uppercase tracking-tight">Limpar histórico de corridas</h4>
+                            <h4 className="text-xl font-display font-black text-text-primary uppercase tracking-tight">Limpar historico de corridas</h4>
                             <p className="text-text-secondary text-sm font-medium max-w-md leading-relaxed">
-                                Todos os registros de corridas e estatísticas serão apagados definitivamente. <span className="text-destructive font-bold underline">Ação irreversível.</span>
+                                Todos os registros de corridas e estatisticas serao apagados definitivamente. <span className="text-destructive font-bold underline">Acao irreversivel.</span>
                             </p>
                         </div>
 
@@ -112,16 +99,10 @@ export function DangerZone() {
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: "auto" }}
                                 exit={{ opacity: 0, height: 0 }}
-                                className="space-y-3 relative z-10"
+                                className="flex items-center gap-2 text-[10px] font-display font-black text-destructive uppercase tracking-widest relative z-10"
                             >
-                                <div className="flex justify-between items-center text-[10px] font-display font-black text-destructive uppercase tracking-widest">
-                                    <span className="flex items-center gap-2">
-                                        <Loader2 className="animate-spin" size={12} />
-                                        Resetando histórico de atividades...
-                                    </span>
-                                    <span>{ridesProgress}%</span>
-                                </div>
-                                <Progress value={ridesProgress} className="h-2 bg-destructive/10 transition-all" />
+                                <Loader2 className="animate-spin" size={12} />
+                                Resetando historico de atividades...
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -130,11 +111,10 @@ export function DangerZone() {
 
             <div className="p-6 bg-destructive/5 border border-dashed border-destructive/20 rounded-3xl">
                 <p className="text-[12px] text-destructive font-display font-black uppercase tracking-widest text-center opacity-70">
-                    Cuidado: As ações acima são permanentes e não podem ser recuperadas após a confirmação.
+                    Cuidado: as acoes acima sao permanentes e nao podem ser recuperadas apos a confirmacao.
                 </p>
             </div>
 
-            {/* Confirmations */}
             <ConfirmModal
                 isOpen={isConfirmClientsOpen}
                 onClose={() => setIsConfirmClientsOpen(false)}
@@ -143,7 +123,7 @@ export function DangerZone() {
                     setIsConfirmClientsOpen(false);
                 }}
                 title="Excluir todos os clientes?"
-                description="Tem certeza absoluta que deseja excluir todos os clientes? Esta ação removerá permanentemente todos os registros de clientes, corridas e pagamentos do sistema."
+                description="Tem certeza absoluta que deseja excluir todos os clientes? Esta acao removera permanentemente todos os registros de clientes, corridas e pagamentos do sistema."
                 confirmText="Sim, excluir tudo"
                 variant="danger"
                 isLoading={isDeletingClients}
@@ -156,9 +136,9 @@ export function DangerZone() {
                     await deleteAllRides();
                     setIsConfirmRidesOpen(false);
                 }}
-                title="Limpar histórico?"
-                description="Deseja realmente apagar todo o histórico de corridas? Suas estatísticas e registros serão resetados permanentemente."
-                confirmText="Sim, limpar histórico"
+                title="Limpar historico?"
+                description="Deseja realmente apagar todo o historico de corridas? Suas estatisticas e registros serao resetados permanentemente."
+                confirmText="Sim, limpar historico"
                 variant="danger"
                 isLoading={isDeletingRides}
             />

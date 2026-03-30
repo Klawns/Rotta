@@ -1,23 +1,23 @@
 "use client";
 
-import { Client, Ride, ClientBalance } from "@/types/rides";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx-js-style";
+import { formatResolvedDateValue } from "@/lib/date-utils";
+import { type ClientPayment } from "@/types/client-payments";
+import { Client, Ride, ClientBalance } from "@/types/rides";
 
 export function useExportClientDebt() {
   const exportToExcel = (
     client: Client,
     rides: Ride[],
-    payments: any[],
+    payments: ClientPayment[],
     balance: ClientBalance,
     options: { userName: string }
   ) => {
     if (!client || !balance) return;
 
-    // --- Estilos ---
     const headerStyle = {
-      fill: { fgColor: { rgb: "3B82F6" } }, // Blue-500
+      fill: { fgColor: { rgb: "3B82F6" } },
       font: { color: { rgb: "FFFFFF" }, bold: true, sz: 12 },
       alignment: { horizontal: "center", vertical: "center" },
       border: {
@@ -28,7 +28,7 @@ export function useExportClientDebt() {
 
     const sectionHeaderStyle = {
       font: { bold: true, sz: 13 },
-      fill: { fgColor: { rgb: "F1F5F9" } }, // Slate-100
+      fill: { fgColor: { rgb: "F1F5F9" } },
       alignment: { horizontal: "left" }
     };
 
@@ -37,66 +37,66 @@ export function useExportClientDebt() {
     const brandStyle = { font: { bold: true, sz: 16, color: { rgb: "1E293B" } } };
     const subtitleStyle = { font: { sz: 10, color: { rgb: "64748B" } } };
 
-    // --- Construção da Planilha ---
     const wb = XLSX.utils.book_new();
 
-    // Preparar dados do resumo
     const summaryData = [
-      [{ v: "DETALHAMENTO DE DÍVIDA", s: { ...sectionHeaderStyle, font: { ...sectionHeaderStyle.font, sz: 14 } } }, "", "", "", { v: "ROTTA", s: { ...brandStyle, alignment: { horizontal: "right" } } }],
-      ["", "", "", "", { v: "Gestão de Entregas", s: { ...subtitleStyle, alignment: { horizontal: "right" } } }],
-      [], // Espaçador
-      [{ v: "INFORMAÇÕES DO CLIENTE", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }],
+      [{ v: "DETALHAMENTO DE DIVIDA", s: { ...sectionHeaderStyle, font: { ...sectionHeaderStyle.font, sz: 14 } } }, "", "", "", { v: "ROTTA", s: { ...brandStyle, alignment: { horizontal: "right" } } }],
+      ["", "", "", "", { v: "Gestao de Entregas", s: { ...subtitleStyle, alignment: { horizontal: "right" } } }],
+      [],
+      [{ v: "INFORMACOES DO CLIENTE", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }],
       [{ v: "Cliente", s: labelStyle }, { v: client.name }],
       [{ v: "Motorista", s: labelStyle }, { v: options.userName }],
       [{ v: "Gerado em", s: labelStyle }, { v: format(new Date(), "dd/MM/yyyy HH:mm") }],
-      [], 
-      [{ v: "RESUMO FINANCEIRO", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }],
-      [{ v: "Total em Corridas", s: labelStyle }, { v: balance.totalDebt, t: 'n', s: currencyStyle }],
-      [{ v: "Total Pago (Parcial)", s: labelStyle }, { v: balance.totalPaid, t: 'n', s: currencyStyle }],
-      [{ v: "Saldo Devedor Atual", s: { ...labelStyle, font: { ...labelStyle.font, color: { rgb: "DC2626" } } } }, { v: balance.remainingBalance, t: 'n', s: { ...currencyStyle, font: { bold: true, color: { rgb: "DC2626" } } } }],
-      [{ v: "Crédito Disponível (Saldo)", s: { ...labelStyle, font: { ...labelStyle.font, color: { rgb: "10B981" } } } }, { v: balance.clientBalance, t: 'n', s: { ...currencyStyle, font: { bold: true, color: { rgb: "10B981" } } } }],
       [],
-      [{ v: "HISTÓRICO DE CORRIDAS", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }],
+      [{ v: "RESUMO FINANCEIRO", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }],
+      [{ v: "Total em Corridas", s: labelStyle }, { v: balance.totalDebt, t: "n", s: currencyStyle }],
+      [{ v: "Total Pago (Parcial)", s: labelStyle }, { v: balance.totalPaid, t: "n", s: currencyStyle }],
+      [{ v: "Saldo Devedor Atual", s: { ...labelStyle, font: { ...labelStyle.font, color: { rgb: "DC2626" } } } }, { v: balance.remainingBalance, t: "n", s: { ...currencyStyle, font: { bold: true, color: { rgb: "DC2626" } } } }],
+      [{ v: "Credito Disponivel (Saldo)", s: { ...labelStyle, font: { ...labelStyle.font, color: { rgb: "10B981" } } } }, { v: balance.clientBalance, t: "n", s: { ...currencyStyle, font: { bold: true, color: { rgb: "10B981" } } } }],
+      [],
+      [{ v: "HISTORICO DE CORRIDAS", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }, { v: "", s: sectionHeaderStyle }],
       [
         { v: "Data", s: headerStyle },
         { v: "Local", s: headerStyle },
         { v: "Valor Orig.", s: headerStyle },
         { v: "Saldo Usado", s: headerStyle },
-        { v: "Dívida Gerada", s: headerStyle },
+        { v: "Divida Gerada", s: headerStyle },
         { v: "Status", s: headerStyle }
       ]
     ];
 
-    // Filtrar apenas corridas pendentes para o relatório de dívida (ou todas?)
-    // O usuário pediu "PDF de dívidas", que geralmente foca no que está em aberto.
-    // Vou incluir todas as enviadas para o hook.
-    const rideRows = rides.map(ride => [
-      { v: ride.rideDate ? format(new Date(ride.rideDate), "dd/MM/yy HH:mm") : "---" },
+    const rideRows = rides.map((ride) => [
+      { v: formatResolvedDateValue(ride.rideDate, ride.createdAt, "dd/MM/yy HH:mm") },
       { v: ride.location || "---" },
-      { v: ride.value, t: 'n', s: currencyStyle },
-      { v: ride.paidWithBalance || 0, t: 'n', s: { ...currencyStyle, font: { color: { rgb: (ride.paidWithBalance || 0) > 0 ? "10B981" : "94A3B8" } } } },
-      { v: ride.debtValue !== undefined ? ride.debtValue : (ride.paymentStatus === 'PENDING' ? ride.value : 0), t: 'n', s: { ...currencyStyle, font: { color: { rgb: "DC2626" }, bold: true } } },
-      { v: ride.paymentStatus === 'PAID' ? 'Pago' : 'Pendente', s: { font: { color: { rgb: ride.paymentStatus === 'PAID' ? "10B981" : "F59E0B" }, bold: true } } }
+      { v: ride.value, t: "n", s: currencyStyle },
+      { v: ride.paidWithBalance || 0, t: "n", s: { ...currencyStyle, font: { color: { rgb: (ride.paidWithBalance || 0) > 0 ? "10B981" : "94A3B8" } } } },
+      { v: ride.debtValue !== undefined ? ride.debtValue : (ride.paymentStatus === "PENDING" ? ride.value : 0), t: "n", s: { ...currencyStyle, font: { color: { rgb: "DC2626" }, bold: true } } },
+      { v: ride.paymentStatus === "PAID" ? "Pago" : "Pendente", s: { font: { color: { rgb: ride.paymentStatus === "PAID" ? "10B981" : "F59E0B" }, bold: true } } }
     ]);
 
-    const finalData = [...summaryData, ...rideRows];
-    const ws = XLSX.utils.aoa_to_sheet(finalData);
+    const paymentRows = payments.map((payment) => [
+      { v: formatResolvedDateValue(payment.paymentDate, payment.createdAt, "dd/MM/yy HH:mm") },
+      { v: payment.notes || "Pagamento" },
+      { v: payment.amount, t: "n", s: currencyStyle },
+      { v: 0, t: "n", s: currencyStyle },
+      { v: 0, t: "n", s: currencyStyle },
+      { v: payment.status === "USED" ? "Utilizado" : "Disponivel" }
+    ]);
 
-    // Definir larguras de colunas
+    const ws = XLSX.utils.aoa_to_sheet([...summaryData, ...rideRows, ...paymentRows]);
+
     ws["!cols"] = [
-      { wch: 18 }, // Data
-      { wch: 25 }, // Local
-      { wch: 15 }, // Valor Orig
-      { wch: 15 }, // Saldo Usado
-      { wch: 15 }, // Divida
-      { wch: 12 }  // Status
+      { wch: 18 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 12 }
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, "Divida");
 
-    const fileName = `Divida_${client.name.replace(/\s+/g, '_')}_${format(new Date(), "dd_MM_yyyy")}.xlsx`;
-
-    // --- Download ---
+    const fileName = `Divida_${client.name.replace(/\s+/g, "_")}_${format(new Date(), "dd_MM_yyyy")}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 

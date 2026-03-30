@@ -7,7 +7,11 @@ import { FinanceHeader } from "./_components/finance-header";
 import { FinanceFilters } from "./_components/finance-filters";
 import { StatsCard } from "./_components/stats-card";
 import { ExportDialog } from "./_components/export-dialog";
-import { RevenueTrendChart, ClientDistributionChart } from "./_components/finance-charts";
+import {
+    RevenueTrendChart,
+    ClientDistributionChart,
+} from "./_components/finance-charts";
+import { PaymentStatusBarChart } from "./_components/payment-status-bar-chart";
 import { RecentActivity } from "./_components/recent-activity";
 import { FinanceSkeleton } from "./_components/finance-skeleton";
 import { useAuth } from "@/hooks/use-auth";
@@ -77,11 +81,15 @@ export default function FinancePage() {
                 onExportCSV={() => data && exportToCSV(data.summary, data.recentRides, filters.period, data.byStatus)}
             />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                 <RevenueTrendChart 
                     data={data?.trends || []} 
                     isLoading={isLoading} 
                     color={PERIODS.find(p => p.id === filters.period)?.chartColor || 'var(--color-primary)'}
+                />
+                <PaymentStatusBarChart
+                    data={data?.byStatus || []}
+                    isLoading={isLoading}
                 />
                 <ClientDistributionChart 
                     data={data?.byClient || []} 

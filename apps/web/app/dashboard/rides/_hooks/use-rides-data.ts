@@ -1,97 +1,120 @@
 "use client";
 
 import { useMemo } from "react";
-import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import {
+    useInfiniteQuery,
+    useMutation,
+    useQuery,
+    useQueryClient,
+} from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import { useClients } from "@/providers/clients-provider";
+import { useClientDirectory } from "@/hooks/use-client-directory";
+import { parseApiError } from "@/lib/api-error";
+import { clientKeys, financeKeys, rideKeys } from "@/lib/query-keys";
 import { ridesService } from "@/services/rides-service";
 import { Ride, RidesFilterState } from "@/types/rides";
-import { toast } from "sonner";
-import { rideKeys } from "@/lib/query-keys";
 
 interface UseRidesDataProps {
     filters: RidesFilterState;
     pageSize: number;
 }
 
-export function useRidesData({ filters, pageSize }: UseRidesDataProps) {
-    const { user } = useAuth();
-    const { clients } = useClients();
-    const queryClient = useQueryClient();
-
-    // Query filters object for keys - wrapped in useMemo for stability
-    const activeFilters = useMemo(() => ({
+function buildRideFilters(filters: RidesFilterState, pageSize: number) {
+    return {
         limit: pageSize,
-        paymentStatus: filters.paymentFilter !== "all" ? filters.paymentFilter : undefined,
+        paymentStatus:
+            filters.paymentFilter !== "all" ? filters.paymentFilter : undefined,
         clientId: filters.clientFilter !== "all" ? filters.clientFilter : undefined,
         startDate: filters.startDate || undefined,
         endDate: filters.endDate || undefined,
-        search: filters.search || undefined
-    }), [pageSize, filters]);
+        search: filters.search || undefined,
+    };
+}
 
-    // Infinite Query para buscar corridas
-    const { 
-        data: ridesData, 
+function getUniqueRides(rides: Ride[]) {
+    return Array.from(
+        new Map(
+            rides
+                .filter((ride) => ride?.id)
+                .map((ride) => [String(ride.id), ride]),
+        ).values(),
+    );
+}
+
+export function useRidesData({ filters, pageSize }: UseRidesDataProps) {
+    const { user } = useAuth();
+    const { clients } = useClientDirectory();
+    const queryClient = useQueryClient();
+
+    const activeFilters = useMemo(
+        () => buildRideFilters(filters, pageSize),
+        [filters, pageSize],
+    );
+
+    const {
+        data: ridesData,
         isLoading: isRidesLoading,
         isFetching: isRidesFetching,
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
         error: ridesError,
-        refetch: fetchRides 
+        refetch: fetchRides,
     } = useInfiniteQuery({
         queryKey: rideKeys.infinite(activeFilters),
-        queryFn: ({ pageParam, signal }) => ridesService.getRides({
-            ...activeFilters,
-            cursor: pageParam as string | undefined,
-        }, signal),
+        queryFn: ({ pageParam, signal }) =>
+            ridesService.getRides(
+                {
+                    ...activeFilters,
+                    cursor: pageParam as string | undefined,
+                },
+                signal,
+            ),
         initialPageParam: undefined as string | undefined,
-        getNextPageParam: (lastPage) => lastPage.meta?.hasMore ? lastPage.meta.nextCursor : undefined,
+        getNextPageParam: (lastPage) =>
+            lastPage.meta?.hasNextPage ? lastPage.meta.nextCursor : undefined,
         enabled: !!user,
-        staleTime: 120000, // 2 minutos
-        gcTime: 300000,   // 5 minutos
+        staleTime: 120000,
+        gcTime: 300000,
     });
 
-    const allRides = ridesData?.pages.flatMap(page => page.data) || [];
-    // Deduplicação robusta por ID (garantindo string e removendo undefined)
-    const rides = Array.from(new Map(
-        allRides
-            .filter(r => r && r.id)
-            .map(r => [String(r.id), r])
-    ).values());
-    const totalCount = ridesData?.pages[0]?.meta?.total || 0;
+    const allRides = ridesData?.pages.flatMap((page) => page.data) || [];
+    const rides = getUniqueRides(allRides);
 
-    // Query para buscar clientes frequentes (fixados)
-    const { 
-        data: frequentClients = [], 
+    const {
+        data: frequentClients = [],
         isLoading: isFrequentLoading,
-        refetch: fetchFrequentClients
+        refetch: fetchFrequentClients,
     } = useQuery({
-        queryKey: rideKeys.lists(), // Clientes frequentes pode ficar agrupado em lists()
+        queryKey: rideKeys.frequentClients(),
         queryFn: ({ signal }) => ridesService.getFrequentClients(signal),
         enabled: !!user,
     });
 
-    // Mutação para atualizar status de pagamento
     const { mutateAsync: togglePaymentStatus } = useMutation({
         mutationFn: (ride: Ride) => {
-            const newStatus = ride.paymentStatus === 'PAID' ? 'PENDING' : 'PAID';
-            return ridesService.updateRideStatus(ride.id, { paymentStatus: newStatus });
+            const newStatus = ride.paymentStatus === "PAID" ? "PENDING" : "PAID";
+            return ridesService.updateRideStatus(ride.id, {
+                paymentStatus: newStatus,
+            });
         },
         onSuccess: () => {
             toast.success("Status de pagamento atualizado");
-            queryClient.invalidateQueries({ queryKey: ["rides-infinite"] });
-            queryClient.invalidateQueries({ queryKey: ["rides-count"] });
+            queryClient.invalidateQueries({ queryKey: rideKeys.all });
+            queryClient.invalidateQueries({ queryKey: clientKeys.all });
+            queryClient.invalidateQueries({ queryKey: financeKeys.all });
         },
         onError: (error) => {
-            console.error("[useRidesData] Erro ao atualizar status de pagamento", error);
-            toast.error("Falha ao atualizar status de pagamento");
-        }
+            toast.error(
+                parseApiError(error, "Falha ao atualizar status de pagamento"),
+            );
+        },
     });
 
     return {
         rides,
-        totalCount,
+        totalCount: rides.length,
         clients,
         frequentClients,
         isLoading: isRidesLoading,
@@ -103,6 +126,6 @@ export function useRidesData({ filters, pageSize }: UseRidesDataProps) {
         ridesError,
         fetchRides,
         fetchFrequentClients,
-        togglePaymentStatus
+        togglePaymentStatus,
     };
 }

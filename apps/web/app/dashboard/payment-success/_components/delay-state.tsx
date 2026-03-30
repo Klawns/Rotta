@@ -2,7 +2,11 @@ import { motion } from "framer-motion";
 import { Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export function DelayState() {
+interface DelayStateProps {
+    onRetry: () => void;
+}
+
+export function DelayState({ onRetry }: DelayStateProps) {
     const router = useRouter();
 
     return (
@@ -17,12 +21,12 @@ export function DelayState() {
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Pagamento em Processamento</h1>
             <p className="text-slate-400">
-                Recebemos o sinal do pagamento, mas a rede está levando mais tempo que o comum para validar sua licença.
+                Recebemos o sinal do pagamento, mas a rede esta levando mais tempo que o comum para validar sua licenca.
             </p>
 
             <div className="flex flex-col gap-3 w-full mt-4">
                 <button
-                    onClick={() => window.location.reload()}
+                    onClick={onRetry}
                     className="w-full bg-white/5 border border-white/10 text-white h-14 rounded-2xl font-bold hover:bg-white/10 transition-all"
                 >
                     Tentar Novamente
@@ -31,7 +35,7 @@ export function DelayState() {
                     onClick={() => router.push("/dashboard")}
                     className="w-full text-slate-500 hover:text-white text-sm transition-colors py-2"
                 >
-                    Ainda não ativou? Ir para o dashboard
+                    Ainda nao ativou? Ir para o dashboard
                 </button>
             </div>
         </motion.div>

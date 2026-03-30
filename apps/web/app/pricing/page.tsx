@@ -1,99 +1,98 @@
-"use client";
+'use client';
 
-import { useAuth } from "@/hooks/use-auth";
-import { CheckoutSelector } from "@/components/dashboard/checkout-selector";
-import { LogOut, Rocket, ArrowLeft } from "lucide-react";
-import { motion } from "framer-motion";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { motion } from 'framer-motion';
+import { ArrowLeft, LogOut, Rocket } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { CheckoutSelector } from '@/components/dashboard/checkout-selector';
+import { useAuth } from '@/hooks/use-auth';
+import { getFreeTrialState } from '@/services/free-trial-service';
 
 export default function PricingGatePage() {
-    const { user, logout } = useAuth();
-    const router = useRouter();
-    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-    const reason = searchParams?.get('reason');
-    const isLimitReached = reason === 'limit_reached';
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const reason = searchParams.get('reason');
+  const isTrialExpired = reason === 'trial_expired';
+  const trial = getFreeTrialState(user);
 
-    return (
-        <div className="min-h-screen bg-[#020617] text-white flex flex-col items-center justify-center p-6 lg:p-24 relative overflow-hidden">
-            {isLimitReached && (
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="fixed top-8 z-50 bg-red-500/10 border border-red-500/30 px-6 py-3 rounded-2xl backdrop-blur-md flex items-center gap-3 shadow-2xl shadow-red-500/10"
-                >
-                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    <p className="text-red-400 text-sm font-bold">
-                        Limite de 20 corridas atingido! Faça o upgrade para continuar usando o Rotta.
-                    </p>
-                </motion.div>
-            )}
-            {/* Background elements */}
-            <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-lime-600/10 to-transparent pointer-events-none" />
-            <div className="absolute -top-24 -left-24 w-96 h-96 bg-lime-600/5 rounded-full blur-3xl pointer-events-none" />
+  return (
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-6 py-12 text-foreground lg:px-24">
+      {isTrialExpired && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed top-8 z-50 flex items-center gap-3 rounded-2xl border border-trial-expired/30 bg-trial-expired/10 px-6 py-3 shadow-2xl shadow-trial-expired/10 backdrop-blur-md"
+        >
+          <div className="h-2 w-2 animate-pulse rounded-full bg-trial-expired" />
+          <p className="text-sm font-bold text-trial-expired">
+            Seu periodo gratuito expirou. Assine para continuar usando o Rotta.
+          </p>
+        </motion.div>
+      )}
 
-            <div className="max-w-7xl w-full relative">
-                <header className="text-center mb-16 space-y-4">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-500/10 border border-lime-500/20 text-lime-400 text-xs font-bold uppercase tracking-widest mb-4"
-                    >
-                        <Rocket size={14} />
-                        Upgrade de Conta
-                    </motion.div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-primary/12 to-transparent" />
+      <div className="pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full bg-primary/8 blur-3xl" />
 
-                    <h1 className="text-4xl lg:text-6xl font-black tracking-tight">
-                        Evolua para o <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-lime-400 to-emerald-500">
-                            Nível Profissional
-                        </span>
-                    </h1>
+      <div className="relative w-full max-w-7xl">
+        <header className="mb-16 space-y-4 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary"
+          >
+            <Rocket size={14} />
+            Upgrade de Conta
+          </motion.div>
 
-                    <p className="text-slate-400 max-w-2xl mx-auto text-lg leading-relaxed">
-                        Desbloqueie corridas ilimitadas e relatórios avançados.
-                        <br />
-                        <span className="text-lime-400 font-bold">Assinaturas atualmente sob demanda — Entre em contato para ativar.</span>
-                    </p>
-                </header>
+          <h1 className="text-4xl font-black tracking-tight lg:text-6xl">
+            Desbloqueie o
+            <br />
+            <span className="bg-gradient-to-r from-primary to-trial-active bg-clip-text text-transparent">
+              acesso completo
+            </span>
+          </h1>
 
-                {/* Mostra apenas os planos pagos para quem já está logado no starter */}
-                <CheckoutSelector />
+          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-text-secondary">
+            Continue registrando corridas, gerenciando clientes e exportando
+            relatórios sem interrupções.
+          </p>
+        </header>
 
-                <footer className="mt-20 flex flex-col items-center gap-6">
-                    <div className="h-px w-24 bg-white/10" />
+        <CheckoutSelector />
 
-                    <div className="flex flex-col sm:flex-row items-center gap-6">
-                        <button
-                            onClick={() => {
-                                const rideCount = user?.subscription?.rideCount || 0;
-                                const isBlocked = user?.subscription?.plan === 'starter' && rideCount >= 20;
-                                if (isBlocked) {
-                                    router.push("/");
-                                } else {
-                                    router.push("/dashboard");
-                                }
-                            }}
-                            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium group"
-                        >
-                            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                            {user?.subscription?.plan === 'starter' && (user?.subscription?.rideCount || 0) >= 20 ? 'Voltar para Início' : 'Voltar ao Dashboard'}
-                        </button>
+        <footer className="mt-20 flex flex-col items-center gap-6">
+          <div className="h-px w-24 bg-border-subtle" />
 
-                        <button
-                            onClick={logout}
-                            className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-sm font-medium group"
-                        >
-                            <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
-                            Sair da conta
-                        </button>
-                    </div>
+          <div className="flex flex-col items-center gap-6 sm:flex-row">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="group flex items-center gap-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+            >
+              <ArrowLeft
+                size={16}
+                className="transition-transform group-hover:-translate-x-1"
+              />
+              {trial.isStarterExpired ? 'Voltar ao dashboard bloqueado' : 'Voltar ao dashboard'}
+            </button>
 
-                    <p className="text-slate-600 text-[10px] uppercase tracking-widest font-bold">
-                        Pagamento processado com segurança via AbacatePay (Pix).
-                    </p>
-                </footer>
-            </div>
-        </div>
-    );
+            <button
+              onClick={logout}
+              className="group flex items-center gap-2 text-sm font-medium text-text-muted transition-colors hover:text-text-primary"
+            >
+              <LogOut
+                size={16}
+                className="transition-transform group-hover:-translate-x-1"
+              />
+              Sair da conta
+            </button>
+          </div>
+
+          <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
+            Pagamento processado com seguranca via AbacatePay (Pix).
+          </p>
+        </footer>
+      </div>
+    </div>
+  );
 }
+

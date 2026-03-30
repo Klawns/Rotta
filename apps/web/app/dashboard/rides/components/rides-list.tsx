@@ -1,11 +1,11 @@
-import { motion } from "framer-motion";
-import { Bike, SearchX } from "lucide-react";
-import { RideCard } from "./ride-card";
-import { Ride } from "@/types/rides";
 import { useRef } from "react";
+import { Bike, SearchX } from "lucide-react";
 import { InfiniteScrollContainer } from "@/components/ui/infinite-scroll-container";
-import { RideSkeleton } from "./ride-skeleton";
 import { HybridInfiniteList } from "@/components/ui/hybrid-infinite-list";
+import { parseApiError } from "@/lib/api-error";
+import { Ride } from "@/types/rides";
+import { RideCard } from "./ride-card";
+import { RideSkeleton } from "./ride-skeleton";
 
 interface RidesListContainerProps {
     rides: Ride[];
@@ -14,8 +14,8 @@ interface RidesListContainerProps {
     hasNextPage?: boolean;
     onLoadMore?: () => void;
     isFetchingNextPage?: boolean;
-    error?: any;
-    retry?: () => void;
+    error?: unknown;
+    retry?: () => void | Promise<unknown>;
     onEdit: (ride: Ride) => void;
     onDelete: (ride: Ride) => void;
     onTogglePayment: (ride: Ride) => void;
@@ -36,18 +36,45 @@ export function RidesListContainer({
     onDelete,
     onTogglePayment,
     hasActiveFilters,
-    onClearFilters
+    onClearFilters,
 }: RidesListContainerProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    const showSkeletons = (isLoading || (isFetching && rides.length === 0)) && !isFetchingNextPage;
+    const showSkeletons =
+        (isLoading || (isFetching && rides.length === 0)) && !isFetchingNextPage;
 
     if (showSkeletons) {
         return (
             <div className="space-y-6">
-                {[...Array(5)].map((_, i) => (
-                    <RideSkeleton key={i} />
+                {[...Array(5)].map((_, index) => (
+                    <RideSkeleton key={index} />
                 ))}
+            </div>
+        );
+    }
+
+    if (error && rides.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-24 gap-6 bg-secondary/5 rounded-[3.5rem] border border-border-subtle shadow-inner">
+                <div className="text-center space-y-2 max-w-md px-6">
+                    <h3 className="text-2xl font-display font-extrabold text-text-primary tracking-tight">
+                        Erro ao carregar corridas
+                    </h3>
+                    <p className="text-text-secondary text-sm font-medium opacity-70">
+                        {parseApiError(
+                            error,
+                            "Nao foi possivel carregar o historico agora.",
+                        )}
+                    </p>
+                </div>
+                {retry ? (
+                    <button
+                        onClick={() => void retry()}
+                        className="bg-button-primary hover:bg-button-primary-hover text-button-primary-foreground px-10 py-4 rounded-2xl font-bold transition-all shadow-xl shadow-button-shadow active:scale-95 mt-2 uppercase tracking-widest text-xs"
+                    >
+                        Tentar novamente
+                    </button>
+                ) : null}
             </div>
         );
     }
@@ -56,7 +83,11 @@ export function RidesListContainer({
         return (
             <div className="flex flex-col items-center justify-center py-24 gap-6 bg-secondary/5 rounded-[3.5rem] border border-border-subtle shadow-inner">
                 <div className="p-8 bg-secondary/10 rounded-full text-text-secondary/20 shadow-sm border border-border-subtle/50">
-                    {hasActiveFilters ? <SearchX size={56} opacity={0.3} /> : <Bike size={56} opacity={0.3} />}
+                    {hasActiveFilters ? (
+                        <SearchX size={56} opacity={0.3} />
+                    ) : (
+                        <Bike size={56} opacity={0.3} />
+                    )}
                 </div>
                 <div className="text-center space-y-2">
                     <h3 className="text-2xl font-display font-extrabold text-text-primary tracking-tight">
@@ -64,8 +95,8 @@ export function RidesListContainer({
                     </h3>
                     <p className="text-text-secondary text-sm font-medium opacity-70 max-w-xs mx-auto">
                         {hasActiveFilters
-                            ? "Não encontramos resultados para seus filtros atuais."
-                            : "Você ainda não tem corridas registradas no período selecionado."}
+                            ? "Nao encontramos resultados para seus filtros atuais."
+                            : "Voce ainda nao tem corridas registradas no periodo selecionado."}
                     </p>
                 </div>
                 {hasActiveFilters && (
@@ -73,7 +104,7 @@ export function RidesListContainer({
                         onClick={onClearFilters}
                         className="bg-button-primary hover:bg-button-primary-hover text-button-primary-foreground px-10 py-4 rounded-2xl font-bold transition-all shadow-xl shadow-button-shadow active:scale-95 mt-4 uppercase tracking-widest text-xs"
                     >
-                        Limpar Filtros e Ver Todos
+                        Limpar filtros e ver todos
                     </button>
                 )}
             </div>
@@ -84,11 +115,13 @@ export function RidesListContainer({
         <div className="space-y-6">
             <div className="flex items-center justify-between px-2 mb-2">
                 <div className="flex items-center gap-2">
-                    <h2 className="text-[10px] font-display font-bold text-text-muted uppercase tracking-[0.25em] opacity-80">Atividades Recentes</h2>
+                    <h2 className="text-[10px] font-display font-bold text-text-muted uppercase tracking-[0.25em] opacity-80">
+                        Atividades recentes
+                    </h2>
                 </div>
             </div>
 
-            <InfiniteScrollContainer 
+            <InfiniteScrollContainer
                 ref={scrollContainerRef}
                 maxHeight="calc(100vh - 220px)"
                 hideScrollbar={true}
@@ -98,8 +131,8 @@ export function RidesListContainer({
                     items={rides.filter(Boolean)}
                     renderItem={(ride, index) => (
                         <RideCard
-                            key={(ride as Ride).id}
-                            ride={ride as Ride}
+                            key={ride.id}
+                            ride={ride}
                             index={index}
                             onEdit={onEdit}
                             onDelete={onDelete}

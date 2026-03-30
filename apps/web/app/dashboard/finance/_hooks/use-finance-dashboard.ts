@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { useClients } from "@/providers/clients-provider";
+import { useClientDirectory } from "@/hooks/use-client-directory";
+import { financeKeys, rideKeys } from "@/lib/query-keys";
 import { financeService } from "@/services/finance-service";
-import { PeriodId, Period, PERIODS } from "../_types";
+import { ridesService } from "@/services/rides-service";
+import { PERIODS, Period, PeriodId } from "../_types";
 
 export interface FinanceFiltersState {
   period: PeriodId;
@@ -16,49 +18,105 @@ export interface FinanceFiltersState {
 
 export function useFinanceDashboard() {
     const { user } = useAuth();
-    const { clients } = useClients();
-    
-    // Filtros em um único estado para facilitar o setFilters
+    const { clients } = useClientDirectory();
+
     const [filters, setFiltersState] = useState<FinanceFiltersState>({
         period: "month",
         clientId: "all",
     });
 
     const setFilters = (newFilters: Partial<FinanceFiltersState>) => {
-        setFiltersState(prev => ({ ...prev, ...newFilters }));
+        setFiltersState((previous) => ({ ...previous, ...newFilters }));
     };
 
-    // Query unificada para o dashboard
-    const { 
-        data: dashboardData = null, 
-        isLoading,
-        isFetching,
-        refetch
-    } = useQuery({
-        queryKey: ["finance-dashboard", filters.period, filters.clientId, filters.startDate, filters.endDate],
-        queryFn: ({ signal }) => financeService.getDashboard({
+    const dashboardParams = useMemo(
+        () => ({
             period: filters.period,
             clientId: filters.clientId !== "all" ? filters.clientId : undefined,
             start: filters.period === "custom" ? filters.startDate : undefined,
             end: filters.period === "custom" ? filters.endDate : undefined,
-        }, signal),
-        enabled: !!user && (filters.period !== "custom" || (!!filters.startDate && !!filters.endDate)),
-        staleTime: 60000, 
+        }),
+        [filters.clientId, filters.endDate, filters.period, filters.startDate],
+    );
+
+    const isEnabled =
+        !!user &&
+        (filters.period !== "custom" ||
+            (!!filters.startDate && !!filters.endDate));
+
+    const {
+        data: dashboardData = null,
+        isLoading: isDashboardLoading,
+        isFetching: isDashboardFetching,
+        refetch: refetchDashboard,
+    } = useQuery({
+        queryKey: financeKeys.dashboard(filters),
+        queryFn: ({ signal }) =>
+            financeService.getDashboard(dashboardParams, signal),
+        enabled: isEnabled,
+        staleTime: 0,
+        gcTime: 300000,
+        refetchOnMount: "always",
+        refetchOnWindowFocus: true,
     });
 
-    const currentPeriod: Period = useMemo(() => 
-        PERIODS.find((p) => p.id === filters.period) || PERIODS[0]
-    , [filters.period]);
+    const {
+        data: summaryData,
+        isLoading: isSummaryLoading,
+        isFetching: isSummaryFetching,
+        refetch: refetchSummary,
+    } = useQuery({
+        queryKey: rideKeys.stats(dashboardParams),
+        queryFn: ({ signal }) => ridesService.getStats(dashboardParams, signal),
+        enabled: isEnabled,
+        staleTime: 0,
+        gcTime: 300000,
+        refetchOnMount: "always",
+        refetchOnWindowFocus: true,
+    });
+
+    const mergedDashboardData = useMemo(() => {
+        if (!dashboardData) {
+            return null;
+        }
+
+        const stats = summaryData?.data;
+        if (!stats) {
+            return dashboardData;
+        }
+
+        const count = Number(stats.count || 0);
+        const totalValue = Number(stats.totalValue || 0);
+
+        return {
+            ...dashboardData,
+            summary: {
+                ...dashboardData.summary,
+                count,
+                totalValue,
+                ticketMedio: count > 0 ? totalValue / count : 0,
+            },
+        };
+    }, [dashboardData, summaryData]);
+
+    const refetch = async () => {
+        await Promise.all([refetchDashboard(), refetchSummary()]);
+    };
+
+    const currentPeriod: Period = useMemo(
+        () => PERIODS.find((period) => period.id === filters.period) || PERIODS[0],
+        [filters.period],
+    );
 
     return {
         user,
         clients,
-        data: dashboardData,
-        isLoading,
-        isFetching,
+        data: mergedDashboardData,
+        isLoading: isDashboardLoading || isSummaryLoading,
+        isFetching: isDashboardFetching || isSummaryFetching,
         refetch,
         currentPeriod,
         filters,
-        setFilters
+        setFilters,
     };
 }

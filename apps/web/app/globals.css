@@ -30,6 +30,13 @@
   --success: 34 197 94;        /* green-500 */
   --warning: 245 158 11;       /* amber-500 */
   --info: 59 130 246;          /* blue-500 */
+  --trial-active: 16 185 129;  /* emerald-500 */
+  --trial-warning: 245 158 11; /* amber-500 */
+  --trial-expired: 239 68 68;  /* red-500 */
+  --trial-cta: 37 99 235;      /* blue-600 */
+  --blocked-surface: 15 23 42 / 0.72;
+  --blocked-border: 148 163 184 / 0.18;
+  --blocked-foreground: 226 232 240;
 
   /* --- COMPONENT STATE CHANNELS --- */
   --primary-hover: 59 130 246;  /* blue-500 */
@@ -153,6 +160,13 @@
   --info: 37 99 235;
   --success: 16 185 129;
   --warning: 245 158 11;
+  --trial-active: 16 185 129;
+  --trial-warning: 245 158 11;
+  --trial-expired: 220 38 38;
+  --trial-cta: 37 99 235;
+  --blocked-surface: 255 255 255 / 0.82;
+  --blocked-border: 37 99 235 / 0.12;
+  --blocked-foreground: 15 23 42;
 
   /* Adjusted Sidebar for more depth */
   /* --- FILTER & CHART HARMONIZATION --- */
@@ -217,6 +231,13 @@
   --color-success: rgb(var(--success));
   --color-warning: rgb(var(--warning));
   --color-info: rgb(var(--info));
+  --color-trial-active: rgb(var(--trial-active));
+  --color-trial-warning: rgb(var(--trial-warning));
+  --color-trial-expired: rgb(var(--trial-expired));
+  --color-trial-cta: rgb(var(--trial-cta));
+  --color-blocked-surface: rgb(var(--blocked-surface));
+  --color-blocked-border: rgb(var(--blocked-border));
+  --color-blocked-foreground: rgb(var(--blocked-foreground));
 
   --color-button-primary: rgb(var(--button-primary));
   --color-button-primary-hover: rgb(var(--button-primary-hover));

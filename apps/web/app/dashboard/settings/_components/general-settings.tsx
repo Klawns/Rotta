@@ -9,6 +9,7 @@ import { RidePresetList } from "./ride-preset-list";
 import { EditRidePresetModal } from "./edit-ride-preset-modal";
 import { SettingsTip } from "./settings-tip";
 import { Button } from "@/components/ui/button";
+import { RidePreset, RidePresetFormInput } from "@/types/settings";
 
 export function GeneralSettings() {
     const {
@@ -23,9 +24,9 @@ export function GeneralSettings() {
 
     const [isFormVisible, setIsFormVisible] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editingPreset, setEditingPreset] = useState<any>(null);
+    const [editingPreset, setEditingPreset] = useState<RidePreset | null>(null);
 
-    const handleAddPreset = async (data: any) => {
+    const handleAddPreset = async (data: RidePresetFormInput) => {
         const success = await addPreset(data);
         if (success) {
             setIsFormVisible(false);
@@ -33,7 +34,7 @@ export function GeneralSettings() {
         return success;
     };
 
-    const handleOpenEdit = (preset: any) => {
+    const handleOpenEdit = (preset: RidePreset) => {
         setEditingPreset(preset);
         setIsEditModalOpen(true);
     };

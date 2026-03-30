@@ -1,190 +1,112 @@
 "use client";
 
-import { useAuth } from "@/hooks/use-auth";
-import { ridesService } from "@/services/rides-service";
-import { useToast } from "@/hooks/use-toast";
-
-// Hooks
-import { useMobileDashboardData } from "./hooks/use-mobile-dashboard-data";
-import { useRideRegistration } from "./hooks/use-ride-registration";
-import { useClientSelection } from "./hooks/use-client-selection";
-
-// Components
+import { ConfirmModal } from "@/components/confirm-modal";
+import { RideModal } from "@/components/ride-modal";
+import { ClientGrid } from "./components/client-grid";
 import { FinanceSummary } from "./components/finance-summary";
 import { PDFExport } from "./components/pdf-export";
-import { ClientGrid } from "./components/client-grid";
 import { RecentRidesList } from "./components/recent-rides-list";
 import { RideForm } from "./components/ride-form";
+import { useMobileDashboardController } from "./hooks/use-mobile-dashboard-controller";
+import type { MobileDashboardProps } from "./types";
+import { FeatureLockShell } from "@/app/dashboard/_components/feature-lock-shell";
 
-// External Components (Shared)
-import { RideModal } from "@/components/ride-modal";
-import { ConfirmModal } from "@/components/confirm-modal";
-
-import { MobileDashboardProps } from "./types";
-
-export default function MobileDashboard({ onRideCreated }: MobileDashboardProps) {
-    const { user } = useAuth();
-    const { toast } = useToast();
-
-    // Data Hook
-    const {
-        presets,
-        recentRides,
-        isLoadingHistory,
-        isLoadingStats,
-        hasNextPage: hasNextRides,
-        fetchNextPage: fetchNextRides,
-        isFetchingNextPage: isFetchingNextPageRides,
-        historyError,
-        refetchHistory,
-        stats,
-        refreshData
-    } = useMobileDashboardData(user);
-
-    // Ride Registration Hook
-    const {
-        selectedClient, setSelectedClient,
-        selectedPresetId, setSelectedPresetId,
-        customValue, setCustomValue,
-        customLocation, setCustomLocation,
-        showCustomForm, setShowCustomForm,
-        paymentStatus, setPaymentStatus,
-        rideDate, setRideDate,
-        notes, setNotes,
-        photo, setPhoto,
-        isSaving,
-        handlePhotoChange,
-        handleConfirmRide,
-        handleDeleteRide,
-        rideToEdit, setRideToEdit,
-        isRideModalOpen, setIsRideModalOpen,
-        rideToDelete, setRideToDelete,
-        isDeleting
-    } = useRideRegistration({
-        onSuccess: () => {
-            refreshData();
-            if (onRideCreated) onRideCreated();
-        }
-    });
-
-    // Client Selection Hook
-    const {
-        clients,
-        isLoadingClients,
-        hasNextPage: hasNextClients,
-        fetchNextPage: fetchNextClients,
-        isClientsError,
-        clientsError,
-        refetchClients,
-        isClientModalOpen,
-        setIsClientModalOpen,
-        newClientName,
-        setNewClientName,
-        isCreatingClient,
-        handleCreateClient
-    } = useClientSelection();
-
-    const handleDeletePreset = async (presetId: string) => {
-        try {
-            await ridesService.deleteRidePreset(presetId);
-            refreshData();
-            toast({ title: "Preset removido" });
-        } catch (err) {
-            toast({ title: "Erro ao remover preset", variant: "destructive" });
-        }
-    };
+export default function MobileDashboard(props: MobileDashboardProps) {
+    const dashboard = useMobileDashboardController(props);
+    const { trial } = props;
 
     return (
-        <div className="flex flex-col gap-6 pb-24 max-w-md mx-auto">
-            {/* 1. Statistics */}
-            <FinanceSummary 
-                today={stats.today} 
-                week={stats.week} 
-                month={stats.month} 
-                isLoading={isLoadingStats}
-            />
-
-            {/* 2. Client Selection */}
-            <ClientGrid
-                clients={clients}
-                selectedClient={selectedClient}
-                onSelect={setSelectedClient}
-                isLoading={isLoadingClients}
-                hasMore={hasNextClients}
-                onLoadMore={fetchNextClients}
-                error={clientsError}
-                retry={refetchClients}
-                openCreateModal={() => setIsClientModalOpen(true)}
-                isCreateModalOpen={isClientModalOpen}
-                setIsCreateModalOpen={setIsClientModalOpen}
-                newClientName={newClientName}
-                setNewClientName={setNewClientName}
-                isCreating={isCreatingClient}
-                onCreate={() => handleCreateClient(setSelectedClient)}
-            />
-
-            {/* 3. Ride Form */}
-            {selectedClient && (
-                <RideForm
-                    presets={presets}
-                    selectedPresetId={selectedPresetId}
-                    onSelectPreset={(id, val, loc) => {
-                        setSelectedPresetId(id);
-                        setCustomValue(String(val));
-                        if (loc) setCustomLocation(loc);
-                    }}
-                    onDeletePreset={handleDeletePreset}
-                    customValue={customValue}
-                    setCustomValue={setCustomValue}
-                    customLocation={customLocation}
-                    setCustomLocation={setCustomLocation}
-                    showCustomForm={showCustomForm}
-                    setShowCustomForm={setShowCustomForm}
-                    paymentStatus={paymentStatus}
-                    setPaymentStatus={setPaymentStatus}
-                    rideDate={rideDate}
-                    setRideDate={setRideDate}
-                    notes={notes}
-                    setNotes={setNotes}
-                    photo={photo}
-                    onPhotoChange={handlePhotoChange}
-                    onRemovePhoto={() => setPhoto(null)}
-                    isSaving={isSaving}
-                    onSubmit={handleConfirmRide}
-                    canSubmit={!!selectedClient && !!customValue}
+        <div className="mx-auto flex max-w-md flex-col gap-6 pb-24">
+            <FeatureLockShell
+                isLocked={trial.shouldLockFeatures}
+                title="Financeiro bloqueado"
+                description="Acompanhe seus resultados novamente assim que ativar um plano pago."
+                ctaHref={trial.ctaHref}
+                ctaLabel={trial.ctaLabel}
+            >
+                <FinanceSummary
+                    today={dashboard.stats.today}
+                    week={dashboard.stats.week}
+                    month={dashboard.stats.month}
+                    isLoading={dashboard.stats.isLoading}
                 />
-            )}
+            </FeatureLockShell>
 
-            {/* 4. Recent History */}
-            <RecentRidesList
-                rides={recentRides}
-                onEdit={setRideToEdit}
-                onDelete={setRideToDelete}
-                isLoading={isLoadingHistory || isFetchingNextPageRides}
-                hasMore={hasNextRides}
-                onLoadMore={fetchNextRides}
-                error={historyError}
-                retry={refetchHistory}
-            />
+            <FeatureLockShell
+                isLocked={trial.shouldLockFeatures}
+                title="Clientes bloqueados"
+                description="Sua base continua visivel, mas o gerenciamento fica disponivel somente no plano pago."
+                ctaHref={trial.ctaHref}
+                ctaLabel={trial.ctaLabel}
+            >
+                <ClientGrid
+                    directory={dashboard.clients.directory}
+                    selectedClient={dashboard.clients.selectedClient}
+                    onSelect={dashboard.clients.selectClient}
+                    creationDialog={dashboard.clients.creationDialog}
+                />
+            </FeatureLockShell>
 
-            {/* 5. PDF Export */}
-            <PDFExport userName={user?.name || "Motorista"} />
+            {dashboard.clients.selectedClient ? (
+                <FeatureLockShell
+                    isLocked={trial.shouldLockFeatures}
+                    title="Registro bloqueado"
+                    description="O formulario continua aparente para reforcar o fluxo, mas o envio depende da assinatura."
+                    ctaHref={trial.ctaHref}
+                    ctaLabel={trial.ctaLabel}
+                >
+                    <RideForm
+                        presets={dashboard.rideForm.presets}
+                        form={dashboard.rideForm.form}
+                        actions={dashboard.rideForm.actions}
+                        onDeletePreset={dashboard.rideForm.deletePreset}
+                    />
+                </FeatureLockShell>
+            ) : null}
 
-            {/* Modals */}
+            <FeatureLockShell
+                isLocked={trial.shouldLockFeatures}
+                title="Historico bloqueado"
+                description="As corridas recentes permanecem visiveis no mobile, mas as interacoes ficam desabilitadas."
+                ctaHref={trial.ctaHref}
+                ctaLabel={trial.ctaLabel}
+            >
+                <RecentRidesList
+                    rides={dashboard.recentRides.rides}
+                    onEdit={dashboard.recentRides.editRide}
+                    onDelete={dashboard.recentRides.deleteRide}
+                    isLoading={dashboard.recentRides.isLoading}
+                    hasMore={dashboard.recentRides.hasMore}
+                    onLoadMore={dashboard.recentRides.loadMore}
+                    error={dashboard.recentRides.error}
+                    retry={dashboard.recentRides.retry}
+                />
+            </FeatureLockShell>
+
+            <FeatureLockShell
+                isLocked={trial.shouldLockFeatures}
+                title="Exportacao bloqueada"
+                description="Os atalhos de exportacao continuam aparentes, mas exigem assinatura para uso."
+                ctaHref={trial.ctaHref}
+                ctaLabel={trial.ctaLabel}
+            >
+                <PDFExport userName={dashboard.user?.name || "Motorista"} />
+            </FeatureLockShell>
+
             <RideModal
-                isOpen={!!rideToEdit}
-                onClose={() => setRideToEdit(null)}
-                rideToEdit={rideToEdit}
-                onSuccess={refreshData}
+                isOpen={!!dashboard.dialogs.rideToEdit}
+                onClose={dashboard.dialogs.closeRideEditor}
+                rideToEdit={dashboard.dialogs.rideToEdit}
+                onSuccess={dashboard.dialogs.refreshData}
             />
 
             <ConfirmModal
-                isOpen={!!rideToDelete}
-                onClose={() => setRideToDelete(null)}
-                onConfirm={handleDeleteRide}
+                isOpen={!!dashboard.dialogs.rideToDelete}
+                onClose={dashboard.dialogs.closeRideDelete}
+                onConfirm={dashboard.dialogs.confirmRideDelete}
                 title="Excluir Corrida"
-                description="Tem certeza que deseja excluir esta corrida? Esta ação não pode ser desfeita."
-                isLoading={isDeleting}
+                description="Tem certeza que deseja excluir esta corrida? Esta acao nao pode ser desfeita."
+                isLoading={dashboard.dialogs.isDeletingRide}
             />
         </div>
     );

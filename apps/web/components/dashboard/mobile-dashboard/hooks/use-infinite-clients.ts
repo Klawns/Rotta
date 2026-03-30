@@ -10,6 +10,7 @@ export function useInfiniteClients(params: { limit: number; search?: string }) {
             cursor: pageParam 
         }),
         initialPageParam: undefined as string | undefined,
-        getNextPageParam: (lastPage) => lastPage.meta?.hasMore ? lastPage.meta.nextCursor : undefined,
+        getNextPageParam: (lastPage) =>
+            lastPage.meta?.hasNextPage ? lastPage.meta.nextCursor : undefined,
     });
 }

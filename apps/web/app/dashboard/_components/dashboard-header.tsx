@@ -7,9 +7,10 @@ interface DashboardHeaderProps {
     userName: string;
     period: 'today' | 'week';
     setPeriod: (period: 'today' | 'week') => void;
+    isLocked?: boolean;
 }
 
-export function DashboardHeader({ userName, period, setPeriod }: DashboardHeaderProps) {
+export function DashboardHeader({ userName, period, setPeriod, isLocked = false }: DashboardHeaderProps) {
     const firstName = userName?.split(" ")[0] || "Usuário";
 
     return (
@@ -22,8 +23,9 @@ export function DashboardHeader({ userName, period, setPeriod }: DashboardHeader
                 <div className="flex items-center gap-1.5 bg-muted/50 p-1.5 rounded-2xl border border-border-subtle shadow-inner">
                     <button
                         onClick={() => setPeriod('today')}
+                        disabled={isLocked}
                         className={cn(
-                            "px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95", 
+                            "px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50", 
                             period === 'today' 
                                 ? "bg-button-primary text-button-primary-foreground shadow-lg shadow-button-shadow" 
                                 : "text-text-secondary hover:text-text-primary hover:bg-secondary/20"
@@ -33,8 +35,9 @@ export function DashboardHeader({ userName, period, setPeriod }: DashboardHeader
                     </button>
                     <button
                         onClick={() => setPeriod('week')}
+                        disabled={isLocked}
                         className={cn(
-                            "px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95", 
+                            "px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50", 
                             period === 'week' 
                                 ? "bg-button-primary text-button-primary-foreground shadow-lg shadow-button-shadow" 
                                 : "text-text-secondary hover:text-text-primary hover:bg-secondary/20"

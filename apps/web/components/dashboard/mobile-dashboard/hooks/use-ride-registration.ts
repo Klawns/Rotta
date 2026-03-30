@@ -1,151 +1,90 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { uploadImage } from "@/lib/upload";
-import { ridesService } from "@/services/rides-service";
-import { toISOFromLocalInput } from "@/lib/date-utils";
-import { parseApiError } from "@/lib/api-error";
-import { Client, Ride, PaymentStatus, RideStatus } from "@/types/rides";
+import { useMemo } from "react";
+import type { Client } from "@/types/rides";
+import type {
+    RideFormActions,
+    RideFormState,
+    RideRegistrationModals,
+} from "./ride-registration.types";
+import { useRideDialogs } from "./use-ride-dialogs";
+import { useRideFormState } from "./use-ride-form-state";
+import { useRideSubmit } from "./use-ride-submit";
 
 interface RideRegistrationProps {
-    onSuccess: () => void;
+    selectedClient: Client | null;
+    onSelectionReset: () => void;
+    onSuccess: () => void | Promise<void>;
 }
 
-export function useRideRegistration({ onSuccess }: RideRegistrationProps) {
-    const { toast } = useToast();
-    
-    // Form State
-    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-    const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
-    const [customValue, setCustomValue] = useState("");
-    const [customLocation, setCustomLocation] = useState("");
-    const [showCustomForm, setShowCustomForm] = useState(false);
-    const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('PAID');
-    const [rideDate, setRideDate] = useState("");
-    const [notes, setNotes] = useState("");
-    const [photo, setPhoto] = useState<string | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
+export type { RideFormActions, RideFormState, RideRegistrationModals };
 
-    // Temp state for editing/deleting
-    const [rideToEdit, setRideToEdit] = useState<Ride | null>(null);
-    const [isRideModalOpen, setIsRideModalOpen] = useState(false);
-    const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+export function useRideRegistration({
+    selectedClient,
+    onSelectionReset,
+    onSuccess,
+}: RideRegistrationProps) {
+    const formState = useRideFormState({
+        onReset: onSelectionReset,
+    });
+    const submitRide = useRideSubmit({
+        selectedClient,
+        customValue: formState.fields.customValue,
+        customLocation: formState.fields.customLocation,
+        paymentStatus: formState.fields.paymentStatus,
+        rideDate: formState.fields.rideDate,
+        notes: formState.fields.notes,
+        photo: formState.fields.photo,
+        setIsSaving: formState.setters.setIsSaving,
+        resetForm: formState.helpers.resetForm,
+        onSuccess,
+    });
+    const modals = useRideDialogs({ onSuccess });
 
-    const resetForm = useCallback(() => {
-        setSelectedClient(null);
-        setSelectedPresetId(null);
-        setShowCustomForm(false);
-        setCustomValue("");
-        setCustomLocation("");
-        setRideDate("");
-        setNotes("");
-        setPhoto(null);
-    }, []);
+    const form = useMemo<RideFormState>(
+        () => ({
+            selectedPresetId: formState.fields.selectedPresetId,
+            customValue: formState.fields.customValue,
+            customLocation: formState.fields.customLocation,
+            showCustomForm: formState.fields.showCustomForm,
+            paymentStatus: formState.fields.paymentStatus,
+            rideDate: formState.fields.rideDate,
+            notes: formState.fields.notes,
+            photo: formState.fields.photo,
+            isSaving: formState.fields.isSaving,
+            canSubmit: !!selectedClient && !!formState.fields.customValue,
+        }),
+        [
+            formState.fields.customLocation,
+            formState.fields.customValue,
+            formState.fields.isSaving,
+            formState.fields.notes,
+            formState.fields.paymentStatus,
+            formState.fields.photo,
+            formState.fields.rideDate,
+            formState.fields.selectedPresetId,
+            formState.fields.showCustomForm,
+            selectedClient,
+        ],
+    );
 
-    const handlePhotoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPhoto(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    }, []);
-
-    const handleConfirmRide = useCallback(async () => {
-        if (!selectedClient) return;
-
-        let finalValue = Number(customValue);
-        let finalLocation = customLocation || "";
-
-        if (!finalValue) {
-            toast({ title: "Selecione um valor", variant: "destructive" });
-            return;
-        }
-
-        setIsSaving(true);
-        try {
-            let uploadedPhotoUrl = photo;
-
-            if (photo && photo.startsWith('data:image')) {
-                try {
-                    const response = await fetch(photo);
-                    const blob = await response.blob();
-                    const file = new File([blob], "ride-photo.jpg", { type: blob.type });
-                    const res = await uploadImage(file, 'rides');
-                    uploadedPhotoUrl = res.url;
-                } catch (uploadErr) {
-                    console.error("[RideRegistration] Erro no upload R2:", uploadErr);
-                    uploadedPhotoUrl = null;
-                }
-            }
-
-            await ridesService.createRide({
-                clientId: selectedClient.id,
-                value: finalValue,
-                location: finalLocation,
-                notes: notes || undefined,
-                photo: uploadedPhotoUrl || undefined,
-                status: 'COMPLETED' as RideStatus,
-                paymentStatus: paymentStatus,
-                rideDate: rideDate ? toISOFromLocalInput(rideDate) : undefined
-            });
-
-            toast({ 
-                title: "Corrida registrada!", 
-                description: `R$ ${finalValue.toFixed(2)} para ${selectedClient.name}` 
-            });
-
-            resetForm();
-            onSuccess();
-        } catch (err) {
-            toast({ title: parseApiError(err, "Erro ao registrar"), variant: "destructive" });
-        } finally {
-            setIsSaving(false);
-        }
-    }, [selectedClient, customValue, customLocation, photo, notes, paymentStatus, rideDate, toast, resetForm, onSuccess]);
-
-    const handleDeleteRide = useCallback(async () => {
-        if (!rideToDelete) return;
-        setIsDeleting(true);
-        try {
-            await ridesService.deleteRide(rideToDelete.id);
-            toast({ title: "Corrida excluída" });
-            onSuccess();
-            setRideToDelete(null);
-        } catch (err) {
-            toast({ title: parseApiError(err, "Erro ao excluir"), variant: "destructive" });
-        } finally {
-            setIsDeleting(false);
-        }
-    }, [rideToDelete, toast, onSuccess]);
+    const actions: RideFormActions = {
+        setCustomValue: formState.setters.setCustomValue,
+        setCustomLocation: formState.setters.setCustomLocation,
+        setPaymentStatus: formState.setters.setPaymentStatus,
+        setRideDate: formState.setters.setRideDate,
+        setNotes: formState.setters.setNotes,
+        handlePresetSelect: formState.helpers.handlePresetSelect,
+        toggleCustomForm: formState.helpers.toggleCustomForm,
+        handlePhotoChange: formState.helpers.handlePhotoChange,
+        removePhoto: () => formState.setters.setPhoto(null),
+        submitRide,
+        resetForm: formState.helpers.resetForm,
+    };
 
     return {
-        // State
-        selectedClient, setSelectedClient,
-        selectedPresetId, setSelectedPresetId,
-        customValue, setCustomValue,
-        customLocation, setCustomLocation,
-        showCustomForm, setShowCustomForm,
-        paymentStatus, setPaymentStatus,
-        rideDate, setRideDate,
-        notes, setNotes,
-        photo, setPhoto,
-        isSaving,
-        
-        // Modals
-        rideToEdit, setRideToEdit,
-        isRideModalOpen, setIsRideModalOpen,
-        rideToDelete, setRideToDelete,
-        isDeleting,
-        
-        // Handlers
-        handlePhotoChange,
-        handleConfirmRide,
-        handleDeleteRide,
-        resetForm
+        form,
+        actions,
+        modals: modals as RideRegistrationModals,
     };
 }

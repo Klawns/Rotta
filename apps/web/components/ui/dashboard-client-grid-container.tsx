@@ -10,7 +10,7 @@ interface DashboardClientGridContainerProps<T> {
     isLoading?: boolean;
     hasMore?: boolean;
     onLoadMore?: () => void;
-    error?: any;
+    error?: unknown;
     retry?: () => void;
 }
 

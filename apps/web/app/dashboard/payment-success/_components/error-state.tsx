@@ -2,7 +2,11 @@ import { motion } from "framer-motion";
 import { AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export function ErrorState() {
+interface ErrorStateProps {
+    onRetry: () => void;
+}
+
+export function ErrorState({ onRetry }: ErrorStateProps) {
     const router = useRouter();
 
     return (
@@ -17,14 +21,22 @@ export function ErrorState() {
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Ops! Algo deu errado</h1>
             <p className="text-slate-400">
-                Tivemos um problema técnico ao atualizar sua conta. Não se preocupe, seu pagamento está seguro.
+                Tivemos um problema tecnico ao atualizar sua conta. Nao se preocupe, seu pagamento esta seguro.
             </p>
-            <button
-                onClick={() => router.push("/pricing")}
-                className="w-full bg-white/5 border border-white/10 text-white h-14 rounded-2xl font-bold hover:bg-white/10 transition-all mt-4"
-            >
-                Voltar e Tentar Novamente
-            </button>
+            <div className="mt-4 flex w-full flex-col gap-3">
+                <button
+                    onClick={onRetry}
+                    className="w-full bg-white text-slate-950 h-14 rounded-2xl font-bold hover:bg-slate-100 transition-all"
+                >
+                    Tentar Novamente
+                </button>
+                <button
+                    onClick={() => router.push("/pricing")}
+                    className="w-full bg-white/5 border border-white/10 text-white h-14 rounded-2xl font-bold hover:bg-white/10 transition-all"
+                >
+                    Voltar para os Planos
+                </button>
+            </div>
         </motion.div>
     );
 }

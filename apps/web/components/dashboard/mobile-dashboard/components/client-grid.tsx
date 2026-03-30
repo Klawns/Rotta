@@ -1,191 +1,190 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { Users, Plus, Star } from "lucide-react";
+import { motion } from "framer-motion";
+import { Plus, Star, Users } from "lucide-react";
 import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
+import { DashboardClientGridContainer } from "@/components/ui/dashboard-client-grid-container";
 import { cn } from "@/lib/utils";
 import { Client } from "@/types/rides";
-
+import type {
+    ClientCreationDialogState,
+    ClientSelectionDirectory,
+} from "../hooks/use-client-selection";
 import { ClientGridSkeleton } from "./client-grid-skeleton";
-import { DashboardClientGridContainer } from "@/components/ui/dashboard-client-grid-container";
+import { CreateClientDialog } from "./create-client-dialog";
+
+type ClientGridItem = Client | { kind: "create" };
 
 interface ClientGridProps {
-    clients: Client[];
+    directory: ClientSelectionDirectory;
     selectedClient: Client | null;
     onSelect: (client: Client | null) => void;
-    isLoading: boolean;
-    hasMore: boolean;
-    onLoadMore: () => void;
-    error: any;
-    retry: () => void;
-    openCreateModal: () => void;
-    isCreateModalOpen: boolean;
-    setIsCreateModalOpen: (open: boolean) => void;
-    newClientName: string;
-    setNewClientName: (name: string) => void;
-    isCreating: boolean;
-    onCreate: () => void;
+    creationDialog: ClientCreationDialogState;
 }
 
+function isCreateButton(item: ClientGridItem): item is { kind: "create" } {
+    return "kind" in item;
+}
 
 export function ClientGrid({
-    clients,
+    directory,
     selectedClient,
     onSelect,
-    isLoading,
-    hasMore,
-    onLoadMore,
-    error,
-    retry,
-    openCreateModal,
-    isCreateModalOpen,
-    setIsCreateModalOpen,
-    newClientName,
-    setNewClientName,
-    isCreating,
-    onCreate
+    creationDialog,
 }: ClientGridProps) {
-    const gridItems = useMemo(() => [
-        ...clients.filter(Boolean),
-        { isNewButton: true } as any
-    ], [clients]);
+    const gridItems = useMemo<ClientGridItem[]>(
+        () => [...directory.clients.filter(Boolean), { kind: "create" }],
+        [directory.clients],
+    );
 
     return (
-        <section className={cn(
-            "bg-card-background border border-border-subtle p-4 rounded-3xl shadow-sm flex flex-col overflow-hidden transition-all duration-300",
-            !selectedClient ? "min-h-[300px]" : "min-h-[100px]"
-        )}>
-            <div className="flex items-center justify-between mb-4 px-2 flex-shrink-0">
-                <h2 className="text-lg font-display font-extrabold text-text-primary flex items-center gap-2">
+        <section
+            className={cn(
+                "flex flex-col overflow-hidden rounded-3xl border border-border-subtle bg-card-background p-4 shadow-sm transition-all duration-300",
+                selectedClient ? "min-h-[100px]" : "min-h-[300px]",
+            )}
+        >
+            <div className="mb-4 flex flex-shrink-0 items-center justify-between px-2">
+                <h2 className="flex items-center gap-2 text-lg font-display font-extrabold text-text-primary">
                     <Users size={18} className="text-primary" />
                     {selectedClient ? "Cliente" : "Selecione o Cliente"}
                 </h2>
-                {selectedClient && (
+                {selectedClient ? (
                     <button
                         onClick={() => onSelect(null)}
-                        className="text-xs text-primary font-medium hover:underline"
+                        className="text-xs font-medium text-primary hover:underline"
                     >
                         Trocar
                     </button>
-                )}
+                ) : null}
             </div>
 
             {!selectedClient ? (
-                <div className="flex-1 overflow-hidden flex flex-col">
-                    {isLoading && clients.length === 0 ? (
+                <div className="flex flex-1 flex-col overflow-hidden">
+                    {directory.isLoading && directory.clients.length === 0 ? (
                         <ClientGridSkeleton />
                     ) : (
                         <DashboardClientGridContainer
                             items={gridItems}
                             maxHeight="40vh"
                             gap={12}
-                            hasMore={hasMore}
-                            isLoading={isLoading}
-                            onLoadMore={onLoadMore}
+                            hasMore={directory.hasMore}
+                            isLoading={directory.isLoading || directory.isFetchingNextPage}
+                            onLoadMore={directory.loadMore}
+                            error={directory.error}
+                            retry={directory.retry}
                             renderItem={(row) => (
-                                <div className="grid grid-cols-3 gap-3 w-full">
-                                    {row.map((item: any) => {
-                                        if ('isNewButton' in item) {
-                                            return (
-                                                <button
-                                                    key="new-button"
-                                                    onClick={openCreateModal}
-                                                    className="min-h-[70px] border border-dashed border-primary/30 bg-primary/5 rounded-2xl flex flex-col items-center justify-center p-2 group active:bg-primary/10 transition-all active:scale-95 shadow-sm"
-                                                >
-                                                    <div className="w-6 h-6 rounded-full border border-dashed border-primary/40 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform text-primary">
-                                                        <Plus size={10} />
-                                                    </div>
-                                                    <span className="text-[9px] text-primary font-display font-bold uppercase tracking-widest">Novo</span>
-                                                </button>
-                                            );
-                                        }
-
-                                        const client = item as Client;
-                                        const isSelected = !!selectedClient && (selectedClient as any).id === client.id;
-
-                                        return (
-                                            <motion.button
-                                                key={client.id}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => onSelect(client)}
-                                                className={cn(
-                                                    "min-h-[70px] rounded-2xl flex flex-col items-center justify-center p-2 text-center transition-all relative group overflow-hidden shadow-sm",
-                                                    isSelected 
-                                                        ? "bg-primary/20 border-primary/50 ring-1 ring-primary/20 shadow-primary/10" 
-                                                        : "bg-card-background border-border-subtle border active:bg-hover-accent"
-                                                )}
-                                            >
-                                                {client.isPinned && (
-                                                    <div className="absolute top-2 right-2 text-yellow-400 animate-pulse drop-shadow-md">
-                                                        <Star size={10} className="fill-yellow-400" />
-                                                    </div>
-                                                )}
-
-                                                <span className={cn(
-                                                    "text-[13px] font-display font-extrabold leading-tight w-full text-center break-words px-1 line-clamp-2 transition-colors tracking-tight",
-                                                    isSelected ? "text-primary" : "text-text-primary group-active:text-primary"
-                                                )}>
-                                                    {client.name || "Sem nome"}
-                                                </span>
-                                            </motion.button>
-                                        );
-                                    })}
+                                <div className="grid w-full grid-cols-3 gap-3">
+                                    {(row as ClientGridItem[]).map((item) =>
+                                        renderGridItem({
+                                            item,
+                                            creationDialog,
+                                            onSelect,
+                                            selectedClientId: null,
+                                        }),
+                                    )}
                                 </div>
                             )}
                         />
                     )}
                 </div>
             ) : (
-                <div className="bg-primary/10 border border-primary/20 rounded-2xl p-5 flex items-center justify-between animate-in fade-in slide-in-from-top-2 shadow-lg shadow-primary/5">
+                <div className="animate-in slide-in-from-top-2 flex items-center justify-between rounded-2xl border border-primary/20 bg-primary/10 p-5 shadow-lg shadow-primary/5 fade-in">
                     <div>
-                        <h3 className="font-display font-extrabold text-text-primary text-xl leading-tight uppercase tracking-tighter">{selectedClient.name || "Sem nome"}</h3>
-                        <p className="text-[10px] font-display font-bold text-primary mt-1 uppercase tracking-widest opacity-80">Cliente selecionado</p>
+                        <h3 className="text-xl font-display font-extrabold uppercase tracking-tighter text-text-primary">
+                            {selectedClient.name || "Sem nome"}
+                        </h3>
+                        <p className="mt-1 text-[10px] font-display font-bold uppercase tracking-widest text-primary opacity-80">
+                            Cliente selecionado
+                        </p>
                     </div>
-                    <div className="bg-primary/20 p-2 rounded-xl">
+                    <div className="rounded-xl bg-primary/20 p-2">
                         <Users size={20} className="text-primary" />
                     </div>
                 </div>
             )}
 
-            {/* In-Page Modal for client creation */}
-            <AnimatePresence>
-                {isCreateModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className="w-full max-w-sm bg-card border border-border rounded-[2rem] p-6 shadow-2xl"
-                        >
-                            <h3 className="text-xl font-bold text-foreground mb-4">Novo Cliente</h3>
-                            <input
-                                autoFocus
-                                value={newClientName}
-                                onChange={e => setNewClientName(e.target.value)}
-                                placeholder="Nome do cliente..."
-                                className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground outline-none focus:border-primary mb-4"
-                            />
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="ghost"
-                                    onClick={() => setIsCreateModalOpen(false)}
-                                    className="flex-1 text-muted-foreground"
-                                >
-                                    Cancelar
-                                </Button>
-                                <Button
-                                    onClick={onCreate}
-                                    disabled={!newClientName || isCreating}
-                                    className="flex-1 bg-primary text-primary-foreground font-bold"
-                                >
-                                    {isCreating ? "Criando..." : "Cadastrar"}
-                                </Button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            <CreateClientDialog dialog={creationDialog} />
         </section>
+    );
+}
+
+interface ClientCardProps {
+    client: Client;
+    isSelected: boolean;
+    onSelect: (client: Client) => void;
+}
+
+function ClientCard({ client, isSelected, onSelect }: ClientCardProps) {
+    return (
+        <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onSelect(client)}
+            className={cn(
+                "group relative flex min-h-[70px] flex-col items-center justify-center overflow-hidden rounded-2xl p-2 text-center shadow-sm transition-all",
+                isSelected
+                    ? "border-primary/50 bg-primary/20 ring-1 ring-primary/20 shadow-primary/10"
+                    : "border border-border-subtle bg-card-background active:bg-hover-accent",
+            )}
+        >
+            {client.isPinned ? (
+                <div className="absolute right-2 top-2 animate-pulse text-yellow-400 drop-shadow-md">
+                    <Star size={10} className="fill-yellow-400" />
+                </div>
+            ) : null}
+
+            <span
+                className={cn(
+                    "line-clamp-2 w-full break-words px-1 text-center text-[13px] font-display font-extrabold leading-tight tracking-tight transition-colors",
+                    isSelected
+                        ? "text-primary"
+                        : "text-text-primary group-active:text-primary",
+                )}
+            >
+                {client.name || "Sem nome"}
+            </span>
+        </motion.button>
+    );
+}
+
+interface RenderGridItemProps {
+    item: ClientGridItem;
+    selectedClientId: string | null;
+    onSelect: (client: Client) => void;
+    creationDialog: ClientCreationDialogState;
+}
+
+function renderGridItem({
+    item,
+    selectedClientId,
+    onSelect,
+    creationDialog,
+}: RenderGridItemProps) {
+    if (isCreateButton(item)) {
+        return (
+            <button
+                key="new-button"
+                onClick={creationDialog.open}
+                className="min-h-[70px] rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-2 shadow-sm transition-all active:scale-95 active:bg-primary/10"
+            >
+                <div className="group flex flex-col items-center justify-center">
+                    <div className="mb-1 flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-primary/40 text-primary transition-transform group-hover:scale-110">
+                        <Plus size={10} />
+                    </div>
+                    <span className="text-[9px] font-display font-bold uppercase tracking-widest text-primary">
+                        Novo
+                    </span>
+                </div>
+            </button>
+        );
+    }
+
+    return (
+        <ClientCard
+            key={item.id}
+            client={item}
+            isSelected={selectedClientId === item.id}
+            onSelect={onSelect}
+        />
     );
 }

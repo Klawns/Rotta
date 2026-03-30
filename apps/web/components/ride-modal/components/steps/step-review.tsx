@@ -3,6 +3,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { User, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDisplayDateValue } from "@/lib/date-utils";
 import { Client, PaymentStatus } from "@/types/rides";
 import { PaymentComposition } from "@/components/ui/payment-composition";
 
@@ -94,7 +95,7 @@ export function StepReview({
                             {rideDate && (
                                 <div className="space-y-1">
                                     <p className="text-[9px] font-bold text-text-secondary uppercase tracking-widest leading-none mb-1.5 opacity-70">Data Agendada</p>
-                                    <p className="text-sm text-text-secondary font-bold tracking-tight">{new Date(rideDate).toLocaleString()}</p>
+                                    <p className="text-sm text-text-secondary font-bold tracking-tight">{formatDisplayDateValue(rideDate)}</p>
                                 </div>
                             )}
                             {photo && (
@@ -109,7 +110,7 @@ export function StepReview({
                         {notes && (
                             <div className="p-4 rounded-2xl bg-secondary/10 border border-border-subtle italic text-text-secondary text-sm font-medium">
                                  <p className="text-[8px] font-bold uppercase tracking-[0.2em] mb-2 normal-case non-italic opacity-50">Observações Internas:</p>
-                                "{notes}"
+                                &ldquo;{notes}&rdquo;
                             </div>
                         )}
                     </div>

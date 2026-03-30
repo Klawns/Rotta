@@ -1,18 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { TutorialModal } from "@/components/dashboard/tutorial-modal";
-import { StarterLimitPopup } from "@/components/dashboard/starter-limit-popup";
 import { SubscriptionExpiringPopup } from "@/components/dashboard/subscription-expiring-popup";
-import { api, apiClient } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 import { User } from "@/hooks/use-auth";
+import { parseApiError } from "@/lib/api-error";
+import { authKeys } from "@/lib/query-keys";
+import { settingsService } from "@/services/settings-service";
 
 interface PopupsManagerProps {
     user: User | null;
     isLoading: boolean;
-    updateUser: (user: User) => void;
     showExpiringPopup: boolean;
     daysRemaining: number;
+}
+
+function shouldShowTutorial(
+    user: User | null,
+    isLoading: boolean,
+    dismissedTutorialUserId: string | null,
+) {
+    if (isLoading || !user || user.role !== "user" || user.hasSeenTutorial) {
+        return false;
+    }
+
+    const hasActivePlan =
+        user.subscription?.status === "active" ||
+        user.subscription?.status === "trial";
+
+    return hasActivePlan && dismissedTutorialUserId !== user.id;
 }
 
 /**
@@ -22,40 +40,44 @@ interface PopupsManagerProps {
 export function PopupsManager({ 
     user, 
     isLoading, 
-    updateUser, 
     showExpiringPopup, 
     daysRemaining 
 }: PopupsManagerProps) {
-    const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+    const [dismissedTutorialUserId, setDismissedTutorialUserId] = useState<string | null>(null);
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
 
-    useEffect(() => {
-        if (!isLoading && user && !user.hasSeenTutorial && user.role === 'user') {
-            const hasActivePlan = user.subscription?.status === 'active' || user.subscription?.status === 'trial';
-            if (hasActivePlan) {
-                setIsTutorialOpen(true);
-            }
-        }
-    }, [isLoading, user]);
+    const tutorialMutation = useMutation({
+        mutationFn: () => settingsService.markTutorialSeen(),
+        onSuccess: () => {
+            queryClient.setQueryData<User | null>(authKeys.user(), (currentUser) =>
+                currentUser ? { ...currentUser, hasSeenTutorial: true } : currentUser,
+            );
+        },
+        onError: (error) => {
+            toast({
+                title: "Erro ao atualizar tutorial",
+                description: parseApiError(error, "Tente novamente."),
+                variant: "destructive",
+            });
+        },
+    });
+
+    const isTutorialOpen = useMemo(() => {
+        return shouldShowTutorial(user, isLoading, dismissedTutorialUserId);
+    }, [dismissedTutorialUserId, isLoading, user]);
 
     async function handleCloseTutorial() {
-        setIsTutorialOpen(false);
-        if (!user) return;
-        
-        try {
-            await apiClient.patch("/settings/tutorial-seen");
-            updateUser({ ...user, hasSeenTutorial: true });
-        } catch (err) {
-            console.error("[PopupsManager] Erro ao marcar tutorial como visto:", err);
+        if (user) {
+            setDismissedTutorialUserId(user.id);
         }
+        if (!user || tutorialMutation.isPending) return;
+        tutorialMutation.mutate();
     }
 
     return (
         <>
             <TutorialModal isOpen={isTutorialOpen} onClose={handleCloseTutorial} />
-
-            {user?.subscription?.plan === 'starter' && user?.subscription?.status === 'active' && (
-                <StarterLimitPopup rideCount={user.subscription.rideCount || 0} />
-            )}
 
             {showExpiringPopup && (
                 <SubscriptionExpiringPopup daysRemaining={daysRemaining} />

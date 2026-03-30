@@ -1,329 +1,125 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { formatCurrency } from "@/lib/utils";
+import jsPDF from 'jspdf';
+import { format } from 'date-fns';
+import { type ClientPayment } from '@/types/client-payments';
+import { type Client, type ClientBalance } from '@/types/rides';
+import {
+  getClientDebtReportFileName,
+  getFinancialReportFileName,
+  getPeriodLabel,
+} from './pdf-service/formatters';
+import {
+  drawDivider,
+  drawFooter,
+  drawHeaderBrand,
+  drawPixKey,
+} from './pdf-service/layout';
+import {
+  drawClientDebtSummary,
+  drawRevenueSummary,
+} from './pdf-service/summaries';
+import {
+  drawPaymentsTable,
+  drawPendingRidesTable,
+  drawRidesTable,
+} from './pdf-service/tables';
+import {
+  type AutoTableDoc,
+  type ExportOptions,
+  type PDFReportRide,
+} from './pdf-service/types';
 
-interface ExportOptions {
-    clients?: string[]; // IDs
-    period: 'today' | 'week' | 'month' | 'year' | 'custom';
-    userName: string;
-    pixKey?: string;
-}
+export type { PDFReportRide } from './pdf-service/types';
 
 export class PDFService {
-    static async generateReport(rides: any[], options: ExportOptions) {
-        const doc = new jsPDF();
-        const { userName, period, pixKey } = options;
+  static async generateReport(
+    rides: PDFReportRide[],
+    options: ExportOptions,
+  ) {
+    const doc = new jsPDF() as AutoTableDoc;
+    const { userName, period, pixKey } = options;
 
-        // Title (Top Left)
-        doc.setFontSize(22);
-        doc.setTextColor(30, 41, 59); // Slate 800
-        doc.text("Relatório de Faturamento", 14, 20);
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Relatorio de Faturamento', 14, 20);
 
-        // Logo & Branding (Top Right)
-        const logoUrl = "/assets/logo8.jpg";
-        try {
-            // Tentar carregar a imagem e adicionar ao PDF no canto direito
-            const img = new Image();
-            img.src = logoUrl;
-            await new Promise((resolve) => {
-                img.onload = resolve;
-                img.onerror = resolve; 
-            });
+    await drawHeaderBrand(doc);
 
-            const rightMargin = 196;
-            if (img.complete && img.naturalWidth > 0) {
-                doc.addImage(img, 'JPEG', rightMargin - 10, 10, 10, 10);
-            } else {
-                doc.setFillColor(30, 41, 59);
-                doc.roundedRect(rightMargin - 10, 10, 10, 10, 2, 2, 'F');
-            }
-            
-            doc.setFontSize(16);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(30, 41, 59);
-            doc.text("Rotta", rightMargin - 12, 16, { align: 'right' });
-            
-            doc.setFontSize(8);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(100, 116, 139);
-            doc.text("Gestão de Entregas", rightMargin - 12, 20, { align: 'right' });
-        } catch (e) {
-            console.error("Error drawing logo", e);
-        }
+    let currentY = 32;
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Motorista: ${userName}`, 14, currentY);
+    currentY += 5;
+    doc.text(`Periodo: ${getPeriodLabel(period)}`, 14, currentY);
+    currentY += 5;
+    doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, currentY);
+    currentY += 8;
 
-        let currentY = 32;
-        doc.setFontSize(10);
-        doc.setTextColor(100, 116, 139); // Slate 500
-        doc.text(`Motorista: ${userName}`, 14, currentY);
-        currentY += 5;
-        doc.text(`Período: ${this.getPeriodLabel(period)}`, 14, currentY);
-        currentY += 5;
-        doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, currentY);
-        currentY += 8;
-
-        // PIX Key highlighting
-        if (pixKey) {
-            currentY += 3;
-            // Background box for PIX
-            doc.setFillColor(236, 253, 245); // Emerald 50
-            doc.setDrawColor(16, 185, 129); // Emerald 500
-            doc.rect(14, currentY - 5, 182, 10, 'FD'); // Fill and Border
-
-            doc.setTextColor(5, 150, 105); // Emerald 600
-            doc.setFont("helvetica", "bold");
-            doc.text(`Chave PIX para pagamento: ${pixKey}`, 17, currentY + 2);
-            doc.setFont("helvetica", "normal");
-            currentY += 10;
-        }
-
-        // Stats Summary
-        const totalValue = rides.reduce((sum, r) => sum + r.value, 0);
-        const totalPaid = rides.filter(r => r.paymentStatus === 'PAID').reduce((sum, r) => sum + r.value, 0);
-        const totalPending = rides.reduce((sum, r) => {
-            if (r.paymentStatus !== 'PENDING' || r.status === 'CANCELLED') return sum;
-            return sum + (r.debtValue !== undefined ? r.debtValue : r.value);
-        }, 0);
-        const totalRides = rides.length;
-
-        doc.setDrawColor(226, 232, 240); // Slate 200
-        doc.line(14, currentY + 2, 196, currentY + 2);
-
-        currentY += 12;
-
-        doc.setFontSize(12);
-        doc.setTextColor(30, 41, 59);
-        doc.text("Resumo Financeiro:", 14, currentY);
-        currentY += 7;
-        
-        doc.setFontSize(10);
-        doc.text(`Total de corridas realizadas: ${totalRides}`, 14, currentY);
-        currentY += 5;
-        doc.text(`Valor total bruto (corridas): ${formatCurrency(totalValue)}`, 14, currentY);
-        currentY += 5;
-        
-        doc.setTextColor(220, 38, 38); // Red 600
-        doc.text(`Total de dívidas pendentes (em haver): ${formatCurrency(totalPending)}`, 14, currentY);
-        currentY += 7;
-
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(5, 150, 105); // Emerald 600
-        doc.text(`Total Faturado (Recebido): ${formatCurrency(totalPaid)}`, 14, currentY);
-        doc.setFont("helvetica", "normal");
-
-        currentY += 10;
-
-        // Table
-        const tableData = rides.map(ride => {
-            const hasBalance = (ride.paidWithBalance ?? 0) > 0;
-            const displayValue = hasBalance 
-                ? `${formatCurrency(ride.value)} (-${formatCurrency(ride.paidWithBalance)})`
-                : formatCurrency(ride.value);
-
-            return [
-                format(new Date(ride.rideDate || ride.createdAt), "dd/MM/yy HH:mm"),
-                ride.clientName || ride.client?.name || "---",
-                ride.location || "---",
-                displayValue,
-                ride.paymentStatus === 'PAID' ? "Pago" : "Pendente"
-            ];
-        });
-
-        autoTable(doc, {
-            startY: currentY,
-            head: [['Data', 'Cliente', 'Local', 'Valor', 'Status']],
-            body: tableData,
-            theme: 'striped',
-            headStyles: { fillColor: [59, 130, 246], textColor: 255 }, // Blue 500
-            alternateRowStyles: { fillColor: [248, 250, 252] }, // Slate 50
-        });
-
-        // Footer
-        const pageCount = (doc.internal as any).getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            doc.setTextColor(148, 163, 184);
-            doc.text(`Rotta - Sistema de Gestão para Motoristas | Página ${i} de ${pageCount}`, 14, 285);
-        }
-
-        const monthName = format(new Date(), "MMMM", { locale: ptBR });
-        const year = format(new Date(), "yyyy");
-        const fileName = period === 'month' 
-            ? `Relatorio_Financeiro_${monthName.charAt(0).toUpperCase() + monthName.slice(1)}_${year}.pdf` 
-            : `Relatorio_Financeiro_${this.getPeriodLabel(period)}_${format(new Date(), "dd_MM_yyyy")}.pdf`;
-
-        doc.save(fileName);
+    if (pixKey) {
+      currentY = drawPixKey(doc, pixKey, currentY);
     }
 
-    static async generateClientDebtReport(client: { name: string; id: string }, rides: any[], payments: any[], balance: { totalDebt: number; totalPaid: number; remainingBalance: number; clientBalance: number }, options: { userName: string; pixKey?: string }) {
-        const doc = new jsPDF();
-        const { userName, pixKey } = options;
+    currentY = drawDivider(doc, currentY);
+    currentY = drawRevenueSummary(doc, currentY, rides);
+    drawRidesTable(doc, currentY, rides);
+    drawFooter(doc);
 
-        // Title (Top Left)
-        doc.setFontSize(22);
-        doc.setTextColor(30, 41, 59);
-        doc.text("Detalhamento de Dívida", 14, 20);
+    doc.save(getFinancialReportFileName(period));
+  }
 
-        // Logo & Branding (Top Right)
-        const logoUrl = "/assets/logo8.jpg";
-        try {
-            // Tentar carregar a imagem e adicionar ao PDF no canto direito
-            const img = new Image();
-            img.src = logoUrl;
-            await new Promise((resolve) => {
-                img.onload = resolve;
-                img.onerror = resolve; 
-            });
+  static async generateClientDebtReport(
+    client: Client,
+    rides: PDFReportRide[],
+    payments: ClientPayment[],
+    balance: ClientBalance,
+    options: { userName: string; pixKey?: string },
+  ) {
+    const doc = new jsPDF() as AutoTableDoc;
+    const { userName, pixKey } = options;
 
-            const rightMargin = 196;
-            if (img.complete && img.naturalWidth > 0) {
-                doc.addImage(img, 'JPEG', rightMargin - 10, 10, 10, 10);
-            } else {
-                doc.setFillColor(30, 41, 59);
-                doc.roundedRect(rightMargin - 10, 10, 10, 10, 2, 2, 'F');
-            }
-            
-            doc.setFontSize(16);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(30, 41, 59);
-            doc.text("Rotta", rightMargin - 12, 16, { align: 'right' });
-            
-            doc.setFontSize(8);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(100, 116, 139);
-            doc.text("Gestão de Entregas", rightMargin - 12, 20, { align: 'right' });
-        } catch (e) {
-            console.error("Error drawing logo", e);
-        }
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Detalhamento de Divida', 14, 20);
 
-        let currentY = 32;
-        doc.setFontSize(10);
-        doc.setTextColor(100, 116, 139);
-        doc.text(`Motorista: ${userName}`, 14, currentY);
-        currentY += 5;
-        doc.text(`Cliente: ${client.name || "Sem nome"}`, 14, currentY);
-        currentY += 5;
-        doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, currentY);
-        currentY += 8;
+    await drawHeaderBrand(doc);
 
-        // PIX Key
-        if (pixKey) {
-            currentY += 3;
-            doc.setFillColor(236, 253, 245);
-            doc.setDrawColor(16, 185, 129);
-            doc.rect(14, currentY - 5, 182, 10, 'FD');
-            doc.setTextColor(5, 150, 105);
-            doc.setFont("helvetica", "bold");
-            doc.text(`Chave PIX para pagamento: ${pixKey}`, 17, currentY + 2);
-            doc.setFont("helvetica", "normal");
-            currentY += 10;
-        }
+    let currentY = 32;
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Motorista: ${userName}`, 14, currentY);
+    currentY += 5;
+    doc.text(`Cliente: ${client.name || 'Sem nome'}`, 14, currentY);
+    currentY += 5;
+    doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, currentY);
+    currentY += 8;
 
-        doc.setDrawColor(226, 232, 240);
-        doc.line(14, currentY + 2, 196, currentY + 2);
-        currentY += 12;
-
-        // Summary
-        doc.setFontSize(12);
-        doc.setTextColor(30, 41, 59);
-        doc.text("Resumo Financeiro:", 14, currentY);
-        currentY += 7;
-        doc.text(`Total da dívida: ${formatCurrency(balance.totalDebt)}`, 14, currentY);
-        currentY += 7;
-        doc.text(`Pagamentos realizados: ${formatCurrency(balance.totalPaid)}`, 14, currentY);
-        currentY += 7;
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(220, 38, 38); // Red 600
-        doc.text(`Dívida em haver: ${formatCurrency(balance.remainingBalance)}`, 14, currentY);
-        
-        currentY += 7;
-        doc.setTextColor(5, 150, 105); // Emerald 600
-        doc.text(`Crédito disponível (Saldo): ${formatCurrency(balance.clientBalance)}`, 14, currentY);
-        
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(30, 41, 59);
-
-        currentY += 15;
-
-        // Payments Table
-        if (payments.length > 0) {
-            doc.setFontSize(14);
-            doc.setFont("helvetica", "bold");
-            doc.text("Lista de pagamentos realizados:", 14, currentY);
-            currentY += 7;
-
-            const paymentTableData = payments.map(p => [
-                format(new Date(p.paymentDate || p.createdAt), "dd/MM/yyyy"),
-                formatCurrency(p.amount),
-                p.notes || "---"
-            ]);
-
-            autoTable(doc, {
-                startY: currentY,
-                head: [['Data', 'Valor', 'Observação']],
-                body: paymentTableData,
-                theme: 'grid',
-                headStyles: { fillColor: [16, 185, 129], textColor: 255 },
-                styles: { fontSize: 9 },
-            });
-
-            currentY = (doc as any).lastAutoTable.finalY + 15;
-        }
-
-        // Rides Table (Pending only)
-        const pendingRides = rides.filter(r => r.paymentStatus === 'PENDING' && r.status !== 'CANCELLED');
-        if (pendingRides.length > 0) {
-            doc.setFontSize(14);
-            doc.setFont("helvetica", "bold");
-            doc.text("Corridas Pendentes:", 14, currentY);
-            currentY += 7;
-
-            const rideTableData = pendingRides.map(ride => {
-                const isPartial = (ride.paidWithBalance ?? 0) > 0;
-                const debtVal = ride.debtValue !== undefined ? ride.debtValue : ride.value;
-                
-                return [
-                    format(new Date(ride.rideDate || ride.createdAt), "dd/MM/yy HH:mm"),
-                    ride.location || "---",
-                    isPartial 
-                        ? `${formatCurrency(debtVal)} (Saldo: -${formatCurrency(ride.paidWithBalance)})` 
-                        : formatCurrency(debtVal)
-                ];
-            });
-
-            autoTable(doc, {
-                startY: currentY,
-                head: [['Data', 'Local', 'Valor']],
-                body: rideTableData,
-                theme: 'striped',
-                headStyles: { fillColor: [59, 130, 246], textColor: 255 },
-                styles: { fontSize: 9 },
-            });
-        }
-
-        // Footer
-        const pageCount = (doc.internal as any).getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            doc.setTextColor(148, 163, 184);
-            doc.text(`Rotta - Sistema de Gestão para Motoristas | Página ${i} de ${pageCount}`, 14, 285);
-        }
-
-        doc.save(`Debito_${(client.name || 'Sem_nome').replace(/\s+/g, '_')}_${format(new Date(), "ddMMyyyy")}.pdf`);
+    if (pixKey) {
+      currentY = drawPixKey(doc, pixKey, currentY);
     }
 
-    private static getPeriodLabel(period: string) {
-        switch (period) {
-            case 'today': return "Hoje";
-            case 'week': return "Esta Semana";
-            case 'month': return "Este Mês";
-            case 'year': return "Este Ano";
-            case 'custom': return "Personalizado";
-            default: return period;
-        }
+    currentY = drawDivider(doc, currentY);
+    currentY = drawClientDebtSummary(doc, currentY, balance);
+
+    if (payments.length > 0) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Lista de pagamentos realizados:', 14, currentY);
+      currentY += 7;
+      currentY = drawPaymentsTable(doc, currentY, payments);
     }
+
+    const pendingRides = rides.filter(
+      (ride) => ride.paymentStatus === 'PENDING' && ride.status !== 'CANCELLED',
+    );
+
+    if (pendingRides.length > 0) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Corridas Pendentes:', 14, currentY);
+      currentY += 7;
+      drawPendingRidesTable(doc, currentY, pendingRides);
+    }
+
+    drawFooter(doc);
+    doc.save(getClientDebtReportFileName(client.name));
+  }
 }

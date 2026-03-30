@@ -10,14 +10,13 @@ export default function QueryProvider({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Configurações padrão para um SaaS robusto
-            staleTime: 60 * 1000, // 1 minuto até os dados serem considerados "velhos"
-            gcTime: 5 * 60 * 1000, // 5 minutos de cache em memória
-            retry: 1, // Tentar apenas uma vez em caso de falha de rede
-            refetchOnWindowFocus: true, // Revalidar ao voltar para a aba
+            staleTime: 30 * 1000,
+            gcTime: 5 * 60 * 1000,
+            retry: 1,
+            refetchOnWindowFocus: false,
           },
         },
-      })
+      }),
   );
 
   return (

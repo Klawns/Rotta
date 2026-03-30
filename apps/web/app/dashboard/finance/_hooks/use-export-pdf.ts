@@ -1,49 +1,68 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { PDFService } from "@/services/pdf-service";
-import { FinanceStats, PeriodId, ExportState, RecentRide } from "../_types";
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { parseApiError } from '@/lib/api-error';
+import { PDFService } from '@/services/pdf-service';
+import { type FinanceStats, type PeriodId, type RecentRide } from '../_types';
 
 interface UseExportPdfParams {
-    viewStats: FinanceStats | null;
-    rides: RecentRide[];
-    selectedPeriod: PeriodId;
-    userName: string;
+  viewStats: FinanceStats | null;
+  rides: RecentRide[];
+  selectedPeriod: PeriodId;
+  userName: string;
 }
 
-export function useExportPdf({ viewStats, rides, selectedPeriod, userName }: UseExportPdfParams) {
-    const [isPixModalOpen, setIsPixModalOpen] = useState(false);
-    const [pixKey, setPixKey] = useState("");
-    const [statsToExport, setStatsToExport] = useState<{ period: PeriodId; stats: FinanceStats; rides: RecentRide[] } | null>(null);
+interface ExportPayload {
+  period: PeriodId;
+  rides: RecentRide[];
+}
 
-    const handleExportPDF = () => {
-        if (!viewStats || !rides.length) return;
+export function useExportPdf({
+  viewStats,
+  rides,
+  selectedPeriod,
+  userName,
+}: UseExportPdfParams) {
+  const [isPixModalOpen, setIsPixModalOpen] = useState(false);
+  const [pixKey, setPixKey] = useState('');
+  const [statsToExport, setStatsToExport] = useState<ExportPayload | null>(
+    null,
+  );
 
-        setStatsToExport({ period: selectedPeriod, stats: viewStats, rides });
-        setIsPixModalOpen(true);
-    };
+  const handleExportPDF = () => {
+    if (!viewStats || !rides.length) {
+      return;
+    }
 
-    const confirmExport = (includePix: boolean) => {
-        if (!statsToExport) return;
+    setStatsToExport({ period: selectedPeriod, rides });
+    setIsPixModalOpen(true);
+  };
 
-        // Note: PDFService might need an update if it expects FinanceRide[] instead of RecentRide[]
-        // But for now we cast to maintain compatibility if the fields match
-        PDFService.generateReport(statsToExport.rides as any, {
-            period: statsToExport.period,
-            userName,
-            pixKey: includePix && pixKey.trim() !== "" ? pixKey : undefined,
-        });
+  const confirmExport = async (includePix: boolean) => {
+    if (!statsToExport) {
+      return;
+    }
 
-        setIsPixModalOpen(false);
-        setStatsToExport(null);
-    };
+    try {
+      await PDFService.generateReport(statsToExport.rides, {
+        period: statsToExport.period,
+        userName,
+        pixKey: includePix && pixKey.trim() ? pixKey : undefined,
+      });
+      setIsPixModalOpen(false);
+      setStatsToExport(null);
+    } catch (error) {
+      toast.error(parseApiError(error, 'Erro ao exportar PDF.'));
+    }
+  };
 
-    return {
-        isPixModalOpen,
-        setIsPixModalOpen,
-        pixKey,
-        setPixKey,
-        handleExportPDF,
-        confirmExport,
-    };
+  return {
+    isPixModalOpen,
+    setIsPixModalOpen,
+    pixKey,
+    setPixKey,
+    handleExportPDF,
+    confirmExport,
+  };
 }

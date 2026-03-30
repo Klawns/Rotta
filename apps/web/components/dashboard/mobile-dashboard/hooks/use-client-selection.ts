@@ -1,72 +1,39 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { api, apiClient } from "@/services/api";
-import { Client } from "@/types/rides";
-import { CLIENTS_PER_PAGE } from "../constants";
-import { useInfiniteClients } from "./use-infinite-clients";
+import type { Client } from "@/types/rides";
+import { useClientCreationDialog } from "./use-client-creation-dialog";
+import { useClientDirectoryState } from "./use-client-directory-state";
 
-export function useClientSelection() {
-    const { toast } = useToast();
-    
-    const {
-        data: clientsData,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
-        isLoading: isLoadingClients,
-        isError: isClientsError,
-        error: clientsError,
-        refetch: refetchClients
-    } = useInfiniteClients({
-        limit: CLIENTS_PER_PAGE
-    });
+export interface ClientSelectionDirectory {
+    clients: Client[];
+    isLoading: boolean;
+    isFetchingNextPage: boolean;
+    hasMore: boolean;
+    loadMore: () => void;
+    error: unknown;
+    retry: () => void;
+}
 
-    const clients = useMemo(() => {
-        const allClients = clientsData?.pages.flatMap(page => page.data || []) || [];
-        return Array.from(new Map(
-            allClients
-                .filter(c => c && c.id)
-                .map(c => [String(c.id), c])
-        ).values());
-    }, [clientsData]);
-    
-    const [isClientModalOpen, setIsClientModalOpen] = useState(false);
-    const [newClientName, setNewClientName] = useState("");
-    const [isCreatingClient, setIsCreatingClient] = useState(false);
+export interface ClientCreationDialogState {
+    isOpen: boolean;
+    open: () => void;
+    close: () => void;
+    name: string;
+    setName: (name: string) => void;
+    isCreating: boolean;
+    submit: () => Promise<void>;
+}
 
-    const handleCreateClient = useCallback(async (onCreated?: (client: Client) => void) => {
-        if (!newClientName) return;
-        setIsCreatingClient(true);
-        try {
-            const data = await apiClient.post<Client>("/clients", { name: newClientName });
-            await refetchClients();
-            setIsClientModalOpen(false);
-            setNewClientName("");
-            toast({ title: "Cliente cadastrado! 👤" });
-            if (onCreated) onCreated(data);
-        } catch (err) {
-            toast({ title: "Erro ao cadastrar", variant: "destructive" });
-        } finally {
-            setIsCreatingClient(false);
-        }
-    }, [newClientName, refetchClients, toast]);
+interface UseClientSelectionProps {
+    onClientCreated?: (client: Client) => void;
+}
+
+export function useClientSelection({ onClientCreated }: UseClientSelectionProps = {}) {
+    const { directory } = useClientDirectoryState();
+    const creationDialog = useClientCreationDialog({ onCreated: onClientCreated });
 
     return {
-        clients,
-        isLoadingClients,
-        isFetchingNextPage,
-        hasNextPage,
-        fetchNextPage,
-        isClientsError,
-        clientsError,
-        refetchClients,
-        isClientModalOpen,
-        setIsClientModalOpen,
-        newClientName,
-        setNewClientName,
-        isCreatingClient,
-        handleCreateClient
+        directory,
+        creationDialog,
     };
 }

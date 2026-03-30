@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, Trash2, Zap } from "lucide-react";
@@ -87,7 +88,14 @@ export function SimulatorRideForm({ client, presets, onComplete }: SimulatorRide
                 <AnimatePresence>
                     {tempPhoto && (
                         <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="relative w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border border-blue-500/30">
-                            <img src={tempPhoto} alt="Preview" className="w-full h-full object-cover" />
+                            <Image
+                                src={tempPhoto}
+                                alt="Preview"
+                                fill
+                                unoptimized
+                                sizes="(max-width: 768px) 64px, 80px"
+                                className="object-cover"
+                            />
                             <button onClick={() => setTempPhoto(null)} className="absolute inset-0 bg-red-500/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                                 <Trash2 size={16} className="text-white" />
                             </button>

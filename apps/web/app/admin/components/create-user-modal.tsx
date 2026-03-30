@@ -1,19 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Loader2, UserPlus } from "lucide-react";
+import { parseApiError } from "@/lib/api-error";
+import { adminService } from "@/services/admin-service";
+import { type CreateAdminUserInput } from "@/types/admin";
+import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
-    DialogHeader,
-    DialogTitle,
     DialogDescription,
     DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Loader2 } from "lucide-react";
-import { api, apiClient } from "@/services/api";
 
 interface CreateUserModalProps {
     open: boolean;
@@ -21,40 +24,65 @@ interface CreateUserModalProps {
     onSuccess: () => void;
 }
 
-export function CreateUserModal({ open, onOpenChange, onSuccess }: CreateUserModalProps) {
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+export function CreateUserModal({
+    open,
+    onOpenChange,
+    onSuccess,
+}: CreateUserModalProps) {
+    const [form, setForm] = useState<CreateAdminUserInput>({
+        name: "",
+        email: "",
+        password: "",
+    });
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError(null);
-
-        const formData = new FormData(e.currentTarget);
-        const name = formData.get("name") as string;
-        const email = formData.get("email") as string;
-        const password = formData.get("password") as string;
-
-        try {
-            await apiClient.post("/admin/users", { name, email, password });
+    const createUserMutation = useMutation({
+        mutationFn: (data: CreateAdminUserInput) => adminService.createUser(data),
+        onSuccess: () => {
+            resetAndClose();
             onSuccess();
-            onOpenChange(false);
-            (e.target as HTMLFormElement).reset();
-        } catch (err: any) {
-            console.error("Erro ao criar usuário:", err);
-            setError(err.response?.data?.message || "Ocorreu um erro ao criar o usuário.");
-        } finally {
-            setIsLoading(false);
-        }
+        },
+    });
+
+    const resetForm = () => {
+        setForm({
+            name: "",
+            email: "",
+            password: "",
+        });
     };
 
+    const resetAndClose = () => {
+        resetForm();
+        createUserMutation.reset();
+        onOpenChange(false);
+    };
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (!nextOpen) {
+            resetForm();
+            createUserMutation.reset();
+        }
+
+        onOpenChange(nextOpen);
+    };
+
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        createUserMutation.mutate(form);
+    };
+
+    const isLoading = createUserMutation.isPending;
+    const error = createUserMutation.error
+        ? parseApiError(createUserMutation.error, "Ocorreu um erro ao criar o usuario.")
+        : null;
+
     return (
-        <Dialog open={open} onOpenChange={(val) => !isLoading && onOpenChange(val)}>
-            <DialogContent className="bg-slate-900 border-white/10 text-white max-w-md">
+        <Dialog open={open} onOpenChange={(nextOpen) => !isLoading && handleOpenChange(nextOpen)}>
+            <DialogContent className="max-w-md border-white/10 bg-slate-900 text-white">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold flex items-center gap-2 text-blue-400">
+                    <DialogTitle className="flex items-center gap-2 text-xl font-bold text-blue-400">
                         <UserPlus size={24} />
-                        Cadastrar Novo Usuário
+                        Cadastrar Novo Usuario
                     </DialogTitle>
                     <DialogDescription className="text-slate-400">
                         Preencha os dados abaixo para criar uma conta manualmente para o cliente.
@@ -68,8 +96,12 @@ export function CreateUserModal({ open, onOpenChange, onSuccess }: CreateUserMod
                             id="name"
                             name="name"
                             required
+                            value={form.name}
+                            onChange={(event) =>
+                                setForm((current) => ({ ...current, name: event.target.value }))
+                            }
                             placeholder="Nome do cliente"
-                            className="bg-slate-950 border-white/5 focus:ring-blue-500/50"
+                            className="border-white/5 bg-slate-950 focus:ring-blue-500/50"
                         />
                     </div>
                     <div className="space-y-2">
@@ -79,8 +111,12 @@ export function CreateUserModal({ open, onOpenChange, onSuccess }: CreateUserMod
                             name="email"
                             type="email"
                             required
+                            value={form.email}
+                            onChange={(event) =>
+                                setForm((current) => ({ ...current, email: event.target.value }))
+                            }
                             placeholder="cliente@email.com"
-                            className="bg-slate-950 border-white/5 focus:ring-blue-500/50"
+                            className="border-white/5 bg-slate-950 focus:ring-blue-500/50"
                         />
                     </div>
                     <div className="space-y-2">
@@ -90,13 +126,17 @@ export function CreateUserModal({ open, onOpenChange, onSuccess }: CreateUserMod
                             name="password"
                             type="password"
                             required
-                            placeholder="••••••"
-                            className="bg-slate-950 border-white/5 focus:ring-blue-500/50"
+                            value={form.password}
+                            onChange={(event) =>
+                                setForm((current) => ({ ...current, password: event.target.value }))
+                            }
+                            placeholder="******"
+                            className="border-white/5 bg-slate-950 focus:ring-blue-500/50"
                         />
                     </div>
 
                     {error && (
-                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
                             {error}
                         </div>
                     )}
@@ -105,7 +145,7 @@ export function CreateUserModal({ open, onOpenChange, onSuccess }: CreateUserMod
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => onOpenChange(false)}
+                            onClick={resetAndClose}
                             disabled={isLoading}
                             className="border-white/10 text-white hover:bg-white/5"
                         >
@@ -114,13 +154,9 @@ export function CreateUserModal({ open, onOpenChange, onSuccess }: CreateUserMod
                         <Button
                             type="submit"
                             disabled={isLoading}
-                            className="bg-blue-600 hover:bg-blue-500 text-white font-bold gap-2 min-w-[120px]"
+                            className="min-w-[120px] gap-2 bg-blue-600 font-bold text-white hover:bg-blue-500"
                         >
-                            {isLoading ? (
-                                <Loader2 className="animate-spin" size={18} />
-                            ) : (
-                                "Criar Usuário"
-                            )}
+                            {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Criar Usuario"}
                         </Button>
                     </DialogFooter>
                 </form>

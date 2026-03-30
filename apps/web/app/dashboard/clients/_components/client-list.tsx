@@ -79,8 +79,8 @@ export function ClientsListContainer({
                     items={clients}
                     renderItem={(client) => (
                         <ClientCard
-                            key={(client as Client).id}
-                            client={client as Client}
+                            key={client.id}
+                            client={client}
                             onEdit={onEdit}
                             onPin={onPin}
                             onQuickRide={onQuickRide}

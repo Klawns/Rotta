@@ -1,40 +1,71 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Mail, Lock } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { api, apiClient } from "@/services/api";
+import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+import { useAuth, type User } from "@/hooks/use-auth";
+import { parseApiError } from "@/lib/api-error";
+import { apiClient } from "@/services/api";
+
+interface LoginResponse {
+    user: User;
+}
+
+interface LoginCredentials {
+    email: string;
+    password: string;
+}
+
+function resolveRestrictedRedirect(role: User["role"] | undefined) {
+    return role === "admin" ? "/admin" : "/dashboard";
+}
 
 export default function AreaRestritaPage() {
-    const { login } = useAuth();
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState("");
+    const router = useRouter();
+    const { login, user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+
+    useEffect(() => {
+        if (isAuthLoading || !isAuthenticated) {
+            return;
+        }
+
+        router.replace(resolveRestrictedRedirect(user?.role));
+    }, [isAuthenticated, isAuthLoading, router, user?.role]);
+
+    const loginMutation = useMutation({
+        mutationFn: (credentials: LoginCredentials) =>
+            apiClient.post<LoginResponse>("/auth/login", credentials),
+        onSuccess: (data) => {
+            login(data.user, "/admin");
+        },
+    });
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setIsLoading(true);
-        setError("");
-
         const formData = new FormData(e.currentTarget);
         const email = formData.get("email") as string;
         const password = formData.get("password") as string;
-
-        try {
-            const data = await apiClient.post<any>("/auth/login", { email, password });
-            const { user } = data;
-            login(user, "/admin");
-        } catch (err: any) {
-            setError(err.response?.data?.message || "Erro no acesso administrativo.");
-        } finally {
-            setIsLoading(false);
-        }
+        loginMutation.mutate({ email, password });
     };
+
+    const isSubmitting = loginMutation.isPending;
+    const error = loginMutation.error
+        ? parseApiError(loginMutation.error, "Erro no acesso administrativo.")
+        : "";
+
+    if (isAuthLoading || isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+                <div className="h-10 w-10 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 relative overflow-hidden">
-            {/* Background elements */}
             <div className="absolute top-0 left-0 w-full h-full opacity-30">
                 <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-red-500/10 blur-[120px] rounded-full"></div>
                 <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-slate-500/10 blur-[120px] rounded-full"></div>
@@ -92,17 +123,17 @@ export default function AreaRestritaPage() {
                                     type="password"
                                     required
                                     className="w-full bg-slate-950/50 border border-white/5 rounded-xl py-4 pl-11 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500/30 transition-all font-medium"
-                                    placeholder="••••••••"
+                                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                                 />
                             </div>
                         </div>
 
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isSubmitting}
                             className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 group shadow-xl shadow-red-600/20"
                         >
-                            {isLoading ? (
+                            {isSubmitting ? (
                                 <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                             ) : (
                                 <>
@@ -115,7 +146,7 @@ export default function AreaRestritaPage() {
 
                     <div className="mt-8 text-center">
                         <Link href="/login" className="text-slate-500 hover:text-slate-300 text-xs transition-colors">
-                            Voltar para o Login Público
+                            Voltar para o Login Publico
                         </Link>
                     </div>
                 </div>
