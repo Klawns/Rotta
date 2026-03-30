@@ -8,6 +8,7 @@
         "build": "tsc",
         "dev": "tsc --watch",
         "db:push": "drizzle-kit push",
+        "db:generate": "drizzle-kit generate",
         "db:studio": "drizzle-kit studio"
     },
     "dependencies": {

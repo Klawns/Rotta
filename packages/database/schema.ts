@@ -32,16 +32,6 @@ export const pgUsers = pgTable('users', {
   createdAt: pgTimestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const pgRefreshTokens = pgTable('refresh_tokens', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  token: pgText('token').notNull().unique(),
-  userId: uuid('user_id').notNull().references(() => pgUsers.id, { onDelete: 'cascade' }),
-  expiresAt: pgTimestamp('expires_at', { withTimezone: true }).notNull(),
-  createdAt: pgTimestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  userIdIdx: pgIndex('refresh_tokens_user_id_idx').on(table.userId),
-}));
-
 export const pgClients = pgTable('clients', {
   id: uuid('id').primaryKey().defaultRandom(),
   displayId: pgSerial('display_id'),
@@ -108,6 +98,7 @@ export const pgSubscriptions = pgTable('subscriptions', {
   plan: planEnum('plan').notNull(),
   status: subscriptionStatusEnum('status').notNull(),
   rideCount: pgInteger('ride_count').notNull().default(0),
+  trialStartedAt: pgTimestamp('trial_started_at', { withTimezone: true }),
   validUntil: pgTimestamp('valid_until', { withTimezone: true }),
   createdAt: pgTimestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
@@ -165,16 +156,6 @@ export const sqUsers = sqliteTable('users', {
   hasSeenTutorial: sqInteger('has_seen_tutorial', { mode: 'boolean' }).default(false),
   createdAt: sqInteger('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
-
-export const sqRefreshTokens = sqliteTable('refresh_tokens', {
-  id: sqText('id').primaryKey(),
-  token: sqText('token').notNull().unique(),
-  userId: sqText('user_id').notNull().references(() => sqUsers.id, { onDelete: 'cascade' }),
-  expiresAt: sqInteger('expires_at', { mode: 'timestamp' }).notNull(),
-  createdAt: sqInteger('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-}, (table) => ({
-  userIdIdx: sqIndex('refresh_tokens_user_id_idx').on(table.userId),
-}));
 
 export const sqClients = sqliteTable('clients', {
   id: sqText('id').primaryKey(),
@@ -242,6 +223,7 @@ export const sqSubscriptions = sqliteTable('subscriptions', {
   plan: sqText('plan', { enum: ['starter', 'premium', 'lifetime'] }).notNull(),
   status: sqText('status', { enum: ['active', 'inactive', 'canceled', 'trial'] }).notNull(),
   rideCount: sqInteger('ride_count').notNull().default(0),
+  trialStartedAt: sqInteger('trial_started_at', { mode: 'timestamp' }),
   validUntil: sqInteger('valid_until', { mode: 'timestamp' }),
   createdAt: sqInteger('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 }, (table) => ({
@@ -289,7 +271,6 @@ export const sqClientPayments = sqliteTable('client_payments', {
 
 export const postgresSchema = {
   users: pgUsers,
-  refreshTokens: pgRefreshTokens,
   clients: pgClients,
   balanceTransactions: pgBalanceTransactions,
   rides: pgRides,
@@ -311,7 +292,6 @@ export const postgresSchema = {
 
 export const sqliteSchema = {
   users: sqUsers,
-  refreshTokens: sqRefreshTokens,
   clients: sqClients,
   balanceTransactions: sqBalanceTransactions,
   rides: sqRides,
@@ -324,7 +304,6 @@ export const sqliteSchema = {
 
 // Backward compatibility or default export based on env
 export const users = isPostgres ? pgUsers : sqUsers;
-export const refreshTokens = isPostgres ? pgRefreshTokens : sqRefreshTokens;
 export const clients = isPostgres ? pgClients : sqClients;
 export const balanceTransactions = isPostgres ? pgBalanceTransactions : sqBalanceTransactions;
 export const rides = isPostgres ? pgRides : sqRides;
