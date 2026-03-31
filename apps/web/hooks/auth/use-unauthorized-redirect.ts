@@ -28,7 +28,11 @@ export function useUnauthorizedRedirect({
       resetAuthQueryCache(queryClient);
 
       const redirectUrl = encodeURIComponent(pathname + (search ? `?${search}` : ''));
-      replace(`/login?redirect=${redirectUrl}`);
+      const destination = pathname.startsWith('/admin')
+        ? '/area-restrita'
+        : '/login';
+
+      replace(`${destination}?redirect=${redirectUrl}`);
     });
   }, [pathname, queryClient, replace, search]);
 }

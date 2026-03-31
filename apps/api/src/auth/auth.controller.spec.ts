@@ -13,6 +13,7 @@ describe('AuthController', () => {
     validateUser: jest.Mock;
     login: jest.Mock;
     register: jest.Mock;
+    refresh: jest.Mock;
     logout: jest.Mock;
   };
 
@@ -21,6 +22,7 @@ describe('AuthController', () => {
       validateUser: jest.fn(),
       login: jest.fn(),
       register: jest.fn(),
+      refresh: jest.fn(),
       logout: jest.fn(),
     };
 
@@ -68,6 +70,7 @@ describe('AuthController', () => {
 
       const mockRes = {
         cookie: jest.fn(),
+        clearCookie: jest.fn(),
         json: jest.fn().mockImplementation((val) => val),
       };
       const result = await controller.login(
@@ -77,7 +80,7 @@ describe('AuthController', () => {
 
       expect(mockRes.cookie).toHaveBeenNthCalledWith(
         1,
-        'admin_refresh_token',
+        'refresh_token',
         'refresh-token',
         expect.objectContaining({
           maxAge: 15 * 24 * 60 * 60 * 1000,
@@ -85,12 +88,13 @@ describe('AuthController', () => {
       );
       expect(mockRes.cookie).toHaveBeenNthCalledWith(
         2,
-        'admin_access_token',
+        'access_token',
         'token',
         expect.objectContaining({
-          maxAge: 8 * 60 * 60 * 1000,
+          maxAge: 24 * 60 * 60 * 1000,
         }),
       );
+      expect(mockRes.clearCookie).toHaveBeenCalledTimes(2);
       expect(result).toEqual({ user });
     });
 
@@ -130,6 +134,75 @@ describe('AuthController', () => {
         2,
         'admin-refresh-token',
       );
+      expect(mockRes.clearCookie).toHaveBeenCalledTimes(4);
+    });
+  });
+
+  describe('refresh', () => {
+    it('should refresh the unified session using the standard refresh cookie', async () => {
+      authServiceMock.refresh.mockResolvedValue({
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        user: {
+          id: '1',
+          email: 'admin@test.com',
+          role: 'admin',
+          name: 'Admin User',
+          hasSeenTutorial: false,
+        },
+      });
+
+      const mockReq = {
+        cookies: {
+          refresh_token: 'refresh-token',
+        },
+      };
+      const mockRes = {
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
+
+      const result = await controller.refresh(mockReq as any, mockRes as any);
+
+      expect(authServiceMock.refresh).toHaveBeenCalledWith('refresh-token');
+      expect(mockRes.cookie).toHaveBeenNthCalledWith(
+        1,
+        'refresh_token',
+        'new-refresh-token',
+        expect.objectContaining({
+          maxAge: 15 * 24 * 60 * 60 * 1000,
+        }),
+      );
+      expect(mockRes.cookie).toHaveBeenNthCalledWith(
+        2,
+        'access_token',
+        'new-access-token',
+        expect.objectContaining({
+          maxAge: 24 * 60 * 60 * 1000,
+        }),
+      );
+      expect(mockRes.clearCookie).toHaveBeenCalledTimes(2);
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should clear auth cookies when refresh token is invalid', async () => {
+      authServiceMock.refresh.mockRejectedValue(new UnauthorizedException());
+
+      const mockReq = {
+        headers: {},
+        cookies: {
+          refresh_token: 'invalid-refresh-token',
+        },
+      };
+      const mockRes = {
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
+
+      await expect(
+        controller.refresh(mockReq as any, mockRes as any),
+      ).rejects.toThrow(UnauthorizedException);
+
       expect(mockRes.clearCookie).toHaveBeenCalledTimes(4);
     });
   });

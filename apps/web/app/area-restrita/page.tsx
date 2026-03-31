@@ -39,7 +39,7 @@ export default function AreaRestritaPage() {
         mutationFn: (credentials: LoginCredentials) =>
             apiClient.post<LoginResponse>("/auth/login", credentials),
         onSuccess: (data) => {
-            login(data.user, "/admin");
+            login(data.user, resolveRestrictedRedirect(data.user.role));
         },
     });
 

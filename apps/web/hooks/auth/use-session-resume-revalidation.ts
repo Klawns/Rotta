@@ -1,20 +1,15 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { type SessionMode } from '@/services/api-session';
 import { shouldRevalidateSessionOnResume } from '@/services/auth-session-revalidation';
 
 interface UseSessionResumeRevalidationProps {
   pathname: string | null;
-  sessionMode: SessionMode;
-  isSessionModeReady: boolean;
   revalidate: () => Promise<unknown>;
 }
 
 export function useSessionResumeRevalidation({
   pathname,
-  sessionMode,
-  isSessionModeReady,
   revalidate,
 }: UseSessionResumeRevalidationProps) {
   const lastAttemptAtRef = useRef(0);
@@ -30,8 +25,6 @@ export function useSessionResumeRevalidation({
       if (
         !shouldRevalidateSessionOnResume({
           pathname,
-          sessionMode,
-          isSessionModeReady,
           isDocumentHidden,
           isOnline,
           now,
@@ -62,5 +55,5 @@ export function useSessionResumeRevalidation({
       window.removeEventListener('pageshow', attemptRevalidation);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isSessionModeReady, pathname, revalidate, sessionMode]);
+  }, [pathname, revalidate]);
 }

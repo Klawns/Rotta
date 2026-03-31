@@ -1,6 +1,5 @@
 import axios, { type AxiosRequestConfig } from 'axios';
 import { authService } from './auth-service';
-import { getSessionHeaders } from './api-session';
 
 type RetriableRequestConfig = AxiosRequestConfig & {
   _skipRedirect?: boolean;
@@ -22,7 +21,6 @@ export async function refreshSession(baseURL: string | undefined) {
       withCredentials: true,
       headers: {
         'X-Requested-With': 'XMLHttpRequest',
-        ...getSessionHeaders(),
       },
       validateStatus: (status) => status < 500,
     },

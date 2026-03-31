@@ -5,9 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -19,7 +17,6 @@ import { useCurrentUserQuery } from "@/hooks/auth/use-current-user-query";
 import { resetAuthQueryCache } from "@/hooks/auth/reset-auth-query-cache";
 import { useSessionResumeRevalidation } from "@/hooks/auth/use-session-resume-revalidation";
 import { useUnauthorizedRedirect } from "@/hooks/auth/use-unauthorized-redirect";
-import { resolveSessionMode, setSessionMode } from "@/services/api-session";
 
 export interface User {
   id: string;
@@ -58,28 +55,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const [isSessionModeReady, setIsSessionModeReady] = useState(false);
-  const sessionMode = resolveSessionMode(pathname);
   const { data: user = null, isLoading: isUserLoading, refetch } =
-    useCurrentUserQuery({
-      enabled: isSessionModeReady,
-    });
+    useCurrentUserQuery();
 
-  useLayoutEffect(() => {
-    setIsSessionModeReady(false);
-    setSessionMode(sessionMode);
-    queryClient.removeQueries({ queryKey: authKeys.user(), exact: true });
-    setIsSessionModeReady(true);
-  }, [queryClient, sessionMode]);
-
-  const isLoading = !isSessionModeReady || isUserLoading;
+  const isLoading = isUserLoading;
 
   const logoutMutation = useMutation({
     mutationFn: () => apiClient.post("/auth/logout"),
     onSettled: () => {
       authService.resetRedirectLock();
       resetAuthQueryCache(queryClient);
-      router.replace("/login");
+      router.replace(pathname?.startsWith("/admin") ? "/area-restrita" : "/login");
     },
   });
 
@@ -123,8 +109,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useSessionResumeRevalidation({
     pathname,
-    sessionMode,
-    isSessionModeReady,
     revalidate: verify,
   });
 

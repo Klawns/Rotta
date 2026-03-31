@@ -21,20 +21,12 @@ function extractCookieToken(req: RequestWithCookies | undefined) {
     return null;
   }
 
-  const accessCookie = req.cookies['access_token'] ?? null;
-  const adminAccessCookie = req.cookies['admin_access_token'] ?? null;
-
-  if (!accessCookie && !adminAccessCookie) {
-    return null;
-  }
-
   const csrfHeader = req.headers['x-requested-with'];
   if (!csrfHeader) {
     return null;
   }
 
-  const sessionMode = req.headers['x-session-mode'];
-  return sessionMode === 'admin' ? adminAccessCookie : accessCookie;
+  return req.cookies['access_token'] ?? null;
 }
 
 function resolveJwtSecret(

@@ -1,7 +1,6 @@
 import {
   Controller,
   Post,
-  Body,
   UnauthorizedException,
   HttpCode,
   HttpStatus,
@@ -44,7 +43,7 @@ import type {
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
-  private readonly accessTokenCookieMaxAgeMs = 8 * 60 * 60 * 1000;
+  private readonly accessTokenCookieMaxAgeMs = 24 * 60 * 60 * 1000;
 
   constructor(
     private readonly authService: AuthService,
@@ -71,24 +70,36 @@ export class AuthController {
     };
   }
 
-  private setAuthCookies(
-    res: Response,
-    tokens: AuthTokensResponse,
-    isAdmin = false,
-  ) {
+  private clearLegacyAuthCookies(res: Response) {
     const cookieOptions = this.getCookieOptions();
-    const refreshCookieName = isAdmin ? 'admin_refresh_token' : 'refresh_token';
-    const accessCookieName = isAdmin ? 'admin_access_token' : 'access_token';
 
-    res.cookie(refreshCookieName, tokens.refresh_token, {
+    res.clearCookie('admin_refresh_token', cookieOptions);
+    res.clearCookie('admin_access_token', cookieOptions);
+  }
+
+  private setAuthCookies(res: Response, tokens: AuthTokensResponse) {
+    const cookieOptions = this.getCookieOptions();
+
+    this.clearLegacyAuthCookies(res);
+
+    res.cookie('refresh_token', tokens.refresh_token, {
       ...cookieOptions,
       maxAge: 15 * 24 * 60 * 60 * 1000,
     });
 
-    res.cookie(accessCookieName, tokens.access_token, {
+    res.cookie('access_token', tokens.access_token, {
       ...cookieOptions,
       maxAge: this.accessTokenCookieMaxAgeMs,
     });
+  }
+
+  private clearAuthCookies(res: Response) {
+    const cookieOptions = this.getCookieOptions();
+
+    res.clearCookie('refresh_token', cookieOptions);
+    res.clearCookie('access_token', cookieOptions);
+    res.clearCookie('admin_refresh_token', cookieOptions);
+    res.clearCookie('admin_access_token', cookieOptions);
   }
 
   private getFrontendUrl() {
@@ -187,7 +198,7 @@ export class AuthController {
     }
 
     const tokens = await this.authService.login(user);
-    this.setAuthCookies(res, tokens, user.role === 'admin');
+    this.setAuthCookies(res, tokens);
 
     // Task 3.2 Phase 2: Whitelisting output via DTO
     return {
@@ -219,17 +230,25 @@ export class AuthController {
     @Req() req: RequestWithCookies,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const isAdmin = !!req.cookies['admin_refresh_token'];
-    const refreshTokenName = isAdmin ? 'admin_refresh_token' : 'refresh_token';
+    const token = req.cookies['refresh_token'];
 
-    const token = req.cookies[refreshTokenName];
     if (!token) {
+      this.clearAuthCookies(res);
       throw new UnauthorizedException();
     }
-    const tokens = await this.authService.refresh(token);
-    this.setAuthCookies(res, tokens, isAdmin);
 
-    return { success: true };
+    try {
+      const tokens = await this.authService.refresh(token);
+      this.setAuthCookies(res, tokens);
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        this.clearAuthCookies(res);
+      }
+
+      throw error;
+    }
   }
 
   @Public()
@@ -239,8 +258,6 @@ export class AuthController {
     @Req() req: RequestWithCookies,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const cookieOptions = this.getCookieOptions();
-
     // Pega os tokens antes de limpar, pra podermos invalidar no Redis
     const refreshToken = req.cookies['refresh_token'];
     const adminRefreshToken = req.cookies['admin_refresh_token'];
@@ -253,9 +270,6 @@ export class AuthController {
       await this.authService.logout(adminRefreshToken);
     }
 
-    res.clearCookie('refresh_token', cookieOptions);
-    res.clearCookie('access_token', cookieOptions);
-    res.clearCookie('admin_refresh_token', cookieOptions);
-    res.clearCookie('admin_access_token', cookieOptions);
+    this.clearAuthCookies(res);
   }
 }

@@ -4,18 +4,22 @@ import type { NextRequest } from 'next/server';
 const publicRoutes = ['/login', '/register', '/pricing', '/area-restrita'];
 const adminRoutes = ['/admin'];
 
+function hasTokenValue(value: string | undefined) {
+  return Boolean(value && value.length > 20);
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const token =
-    request.cookies.get('access_token')?.value ??
-    request.cookies.get('refresh_token')?.value;
-  const adminToken =
-    request.cookies.get('admin_access_token')?.value ??
-    request.cookies.get('admin_refresh_token')?.value;
+  const accessToken = request.cookies.get('access_token')?.value;
+  const refreshToken = request.cookies.get('refresh_token')?.value;
+  const hasAccess = hasTokenValue(accessToken);
+  const hasSessionCandidate = hasAccess || hasTokenValue(refreshToken);
 
-  const isAuthenticated = Boolean(token && token.length > 20);
-  const isAdminAuthenticated = Boolean(adminToken && adminToken.length > 20);
+  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
+  const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
+  const shouldRedirectPublicRoute =
+    isPublicRoute && pathname !== '/area-restrita' && hasAccess;
 
   const redirect = (path: string) => {
     const url = request.nextUrl.clone();
@@ -24,25 +28,22 @@ export function proxy(request: NextRequest) {
   };
 
   if (pathname === '/') {
-    if (isAuthenticated && !isAdminAuthenticated) {
+    if (hasAccess) {
       return redirect('/dashboard');
     }
 
     return NextResponse.next();
   }
 
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
-  const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
-
-  if (isPublicRoute && isAuthenticated && !isAdminAuthenticated) {
+  if (shouldRedirectPublicRoute) {
     return redirect('/dashboard');
   }
 
-  if (isAdminRoute && !isAdminAuthenticated) {
-    return redirect('/login');
+  if (isAdminRoute && !hasSessionCandidate) {
+    return redirect('/area-restrita');
   }
 
-  if (pathname.startsWith('/dashboard') && !isAuthenticated) {
+  if (pathname.startsWith('/dashboard') && !hasSessionCandidate) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirect', pathname);

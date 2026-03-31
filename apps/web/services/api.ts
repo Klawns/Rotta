@@ -6,9 +6,8 @@ import {
 } from './api-auth';
 import { createRefreshQueue } from './api-refresh-queue';
 import { normalizeEnvelope, type ApiEnvelope, unwrapData } from './api-envelope';
-import { applySessionHeaders, setSessionMode } from './api-session';
+import { applySessionHeaders } from './api-session';
 export type { ApiEnvelope } from './api-envelope';
-export { setSessionMode };
 
 declare module 'axios' {
   export interface AxiosRequestConfig {

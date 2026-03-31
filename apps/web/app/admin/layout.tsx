@@ -2,23 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
 import { LogOut, Settings, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { setSessionMode } from "@/services/api";
 import { useAdminAccess } from "./_hooks/use-admin-access";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { logout } = useAuth();
     const { isAdmin, isLoading } = useAdminAccess();
     const pathname = usePathname();
-
-    useEffect(() => {
-        setSessionMode("admin");
-        return () => setSessionMode("user");
-    }, []);
 
     if (isLoading || !isAdmin) {
         return (

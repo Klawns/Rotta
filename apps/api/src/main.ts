@@ -80,8 +80,7 @@ async function bootstrap() {
     },
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders:
-      'Content-Type, Accept, Authorization, X-Requested-With, x-session-mode',
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
   });
 
   app.use(cookieParser());
