@@ -37,14 +37,14 @@ export function FinanceFilters({
     setEndDate,
 }: FinanceFiltersProps) {
     return (
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center bg-muted/40 p-4 rounded-[2rem] border border-border-subtle backdrop-blur-md shadow-sm">
-            <div className="flex bg-card-background p-1.5 rounded-2xl border border-border-subtle w-full md:w-auto overflow-x-auto no-scrollbar shadow-inner">
+        <div className="sticky top-3 z-20 flex flex-col items-stretch gap-3 rounded-[1.5rem] border border-border-subtle bg-background/85 p-2.5 shadow-lg backdrop-blur-xl md:flex-row md:items-center md:rounded-[2rem] md:p-3">
+            <div className="flex w-full overflow-x-auto rounded-2xl border border-border-subtle bg-card-background p-1 shadow-inner md:w-auto no-scrollbar">
                 {PERIODS.map((p) => (
                     <button
                         key={p.id}
                         onClick={() => setSelectedPeriod(p.id as PeriodId)}
                         className={cn(
-                            "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                            "rounded-xl px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] transition-all whitespace-nowrap",
                             selectedPeriod === p.id
                                 ? `${p.color} text-white shadow-lg`
                                 : "text-text-muted hover:text-text-primary hover:bg-hover-accent"
@@ -55,11 +55,11 @@ export function FinanceFilters({
                 ))}
             </div>
 
-            <div className="hidden md:block w-px h-8 bg-border-subtle mx-2" />
+            <div className="mx-2 hidden h-8 w-px bg-border-subtle md:block" />
 
             <div className="w-full md:w-64">
                 <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                    <SelectTrigger className="h-12 bg-card-background border-border-subtle rounded-xl pl-4 text-text-primary font-bold hover:bg-hover-accent transition-all outline-none ring-0 border shadow-sm">
+                    <SelectTrigger className="h-11 rounded-xl border border-border-subtle bg-card-background pl-4 text-text-primary font-bold shadow-sm transition-all outline-none ring-0 hover:bg-hover-accent md:h-12">
                         <div className="flex items-center gap-3">
                             <UserIcon size={16} className="text-primary" />
                             <SelectValue placeholder="Cliente" />
@@ -80,19 +80,19 @@ export function FinanceFilters({
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="flex items-center gap-3 w-full md:w-auto"
+                        className="grid w-full gap-3 sm:grid-cols-2 md:flex md:w-auto"
                     >
                         <Input
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="h-12 bg-card-background border-border-subtle rounded-xl text-text-primary font-bold w-full md:w-40 shadow-sm"
+                            className="h-11 w-full rounded-xl border-border-subtle bg-card-background text-text-primary font-bold shadow-sm md:h-12 md:w-40"
                         />
                         <Input
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="h-12 bg-card-background border-border-subtle rounded-xl text-text-primary font-bold w-full md:w-40 shadow-sm"
+                            className="h-11 w-full rounded-xl border-border-subtle bg-card-background text-text-primary font-bold shadow-sm md:h-12 md:w-40"
                         />
                     </motion.div>
                 )}
