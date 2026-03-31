@@ -4,18 +4,23 @@ import { motion } from "framer-motion";
 import { Camera, FileText, MapPin, Pencil, Trash2 } from "lucide-react";
 import { resolveRideDateValue } from "@/lib/date-utils";
 import { PaymentComposition } from "@/components/ui/payment-composition";
+import { RidePaymentAction } from "@/components/ui/ride-payment-action";
 import { Ride } from "../types";
 
 interface RecentRideCardProps {
     ride: Ride;
     onEdit: (ride: Ride) => void;
     onDelete: (ride: Ride) => void;
+    onChangePaymentStatus: (ride: Ride, status: 'PAID' | 'PENDING') => void | Promise<unknown>;
+    isPaymentUpdating: boolean;
 }
 
 export function RecentRideCard({
     ride,
     onEdit,
     onDelete,
+    onChangePaymentStatus,
+    isPaymentUpdating,
 }: RecentRideCardProps) {
     const rideDate = resolveRideDateValue(ride.rideDate, ride.createdAt);
 
@@ -61,16 +66,12 @@ export function RecentRideCard({
                     compact={true}
                     className="items-end"
                 />
-                <span
-                    className={[
-                        "rounded-lg border px-2.5 py-1 text-center text-[9px] font-display font-bold uppercase tracking-widest shadow-sm",
-                        ride.paymentStatus === "PAID"
-                            ? "border-icon-success/20 bg-icon-success/10 text-icon-success"
-                            : "border-icon-warning/20 bg-icon-warning/10 text-icon-warning",
-                    ].join(" ")}
-                >
-                    {ride.paymentStatus === "PAID" ? "Pago" : "Pendente"}
-                </span>
+                <RidePaymentAction
+                    paymentStatus={ride.paymentStatus}
+                    onChangeStatus={(status) => onChangePaymentStatus(ride, status)}
+                    isLoading={isPaymentUpdating}
+                    size="xs"
+                />
             </div>
 
             <button

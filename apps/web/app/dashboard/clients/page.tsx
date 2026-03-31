@@ -1,6 +1,7 @@
 "use client";
 
 import { ClientDetailsDrawer } from "@/components/client-details-drawer";
+import { useRidePaymentStatus } from "@/hooks/use-ride-payment-status";
 
 // Services & Types
 import { Client } from "@/types/rides";
@@ -17,6 +18,7 @@ import { ClientListSection } from "./_components/client-list-section";
 import { ClientModals } from "./_components/client-modals";
 
 export default function ClientsPage() {
+    const paymentStatus = useRidePaymentStatus();
     // Data Hooks
     const { 
         clients, search, setSearch, isLoading, isFetching,
@@ -110,6 +112,8 @@ export default function ClientsPage() {
                 onDeleteClient={() => state.setIsDeleteConfirmOpen(true)}
                 onEditRide={state.openEditRideModal}
                 onDeleteRide={state.setRideToDelete}
+                onChangePaymentStatus={paymentStatus.setPaymentStatus}
+                isPaymentUpdating={paymentStatus.isUpdatingRide}
             />
 
             <ClientModals 

@@ -26,6 +26,8 @@ interface ClientDetailsDrawerProps {
     onDeleteClient: () => void;
     onEditRide: (ride: Ride) => void;
     onDeleteRide: (ride: Ride) => void;
+    onChangePaymentStatus: (ride: Ride, status: 'PAID' | 'PENDING') => void | Promise<unknown>;
+    isPaymentUpdating: (rideId: string) => boolean;
     fetchNextPage: () => void;
 }
 
@@ -47,6 +49,8 @@ export function ClientDetailsDrawer({
     onDeleteClient,
     onEditRide,
     onDeleteRide,
+    onChangePaymentStatus,
+    isPaymentUpdating,
     fetchNextPage,
 }: ClientDetailsDrawerProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -97,6 +101,8 @@ export function ClientDetailsDrawer({
                             containerRef={scrollContainerRef}
                             onEditRide={onEditRide}
                             onDeleteRide={onDeleteRide}
+                            onChangePaymentStatus={onChangePaymentStatus}
+                            isPaymentUpdating={isPaymentUpdating}
                         />
                     </div>
                 </motion.div>

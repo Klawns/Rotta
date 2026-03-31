@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Bike, Clock, Calendar, MessageSquare, Trash2, ChevronRight, Settings2, Wallet } from "lucide-react";
 import { resolveRideDateValue } from "@/lib/date-utils";
-import { cn } from "@/lib/utils";
+import { RidePaymentAction } from "@/components/ui/ride-payment-action";
 import { Ride } from "@/types/rides";
 import { PaymentComposition } from "@/components/ui/payment-composition";
 
@@ -11,10 +11,11 @@ interface RideCardProps {
     index: number;
     onEdit: (ride: Ride) => void;
     onDelete: (ride: Ride) => void;
-    onTogglePayment: (ride: Ride) => void;
+    onChangePaymentStatus: (ride: Ride, status: 'PAID' | 'PENDING') => void | Promise<unknown>;
+    isPaymentUpdating: boolean;
 }
 
-export const RideCard = React.memo(({ ride, index, onEdit, onDelete, onTogglePayment }: RideCardProps) => {
+export const RideCard = React.memo(({ ride, index, onEdit, onDelete, onChangePaymentStatus, isPaymentUpdating }: RideCardProps) => {
     const rideDate = resolveRideDateValue(ride.rideDate, ride.createdAt);
 
     return (
@@ -39,20 +40,13 @@ export const RideCard = React.memo(({ ride, index, onEdit, onDelete, onTogglePay
                                     </div>
                                 )}
                             </h4>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onTogglePayment(ride);
-                                }}
-                                className={cn(
-                                    "hidden sm:inline-block text-[9px] font-bold uppercase tracking-[0.15em] px-2.5 py-1 rounded-full flex-shrink-0 border transition-all active:scale-95",
-                                    ride.paymentStatus === 'PAID' 
-                                        ? "bg-icon-success/10 text-icon-success border-icon-success/20" 
-                                        : "bg-icon-warning/10 text-icon-warning border-icon-warning/20"
-                                )}
-                            >
-                                {ride.paymentStatus === 'PAID' ? 'Pago' : 'Pendente'}
-                            </button>
+                            <RidePaymentAction
+                                paymentStatus={ride.paymentStatus}
+                                onChangeStatus={(status) => onChangePaymentStatus(ride, status)}
+                                isLoading={isPaymentUpdating}
+                                size="sm"
+                                className="hidden sm:inline-flex flex-shrink-0"
+                            />
                         </div>
                         
                         <div className="sm:hidden flex flex-col items-end shrink-0 pt-0.5">
@@ -65,20 +59,13 @@ export const RideCard = React.memo(({ ride, index, onEdit, onDelete, onTogglePay
                                 compact={true}
                             />
 
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onTogglePayment(ride);
-                                }}
-                                className={cn(
-                                    "text-[8px] font-bold uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border mt-2",
-                                    ride.paymentStatus === 'PAID' 
-                                        ? "bg-icon-success/10 text-icon-success border-icon-success/20" 
-                                        : "bg-icon-warning/20 text-text-primary border-icon-warning/40 shadow-sm"
-                                )}
-                            >
-                                {ride.paymentStatus === 'PAID' ? 'Pago' : 'Pendente'}
-                            </button>
+                            <RidePaymentAction
+                                paymentStatus={ride.paymentStatus}
+                                onChangeStatus={(status) => onChangePaymentStatus(ride, status)}
+                                isLoading={isPaymentUpdating}
+                                size="xs"
+                                className="mt-2"
+                            />
                         </div>
                     </div>
                     <div className="flex-1 min-w-0">

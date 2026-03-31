@@ -3,7 +3,7 @@ import { Bike, SearchX } from "lucide-react";
 import { InfiniteScrollContainer } from "@/components/ui/infinite-scroll-container";
 import { HybridInfiniteList } from "@/components/ui/hybrid-infinite-list";
 import { parseApiError } from "@/lib/api-error";
-import { Ride } from "@/types/rides";
+import { PaymentStatus, Ride } from "@/types/rides";
 import { RideCard } from "./ride-card";
 import { RideSkeleton } from "./ride-skeleton";
 
@@ -18,7 +18,8 @@ interface RidesListContainerProps {
     retry?: () => void | Promise<unknown>;
     onEdit: (ride: Ride) => void;
     onDelete: (ride: Ride) => void;
-    onTogglePayment: (ride: Ride) => void;
+    onChangePaymentStatus: (ride: Ride, status: PaymentStatus) => void | Promise<unknown>;
+    isPaymentUpdating: (rideId: string) => boolean;
     hasActiveFilters: boolean;
     onClearFilters: () => void;
 }
@@ -34,7 +35,8 @@ export function RidesListContainer({
     retry,
     onEdit,
     onDelete,
-    onTogglePayment,
+    onChangePaymentStatus,
+    isPaymentUpdating,
     hasActiveFilters,
     onClearFilters,
 }: RidesListContainerProps) {
@@ -136,7 +138,8 @@ export function RidesListContainer({
                             index={index}
                             onEdit={onEdit}
                             onDelete={onDelete}
-                            onTogglePayment={onTogglePayment}
+                            onChangePaymentStatus={onChangePaymentStatus}
+                            isPaymentUpdating={isPaymentUpdating(ride.id)}
                         />
                     )}
                     estimateSize={140}

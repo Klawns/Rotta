@@ -10,6 +10,8 @@ interface RecentRidesListProps {
     rides: Ride[];
     onEdit: (ride: Ride) => void;
     onDelete: (ride: Ride) => void;
+    onChangePaymentStatus: (ride: Ride, status: 'PAID' | 'PENDING') => void | Promise<unknown>;
+    isPaymentUpdating: (rideId: string) => boolean;
     isLoading: boolean;
     hasMore: boolean;
     onLoadMore: () => void;
@@ -21,6 +23,8 @@ export function RecentRidesList({
     rides,
     onEdit,
     onDelete,
+    onChangePaymentStatus,
+    isPaymentUpdating,
     isLoading,
     hasMore,
     onLoadMore,
@@ -59,6 +63,8 @@ export function RecentRidesList({
                             ride={ride}
                             onEdit={onEdit}
                             onDelete={onDelete}
+                            onChangePaymentStatus={onChangePaymentStatus}
+                            isPaymentUpdating={isPaymentUpdating(ride.id)}
                         />
                     )}
                 />

@@ -44,6 +44,7 @@ export function useRides() {
         ...modals,
         fetchData: data.fetchRides,
         fetchFrequentClients: data.fetchFrequentClients,
-        togglePaymentStatus: data.togglePaymentStatus,
+        setPaymentStatus: data.setPaymentStatus,
+        isUpdatingRide: data.isUpdatingRide,
     };
 }

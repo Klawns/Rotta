@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useRidePaymentStatus } from "@/hooks/use-ride-payment-status";
 import { parseApiError } from "@/lib/api-error";
 import { settingsService } from "@/services/settings-service";
 import type { MobileDashboardProps } from "../types";
@@ -14,6 +15,7 @@ import { useSelectedClient } from "./use-selected-client";
 export function useMobileDashboardController({ onRideCreated }: MobileDashboardProps) {
     const { user } = useAuth();
     const { toast } = useToast();
+    const paymentStatus = useRidePaymentStatus();
 
     const data = useMobileDashboardData(user);
     const selectedClientState = useSelectedClient();
@@ -75,6 +77,8 @@ export function useMobileDashboardController({ onRideCreated }: MobileDashboardP
             retry: data.refetchHistory,
             editRide: rideRegistration.modals.setRideToEdit,
             deleteRide: rideRegistration.modals.setRideToDelete,
+            setPaymentStatus: paymentStatus.setPaymentStatus,
+            isUpdatingRide: paymentStatus.isUpdatingRide,
         },
         dialogs: {
             rideToEdit: rideRegistration.modals.rideToEdit,

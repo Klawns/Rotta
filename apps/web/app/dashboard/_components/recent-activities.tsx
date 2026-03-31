@@ -54,7 +54,8 @@ export function RecentActivities({
                                     ride={ride}
                                     onEditRide={onEditRide}
                                     onDeleteRide={onDeleteRide}
-                                    onTogglePaymentStatus={recentActivities.togglePaymentStatus}
+                                    onChangePaymentStatus={recentActivities.setPaymentStatus}
+                                    isPaymentUpdating={recentActivities.isUpdatingRide(ride.id)}
                                 />
                             )}
                             estimateSize={88}

@@ -4,12 +4,18 @@ import { motion } from "framer-motion";
 import { format, isValid, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CheckCircle2, Clock } from "lucide-react";
+import { RidePaymentAction } from "@/components/ui/ride-payment-action";
 import { formatCurrency, cn } from "@/lib/utils";
 import { RecentRide } from "@/services/finance-service";
 
 interface RecentActivityProps {
   rides: RecentRide[];
   isLoading: boolean;
+  onChangePaymentStatus?: (
+    ride: RecentRide,
+    status: 'PAID' | 'PENDING',
+  ) => void | Promise<unknown>;
+  isPaymentUpdating?: (rideId: string) => boolean;
 }
 
 function getRideDateLabel(value: unknown) {
@@ -29,7 +35,12 @@ function getRideDateLabel(value: unknown) {
   return format(parsedDate, "dd 'de' MMMM 'às' HH:mm", { locale: ptBR });
 }
 
-export function RecentActivity({ rides, isLoading }: RecentActivityProps) {
+export function RecentActivity({
+  rides,
+  isLoading,
+  onChangePaymentStatus,
+  isPaymentUpdating,
+}: RecentActivityProps) {
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -86,16 +97,17 @@ export function RecentActivity({ rides, isLoading }: RecentActivityProps) {
             <p className="text-lg font-display font-extrabold tracking-tighter text-text-primary">
               {formatCurrency(ride.value)}
             </p>
-            <span
-              className={cn(
-                "rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                ride.paymentStatus === "PAID"
-                  ? "border-icon-success/10 bg-icon-success/10 text-icon-success"
-                  : "border-icon-warning/10 bg-icon-warning/10 text-icon-warning",
-              )}
-            >
-              {ride.paymentStatus === "PAID" ? "Pago" : "Pendente"}
-            </span>
+            <RidePaymentAction
+              paymentStatus={ride.paymentStatus}
+              onChangeStatus={
+                onChangePaymentStatus
+                  ? (status) => onChangePaymentStatus(ride, status)
+                  : undefined
+              }
+              isLoading={isPaymentUpdating?.(ride.id)}
+              size="xs"
+              className="mt-1"
+            />
           </div>
         </motion.div>
       ))}

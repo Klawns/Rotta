@@ -3,21 +3,23 @@
 import { Calendar, Pencil, Trash2 } from "lucide-react";
 import { resolveRideDateValue } from "@/lib/date-utils";
 import { PaymentComposition } from "@/components/ui/payment-composition";
-import { cn } from "@/lib/utils";
+import { RidePaymentAction } from "@/components/ui/ride-payment-action";
 import { Ride } from "@/types/rides";
 
 interface RecentActivityItemProps {
     ride: Ride;
     onEditRide: (ride: Ride) => void;
     onDeleteRide: (ride: Ride) => void;
-    onTogglePaymentStatus: (ride: Ride) => void;
+    onChangePaymentStatus: (ride: Ride, status: 'PAID' | 'PENDING') => void | Promise<unknown>;
+    isPaymentUpdating: boolean;
 }
 
 export function RecentActivityItem({
     ride,
     onEditRide,
     onDeleteRide,
-    onTogglePaymentStatus,
+    onChangePaymentStatus,
+    isPaymentUpdating,
 }: RecentActivityItemProps) {
     const rideDate = resolveRideDateValue(ride.rideDate, ride.createdAt);
 
@@ -46,20 +48,13 @@ export function RecentActivityItem({
                         compact={true}
                         showLabel={false}
                     />
-                    <button
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            onTogglePaymentStatus(ride);
-                        }}
-                        className={cn(
-                            "mt-1 block w-fit rounded-full border px-2.5 py-1 text-center text-[8px] font-black uppercase tracking-[0.2em] transition-all",
-                            ride.paymentStatus === "PAID"
-                                ? "border-icon-success/10 bg-icon-success/10 text-icon-success hover:bg-icon-success/20"
-                                : "border-icon-warning/10 bg-icon-warning/10 text-icon-warning hover:bg-icon-warning/20",
-                        )}
-                    >
-                        {ride.paymentStatus === "PAID" ? "Pago" : "Pendente"}
-                    </button>
+                    <RidePaymentAction
+                        paymentStatus={ride.paymentStatus}
+                        onChangeStatus={(status) => onChangePaymentStatus(ride, status)}
+                        isLoading={isPaymentUpdating}
+                        size="xs"
+                        className="mt-1"
+                    />
                 </div>
 
                 <div className="absolute right-4 flex scale-95 items-center gap-2 rounded-xl border border-border-subtle bg-card-background/90 p-1 opacity-0 shadow-lg backdrop-blur-sm transition-all group-hover:scale-100 group-hover:opacity-100">

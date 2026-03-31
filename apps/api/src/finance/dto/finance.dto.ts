@@ -33,9 +33,19 @@ export interface FinanceByStatusItem {
   value: number;
 }
 
+export interface RecentRideItem {
+  id: string;
+  value: number;
+  rideDate: string;
+  paymentStatus: 'PAID' | 'PENDING';
+  location?: string | null;
+  clientName: string | null;
+}
+
 export interface FinanceDashboardResponse {
   summary: FinanceSummaryResponse;
   trends: FinanceTrendItem[];
   byClient: FinanceByClientItem[];
   byStatus: FinanceByStatusItem[];
+  recentRides: RecentRideItem[];
 }

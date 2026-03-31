@@ -1,13 +1,23 @@
-"use client";
+'use client';
 
-import { FinanceStats, PeriodId, RecentRide, FinanceByStatus } from "../_types";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import * as XLSX from "xlsx-js-style";
-import { formatDateValue } from "@/lib/date-utils";
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import * as XLSX from 'xlsx-js-style';
+import { formatDateValue } from '@/lib/date-utils';
+import type {
+  FinanceByStatus,
+  FinanceSummary,
+  RecentRide,
+} from '@/services/finance-service';
+import type { PeriodId } from '../_types';
 
 export function useExportFinance() {
-  const exportToCSV = (stats: FinanceStats, rides: RecentRide[], period: PeriodId, byStatus: FinanceByStatus[]) => {
+  const exportToCSV = (
+    stats: FinanceSummary,
+    rides: RecentRide[],
+    period: PeriodId,
+    byStatus: FinanceByStatus[],
+  ) => {
     if (!stats || !rides.length) return;
 
     const totalPaid = byStatus.find(s => s.status === 'PAID')?.value || 0;

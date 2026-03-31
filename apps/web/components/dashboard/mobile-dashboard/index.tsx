@@ -75,6 +75,8 @@ export default function MobileDashboard(props: MobileDashboardProps) {
                     rides={dashboard.recentRides.rides}
                     onEdit={dashboard.recentRides.editRide}
                     onDelete={dashboard.recentRides.deleteRide}
+                    onChangePaymentStatus={dashboard.recentRides.setPaymentStatus}
+                    isPaymentUpdating={dashboard.recentRides.isUpdatingRide}
                     isLoading={dashboard.recentRides.isLoading}
                     hasMore={dashboard.recentRides.hasMore}
                     onLoadMore={dashboard.recentRides.loadMore}

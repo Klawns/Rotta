@@ -3,15 +3,12 @@
 import { useMemo } from "react";
 import {
     useInfiniteQuery,
-    useMutation,
     useQuery,
-    useQueryClient,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useClientDirectory } from "@/hooks/use-client-directory";
-import { parseApiError } from "@/lib/api-error";
-import { clientKeys, financeKeys, rideKeys } from "@/lib/query-keys";
+import { useRidePaymentStatus } from "@/hooks/use-ride-payment-status";
+import { rideKeys } from "@/lib/query-keys";
 import { ridesService } from "@/services/rides-service";
 import { Ride, RidesFilterState } from "@/types/rides";
 
@@ -45,7 +42,7 @@ function getUniqueRides(rides: Ride[]) {
 export function useRidesData({ filters, pageSize }: UseRidesDataProps) {
     const { user } = useAuth();
     const { clients } = useClientDirectory();
-    const queryClient = useQueryClient();
+    const paymentStatus = useRidePaymentStatus();
 
     const activeFilters = useMemo(
         () => buildRideFilters(filters, pageSize),
@@ -92,26 +89,6 @@ export function useRidesData({ filters, pageSize }: UseRidesDataProps) {
         enabled: !!user,
     });
 
-    const { mutateAsync: togglePaymentStatus } = useMutation({
-        mutationFn: (ride: Ride) => {
-            const newStatus = ride.paymentStatus === "PAID" ? "PENDING" : "PAID";
-            return ridesService.updateRideStatus(ride.id, {
-                paymentStatus: newStatus,
-            });
-        },
-        onSuccess: () => {
-            toast.success("Status de pagamento atualizado");
-            queryClient.invalidateQueries({ queryKey: rideKeys.all });
-            queryClient.invalidateQueries({ queryKey: clientKeys.all });
-            queryClient.invalidateQueries({ queryKey: financeKeys.all });
-        },
-        onError: (error) => {
-            toast.error(
-                parseApiError(error, "Falha ao atualizar status de pagamento"),
-            );
-        },
-    });
-
     return {
         rides,
         totalCount: rides.length,
@@ -126,6 +103,7 @@ export function useRidesData({ filters, pageSize }: UseRidesDataProps) {
         ridesError,
         fetchRides,
         fetchFrequentClients,
-        togglePaymentStatus,
+        setPaymentStatus: paymentStatus.setPaymentStatus,
+        isUpdatingRide: paymentStatus.isUpdatingRide,
     };
 }

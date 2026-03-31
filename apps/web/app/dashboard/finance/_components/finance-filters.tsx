@@ -11,10 +11,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PERIODS, PeriodId, FinanceClient } from "../_types";
+import { type Client } from "@/types/rides";
+import { PERIODS, PeriodId } from "../_types";
 
 interface FinanceFiltersProps {
-    clients: FinanceClient[];
+    clients: Client[];
     selectedClientId: string;
     setSelectedClientId: (id: string) => void;
     selectedPeriod: PeriodId;

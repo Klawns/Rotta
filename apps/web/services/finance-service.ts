@@ -1,4 +1,11 @@
-import { apiClient } from "@/services/api";
+import { apiClient } from '@/services/api';
+
+export interface FinanceDashboardParams {
+  period: string;
+  start?: string;
+  end?: string;
+  clientId?: string;
+}
 
 export interface FinanceSummary {
   totalValue: number;
@@ -41,14 +48,51 @@ export interface FinanceDashboardData {
   recentRides: RecentRide[];
 }
 
-interface RawRecentRide extends Omit<RecentRide, "rideDate" | "value" | "clientName"> {
+interface RawFinanceSummary {
+  totalValue?: number | string | null;
+  count?: number | string | null;
+  ticketMedio?: number | string | null;
+  previousPeriodComparison?: number | string | null;
+  projection?: number | string | null;
+}
+
+interface RawFinanceTrend {
+  date?: string | null;
+  value?: number | string | null;
+}
+
+interface RawFinanceByClient {
+  clientId?: string | null;
+  clientName?: string | null;
+  value?: number | string | null;
+}
+
+interface RawFinanceByStatus {
+  status: FinanceByStatus['status'];
+  value?: number | string | null;
+}
+
+interface RawRecentRide
+  extends Omit<RecentRide, 'rideDate' | 'value' | 'clientName'> {
   rideDate: unknown;
   value: number | string | null;
   clientName: string | null;
 }
 
+interface RawFinanceDashboardData {
+  summary?: RawFinanceSummary | null;
+  trends?: RawFinanceTrend[] | null;
+  byClient?: RawFinanceByClient[] | null;
+  byStatus?: RawFinanceByStatus[] | null;
+  recentRides?: RawRecentRide[] | null;
+}
+
+function normalizeNumber(value: number | string | null | undefined) {
+  return Number(value || 0);
+}
+
 function normalizeRideDate(value: unknown): string {
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     return value;
   }
 
@@ -56,38 +100,80 @@ function normalizeRideDate(value: unknown): string {
     return value.toISOString();
   }
 
-  if (typeof value === "number") {
+  if (typeof value === 'number') {
     const parsedDate = new Date(value);
-    return Number.isNaN(parsedDate.getTime()) ? "" : parsedDate.toISOString();
+    return Number.isNaN(parsedDate.getTime()) ? '' : parsedDate.toISOString();
   }
 
-  return "";
+  return '';
+}
+
+function normalizeSummary(summary?: RawFinanceSummary | null): FinanceSummary {
+  return {
+    totalValue: normalizeNumber(summary?.totalValue),
+    count: normalizeNumber(summary?.count),
+    ticketMedio: normalizeNumber(summary?.ticketMedio),
+    previousPeriodComparison: normalizeNumber(
+      summary?.previousPeriodComparison,
+    ),
+    projection: normalizeNumber(summary?.projection),
+  };
+}
+
+function normalizeTrend(item: RawFinanceTrend): FinanceTrend {
+  return {
+    date: item.date || '',
+    value: normalizeNumber(item.value),
+  };
+}
+
+function normalizeClient(item: RawFinanceByClient): FinanceByClient {
+  return {
+    clientId: item.clientId || '',
+    clientName: item.clientName || '',
+    value: normalizeNumber(item.value),
+  };
+}
+
+function normalizeStatus(item: RawFinanceByStatus): FinanceByStatus {
+  return {
+    status: item.status,
+    value: normalizeNumber(item.value),
+  };
 }
 
 function normalizeRecentRide(ride: RawRecentRide): RecentRide {
   return {
     ...ride,
-    value: Number(ride.value || 0),
+    value: normalizeNumber(ride.value),
     rideDate: normalizeRideDate(ride.rideDate),
-    clientName: ride.clientName || "Cliente",
+    clientName: ride.clientName || '',
+  };
+}
+
+function normalizeDashboardData(
+  data: RawFinanceDashboardData,
+): FinanceDashboardData {
+  return {
+    summary: normalizeSummary(data.summary),
+    trends: (data.trends || []).map(normalizeTrend),
+    byClient: (data.byClient || []).map(normalizeClient),
+    byStatus: (data.byStatus || []).map(normalizeStatus),
+    recentRides: (data.recentRides || []).map(normalizeRecentRide),
   };
 }
 
 export const financeService = {
-  async getDashboard(params: {
-    period: string;
-    start?: string;
-    end?: string;
-    clientId?: string;
-  }, signal?: AbortSignal): Promise<FinanceDashboardData> {
-    const data = await apiClient.get<
-      Omit<FinanceDashboardData, "recentRides"> & { recentRides: RawRecentRide[] }
-    >("/finance/dashboard", { params, signal });
+  async getDashboard(
+    params: FinanceDashboardParams,
+    signal?: AbortSignal,
+  ): Promise<FinanceDashboardData> {
+    const data = await apiClient.get<RawFinanceDashboardData>(
+      '/finance/dashboard',
+      { params, signal },
+    );
 
-    return {
-      ...data,
-      recentRides: (data.recentRides || []).map(normalizeRecentRide),
-    };
+    return normalizeDashboardData(data);
   },
 };
 

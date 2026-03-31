@@ -3,8 +3,8 @@
 import { Calendar, Pencil, Trash2 } from 'lucide-react';
 import { HybridInfiniteList } from '@/components/ui/hybrid-infinite-list';
 import { PaymentComposition } from '@/components/ui/payment-composition';
+import { RidePaymentAction } from '@/components/ui/ride-payment-action';
 import { resolveRideDateValue } from '@/lib/date-utils';
-import { cn } from '@/lib/utils';
 import { type Ride } from '@/types/rides';
 
 interface ClientRidesHistoryProps {
@@ -16,6 +16,11 @@ interface ClientRidesHistoryProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
   onEditRide: (ride: Ride) => void;
   onDeleteRide: (ride: Ride) => void;
+  onChangePaymentStatus: (
+    ride: Ride,
+    status: 'PAID' | 'PENDING',
+  ) => void | Promise<unknown>;
+  isPaymentUpdating: (rideId: string) => boolean;
 }
 
 export function ClientRidesHistory({
@@ -27,6 +32,8 @@ export function ClientRidesHistory({
   containerRef,
   onEditRide,
   onDeleteRide,
+  onChangePaymentStatus,
+  isPaymentUpdating,
 }: ClientRidesHistoryProps) {
   return (
     <section className="space-y-6">
@@ -59,16 +66,14 @@ export function ClientRidesHistory({
                   {rideDate?.toLocaleString('pt-BR') || 'Data indisponivel'}
                 </p>
                 <div className="flex gap-2 mt-2">
-                  <span
-                    className={cn(
-                      "text-[8px] font-black uppercase px-2 py-0.5 rounded-full border",
-                      ride.paymentStatus === 'PAID'
-                        ? "bg-icon-success/10 text-icon-success border-icon-success/10"
-                        : "bg-icon-warning/10 text-icon-warning border-icon-warning/10",
-                    )}
-                  >
-                    {ride.paymentStatus === 'PAID' ? 'Pago' : 'Pendente'}
-                  </span>
+                  <RidePaymentAction
+                    paymentStatus={ride.paymentStatus}
+                    onChangeStatus={(status) =>
+                      onChangePaymentStatus(ride, status)
+                    }
+                    isLoading={isPaymentUpdating(ride.id)}
+                    size="xs"
+                  />
                 </div>
               </div>
               <div className="text-right flex flex-col items-end justify-center min-w-[80px]">
