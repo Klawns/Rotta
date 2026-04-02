@@ -53,7 +53,19 @@ export function calculateRevenueTotals(rides: PDFReportRide[]) {
   };
 }
 
-export function getPeriodLabel(period: string) {
+function formatDateRangeValue(value: string) {
+  const date = normalizeDateValue(value);
+  return date ? format(date, 'dd/MM/yyyy') : '';
+}
+
+export function getPeriodLabel(
+  period: string,
+  dateRange?: { start: string; end: string },
+) {
+  if (period === 'custom' && dateRange?.start && dateRange?.end) {
+    return `${formatDateRangeValue(dateRange.start)} a ${formatDateRangeValue(dateRange.end)}`;
+  }
+
   switch (period) {
     case 'today':
       return 'Hoje';
@@ -70,16 +82,25 @@ export function getPeriodLabel(period: string) {
   }
 }
 
-export function getFinancialReportFileName(period: string) {
+export function getFinancialReportFileName(
+  period: string,
+  dateRange?: { start: string; end: string },
+) {
   const now = new Date();
   const monthName = format(now, 'MMMM', { locale: ptBR });
   const year = format(now, 'yyyy');
+
+  if (period === 'custom' && dateRange?.start && dateRange?.end) {
+    const start = formatDateRangeValue(dateRange.start).replace(/\//g, '_');
+    const end = formatDateRangeValue(dateRange.end).replace(/\//g, '_');
+    return `Relatorio_Financeiro_${start}_a_${end}.pdf`;
+  }
 
   if (period === 'month') {
     return `Relatorio_Financeiro_${monthName.charAt(0).toUpperCase() + monthName.slice(1)}_${year}.pdf`;
   }
 
-  return `Relatorio_Financeiro_${getPeriodLabel(period)}_${format(now, 'dd_MM_yyyy')}.pdf`;
+  return `Relatorio_Financeiro_${getPeriodLabel(period, dateRange)}_${format(now, 'dd_MM_yyyy')}.pdf`;
 }
 
 export function getClientDebtReportFileName(clientName: string | null | undefined) {

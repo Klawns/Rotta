@@ -1,44 +1,48 @@
 import { ClientModal } from "@/components/client-modal";
-import { RideModal } from "@/components/ride-modal";
-import { PaymentModal } from "@/components/payment-modal";
 import { ConfirmModal } from "@/components/confirm-modal";
+import { PaymentModal } from "@/components/payment-modal";
+import { RideModal } from "@/components/ride-modal";
 import { Client, Ride } from "@/types/rides";
 
 interface ClientModalsProps {
     selectedClient: Client | null;
+    modalClient: Client | null;
     clientToEdit: Client | null;
+    clientToDelete: Client | null;
     rideToEdit: Ride | null;
     rideToDelete: Ride | null;
-    
+
     isClientModalOpen: boolean;
     isRideModalOpen: boolean;
     isPaymentModalOpen: boolean;
     isDeleteConfirmOpen: boolean;
     isCloseDebtConfirmOpen: boolean;
-    
+
     isSettling: boolean;
     isDeleting: boolean;
     isDeletingRide: boolean;
-    
+
     onCloseClientModal: () => void;
     onCloseRideModal: () => void;
     onClosePaymentModal: () => void;
     onCloseDeleteConfirm: () => void;
     onCloseCloseDebtConfirm: () => void;
     onCloseDeleteRideConfirm: () => void;
-    
+
     onConfirmDeleteClient: () => void;
     onConfirmCloseDebt: () => void;
     onConfirmDeleteRide: () => void;
-    
-    onSuccessClient: () => void;
+
+    onSuccessClient?: (client: Client) => void;
     onSuccessPayment: () => void;
     onSuccessRide: () => void;
 }
 
 export function ClientModals({
     selectedClient,
+    modalClient,
     clientToEdit,
+    clientToDelete,
     rideToEdit,
     rideToDelete,
     isClientModalOpen,
@@ -60,12 +64,12 @@ export function ClientModals({
     onConfirmDeleteRide,
     onSuccessClient,
     onSuccessPayment,
-    onSuccessRide
+    onSuccessRide,
 }: ClientModalsProps) {
     return (
         <>
             <ClientModal
-                key={`${clientToEdit?.id ?? 'new'}-${isClientModalOpen ? 'open' : 'closed'}`}
+                key={`${clientToEdit?.id ?? "new"}-${isClientModalOpen ? "open" : "closed"}`}
                 isOpen={isClientModalOpen}
                 onClose={onCloseClientModal}
                 onSuccess={onSuccessClient}
@@ -76,13 +80,13 @@ export function ClientModals({
                 isOpen={isRideModalOpen}
                 onClose={onCloseRideModal}
                 onSuccess={onSuccessRide}
-                clientId={selectedClient?.id}
-                clientName={selectedClient?.name}
+                clientId={modalClient?.id}
+                clientName={modalClient?.name}
                 rideToEdit={rideToEdit}
             />
 
             <PaymentModal
-                key={`${selectedClient?.id ?? 'empty'}-${isPaymentModalOpen ? 'open' : 'closed'}`}
+                key={`${selectedClient?.id ?? "empty"}-${isPaymentModalOpen ? "open" : "closed"}`}
                 isOpen={isPaymentModalOpen}
                 onClose={onClosePaymentModal}
                 onSuccess={onSuccessPayment}
@@ -95,7 +99,7 @@ export function ClientModals({
                 onClose={onCloseDeleteConfirm}
                 onConfirm={onConfirmDeleteClient}
                 title="Excluir Cliente"
-                description={`Deseja realmente excluir o cliente "${selectedClient?.name}"? Esta ação é IRREVERSÍVEL e excluirá todas as corridas e pagamentos vinculados.`}
+                description={`Deseja realmente excluir o cliente "${clientToDelete?.name}"? Esta acao e irreversivel. Ao apagar este cliente, corridas, pagamentos e outras informacoes relacionadas tambem serao removidas permanentemente.`}
                 confirmText="Excluir"
                 variant="danger"
                 isLoading={isDeleting}
@@ -105,9 +109,9 @@ export function ClientModals({
                 isOpen={isCloseDebtConfirmOpen}
                 onClose={onCloseCloseDebtConfirm}
                 onConfirm={onConfirmCloseDebt}
-                title="Fechar Dívida"
-                description={`Deseja realmente fechar a dívida de ${selectedClient?.name}? Isso marcará as corridas como pagas e os adiantamentos como usados.`}
-                confirmText="Fechar Dívida"
+                title="Fechar Divida"
+                description={`Deseja realmente fechar a divida de ${selectedClient?.name}? Isso marcara as corridas como pagas e os adiantamentos como usados.`}
+                confirmText="Fechar Divida"
                 isLoading={isSettling}
             />
 

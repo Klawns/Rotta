@@ -31,6 +31,9 @@ export const clientKeys = {
 export const settingsKeys = {
   all: ['settings'] as const,
   presets: () => [...settingsKeys.all, 'presets'] as const,
+  backups: () => [...settingsKeys.all, 'backups'] as const,
+  backupsStatus: () => [...settingsKeys.all, 'backups-status'] as const,
+  backupImport: (id: string) => [...settingsKeys.all, 'backup-import', id] as const,
 };
 
 export const authKeys = {
@@ -59,4 +62,5 @@ export const adminKeys = {
   configs: () => [...adminKeys.settings(), 'configs'] as const,
   plans: () => [...adminKeys.settings(), 'plans'] as const,
   promoCodes: () => [...adminKeys.settings(), 'promo-codes'] as const,
+  technicalBackups: () => [...adminKeys.settings(), 'technical-backups'] as const,
 };

@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument -- Drizzle is consumed through a dialect-agnostic runtime boundary in this service. */
 import { Injectable } from '@nestjs/common';
 import { and, desc, eq, sql } from 'drizzle-orm';
+import type {
+  FinanceByClientItem,
+  FinanceByStatusItem,
+  RecentRideItem,
+} from '../dto/finance.dto';
 import { FinanceRideQueryService } from './finance-ride-query.service';
 
 @Injectable()
@@ -9,12 +14,52 @@ export class FinanceBreakdownService {
     private readonly financeRideQueryService: FinanceRideQueryService,
   ) {}
 
-  async getByClient(userId: string, start: Date, end: Date) {
-    const conditions = this.financeRideQueryService.buildFinancialRideConditions(
-      userId,
-      start,
-      end,
-    );
+  private buildRidesQuery(
+    userId: string,
+    start: Date,
+    end: Date,
+    clientId?: string,
+  ) {
+    const conditions =
+      this.financeRideQueryService.buildFinancialRideConditions(
+        userId,
+        start,
+        end,
+        clientId,
+      );
+
+    return this.financeRideQueryService.db
+      .select({
+        id: this.financeRideQueryService.schema.rides.id,
+        value: this.financeRideQueryService.schema.rides.value,
+        rideDate: this.financeRideQueryService.schema.rides.rideDate,
+        paymentStatus: this.financeRideQueryService.schema.rides.paymentStatus,
+        location: this.financeRideQueryService.schema.rides.location,
+        clientName: this.financeRideQueryService.schema.clients.name,
+      })
+      .from(this.financeRideQueryService.schema.rides)
+      .leftJoin(
+        this.financeRideQueryService.schema.clients,
+        eq(
+          this.financeRideQueryService.schema.rides.clientId,
+          this.financeRideQueryService.schema.clients.id,
+        ),
+      )
+      .where(and(...conditions))
+      .orderBy(desc(this.financeRideQueryService.schema.rides.rideDate));
+  }
+
+  async getByClient(
+    userId: string,
+    start: Date,
+    end: Date,
+  ): Promise<FinanceByClientItem[]> {
+    const conditions =
+      this.financeRideQueryService.buildFinancialRideConditions(
+        userId,
+        start,
+        end,
+      );
 
     const results = await this.financeRideQueryService.db
       .select({
@@ -58,13 +103,14 @@ export class FinanceBreakdownService {
     start: Date,
     end: Date,
     clientId?: string,
-  ) {
-    const conditions = this.financeRideQueryService.buildFinancialRideConditions(
-      userId,
-      start,
-      end,
-      clientId,
-    );
+  ): Promise<FinanceByStatusItem[]> {
+    const conditions =
+      this.financeRideQueryService.buildFinancialRideConditions(
+        userId,
+        start,
+        end,
+        clientId,
+      );
 
     const results = await this.financeRideQueryService.db
       .select({
@@ -86,33 +132,25 @@ export class FinanceBreakdownService {
     );
   }
 
-  getRecentRides(userId: string, start: Date, end: Date, clientId?: string) {
-    const conditions = this.financeRideQueryService.buildFinancialRideConditions(
-      userId,
-      start,
-      end,
-      clientId,
-    );
+  getRecentRides(
+    userId: string,
+    start: Date,
+    end: Date,
+    clientId?: string,
+  ): Promise<RecentRideItem[]> {
+    return this.buildRidesQuery(userId, start, end, clientId).limit(
+      10,
+    ) as Promise<RecentRideItem[]>;
+  }
 
-    return this.financeRideQueryService.db
-      .select({
-        id: this.financeRideQueryService.schema.rides.id,
-        value: this.financeRideQueryService.schema.rides.value,
-        rideDate: this.financeRideQueryService.schema.rides.rideDate,
-        paymentStatus: this.financeRideQueryService.schema.rides.paymentStatus,
-        location: this.financeRideQueryService.schema.rides.location,
-        clientName: this.financeRideQueryService.schema.clients.name,
-      })
-      .from(this.financeRideQueryService.schema.rides)
-      .leftJoin(
-        this.financeRideQueryService.schema.clients,
-        eq(
-          this.financeRideQueryService.schema.rides.clientId,
-          this.financeRideQueryService.schema.clients.id,
-        ),
-      )
-      .where(and(...conditions))
-      .orderBy(desc(this.financeRideQueryService.schema.rides.rideDate))
-      .limit(10);
+  getReportRides(
+    userId: string,
+    start: Date,
+    end: Date,
+    clientId?: string,
+  ): Promise<RecentRideItem[]> {
+    return this.buildRidesQuery(userId, start, end, clientId) as Promise<
+      RecentRideItem[]
+    >;
   }
 }

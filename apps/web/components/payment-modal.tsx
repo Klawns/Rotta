@@ -12,7 +12,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { parseApiError } from '@/lib/api-error';
-import { clientKeys, financeKeys, rideKeys } from '@/lib/query-keys';
+import { upsertClientPaymentCaches } from '@/lib/client-cache';
+import { invalidateRideCachesForClient } from '@/lib/ride-cache';
+import { clientKeys, financeKeys } from '@/lib/query-keys';
 import { clientsService } from '@/services/clients-service';
 import { type CreateClientPaymentInput } from '@/types/client-payments';
 
@@ -39,10 +41,19 @@ function PaymentModalForm({
   const mutation = useMutation({
     mutationFn: (payload: CreateClientPaymentInput) =>
       clientsService.addClientPayment(clientId, payload),
-    onSuccess: async () => {
+    onSuccess: async (payment) => {
+      upsertClientPaymentCaches(queryClient, payment);
+
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: clientKeys.all }),
-        queryClient.invalidateQueries({ queryKey: rideKeys.all }),
+        invalidateRideCachesForClient(queryClient, clientId),
+        queryClient.invalidateQueries({
+          queryKey: clientKeys.detail(clientId),
+          exact: true,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: clientKeys.balance(clientId),
+          exact: true,
+        }),
         queryClient.invalidateQueries({ queryKey: financeKeys.all }),
       ]);
 

@@ -122,7 +122,12 @@ export const ridesService = {
 
   async getRidesByClient(
     clientId: string,
-    params?: { limit?: number; cursor?: string },
+    params?: {
+      limit?: number;
+      cursor?: string;
+      status?: string;
+      paymentStatus?: string;
+    },
     signal?: AbortSignal,
   ): Promise<ApiEnvelope<Ride[], CursorMeta>> {
     const response = await apiClient.getPaginated<RideResponseDTO[], CursorMeta>(

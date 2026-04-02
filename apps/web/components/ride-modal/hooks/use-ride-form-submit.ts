@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { parseApiError } from '@/lib/api-error';
 import { authKeys, clientKeys, financeKeys, rideKeys } from '@/lib/query-keys';
+import { upsertRideCaches } from '@/lib/ride-cache';
 import { type Ride } from '@/types/rides';
 import { submitRideDraft } from '../lib/ride-submission';
 
@@ -37,12 +38,30 @@ export function useRideFormSubmit({
 
   const mutation = useMutation({
     mutationFn: () => submitRideDraft(draft, rideToEdit),
-    onSuccess: async () => {
+    onSuccess: async (ride) => {
+      upsertRideCaches(queryClient, ride);
+
+      const affectedClientIds = Array.from(
+        new Set(
+          [ride.clientId || ride.client?.id, rideToEdit?.clientId || rideToEdit?.client?.id]
+            .filter((value): value is string => Boolean(value)),
+        ),
+      );
+
       toast.success(rideToEdit ? 'Corrida atualizada' : 'Corrida registrada');
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: rideKeys.all }),
-        queryClient.invalidateQueries({ queryKey: clientKeys.all }),
+        ...affectedClientIds.flatMap((clientId) => [
+          queryClient.invalidateQueries({
+            queryKey: clientKeys.detail(clientId),
+            exact: true,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: clientKeys.balance(clientId),
+            exact: true,
+          }),
+        ]),
+        queryClient.invalidateQueries({ queryKey: rideKeys.frequentClients() }),
         queryClient.invalidateQueries({ queryKey: financeKeys.all }),
         queryClient.invalidateQueries({ queryKey: authKeys.user() }),
       ]);

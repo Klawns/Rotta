@@ -3,7 +3,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { parseApiError } from '@/lib/api-error';
-import { clientKeys, financeKeys, rideKeys } from '@/lib/query-keys';
+import { upsertRideCaches } from '@/lib/ride-cache';
+import { clientKeys, financeKeys } from '@/lib/query-keys';
 import { ridesService } from '@/services/rides-service';
 import type { PaymentStatus } from '@/types/rides';
 
@@ -23,18 +24,34 @@ export function useRidePaymentStatus() {
   const mutation = useMutation({
     mutationFn: ({ id, nextStatus }: RidePaymentUpdateInput) =>
       ridesService.updateRideStatus(id, { paymentStatus: nextStatus }),
-    onSuccess: async (_, variables) => {
+    onSuccess: async (ride, variables) => {
+      upsertRideCaches(queryClient, ride);
+
+      const clientId = ride.clientId || ride.client?.id;
+      const tasks = [queryClient.invalidateQueries({ queryKey: financeKeys.all })];
+
+      if (clientId) {
+        tasks.push(
+          queryClient.invalidateQueries({
+            queryKey: clientKeys.detail(clientId),
+            exact: true,
+          }),
+        );
+        tasks.push(
+          queryClient.invalidateQueries({
+            queryKey: clientKeys.balance(clientId),
+            exact: true,
+          }),
+        );
+      }
+
       toast.success(
         variables.nextStatus === 'PAID'
           ? 'Pagamento marcado como pago'
           : 'Pagamento marcado como pendente',
       );
 
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: rideKeys.all }),
-        queryClient.invalidateQueries({ queryKey: clientKeys.all }),
-        queryClient.invalidateQueries({ queryKey: financeKeys.all }),
-      ]);
+      await Promise.all(tasks);
     },
     onError: (error) => {
       toast.error(parseApiError(error, 'Erro ao atualizar pagamento'));

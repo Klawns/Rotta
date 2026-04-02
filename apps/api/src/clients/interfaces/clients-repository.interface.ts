@@ -15,7 +15,7 @@ export interface IClientsRepository {
     clients: Client[];
     total: number;
     nextCursor?: string;
-    hasMore: boolean;
+    hasNextPage: boolean;
   }>;
 
   create(data: CreateClientDto, executor?: unknown): Promise<Client>;

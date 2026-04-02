@@ -33,7 +33,7 @@ export interface IRidesRepository {
     rides: RideWithClient[];
     total: number;
     nextCursor?: string;
-    hasMore: boolean;
+    hasNextPage: boolean;
   }>;
 
   create(data: CreateRideDto, executor?: unknown): Promise<Ride>;
@@ -68,18 +68,23 @@ export interface IRidesRepository {
 
   countAll(userId: string): Promise<number>;
 
-  delete(userId: string, id: string, executor?: unknown): Promise<Ride | undefined>;
+  delete(
+    userId: string,
+    id: string,
+    executor?: unknown,
+  ): Promise<Ride | undefined>;
 
   findByClient(
     userId: string,
     clientId: string,
     limit?: number,
     cursor?: string,
+    filters?: Omit<FindAllFilters, 'clientId'>,
   ): Promise<{
     rides: Ride[];
     total: number;
     nextCursor?: string;
-    hasMore: boolean;
+    hasNextPage: boolean;
   }>;
 
   getStats(

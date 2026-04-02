@@ -22,6 +22,7 @@ export function useClientDetailsData(client: Client | null) {
     hasNextPage,
     isFetchingNextPage,
     isLoading: isRidesLoading,
+    isFetching: isRidesFetching,
     refetch: refetchRides,
   } = useInfiniteQuery({
     queryKey: client
@@ -46,6 +47,7 @@ export function useClientDetailsData(client: Client | null) {
   const {
     data: balance,
     isLoading: isBalanceLoading,
+    isFetching: isBalanceFetching,
     refetch: refetchBalance,
   } = useQuery({
     queryKey: client ? clientKeys.balance(client.id) : getEmptyClientKey('balance'),
@@ -57,6 +59,7 @@ export function useClientDetailsData(client: Client | null) {
   const {
     data: payments = [] as ClientPayment[],
     isLoading: isPaymentsLoading,
+    isFetching: isPaymentsFetching,
     refetch: refetchPayments,
   } = useQuery({
     queryKey: client ? clientKeys.payments(client.id) : getEmptyClientKey('payments'),
@@ -75,11 +78,23 @@ export function useClientDetailsData(client: Client | null) {
     refetchBalance();
     refetchPayments();
   }, [refetchRides, refetchBalance, refetchPayments]);
-  const { generatePDF, generateExcel } = useClientDetailsExport({
-    client,
-    balance: balance || null,
-    payments,
-  });
+  const isDetailsPending =
+    isRidesLoading ||
+    isBalanceLoading ||
+    isPaymentsLoading ||
+    isRidesFetching ||
+    isBalanceFetching ||
+    isPaymentsFetching ||
+    isFetchingNextPage;
+
+  const { generatePDF, generateExcel, isExportingPdf, isExportingExcel } =
+    useClientDetailsExport({
+      client,
+      rides,
+      balance: balance || null,
+      payments,
+      isDetailsPending,
+    });
 
   return {
     rides,
@@ -92,6 +107,9 @@ export function useClientDetailsData(client: Client | null) {
     hasNextPage,
     fetchNextPage,
     refreshDetails,
+    isDetailsPending,
+    isExportingPdf,
+    isExportingExcel,
     generatePDF,
     generateExcel,
   };

@@ -1,4 +1,4 @@
-import { Download, FileSpreadsheet } from 'lucide-react';
+import { Download, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getPeriodAccent } from '../_lib/finance-theme';
@@ -7,6 +7,8 @@ import type { Period } from '../_types';
 interface FinanceActionBarProps {
   currentPeriod: Period;
   isLoading: boolean;
+  isFetching: boolean;
+  isExportingPdf: boolean;
   hasData: boolean;
   onExport: () => void;
   onExportCSV: () => void;
@@ -15,12 +17,16 @@ interface FinanceActionBarProps {
 export function FinanceActionBar({
   currentPeriod,
   isLoading,
+  isFetching,
+  isExportingPdf,
   hasData,
   onExport,
   onExportCSV,
 }: FinanceActionBarProps) {
   const accent = getPeriodAccent(currentPeriod.id);
-  const isDisabled = isLoading || !hasData;
+  const isPdfDisabled = isLoading || isFetching || isExportingPdf;
+  const isSpreadsheetDisabled =
+    isLoading || isFetching || !hasData || isExportingPdf;
 
   return (
     <section className="rounded-[1.75rem] border border-border-subtle bg-card-background p-4 shadow-sm md:p-5">
@@ -37,20 +43,24 @@ export function FinanceActionBar({
         <div className="grid gap-3 sm:grid-cols-2">
           <Button
             onClick={onExport}
-            disabled={isDisabled}
+            disabled={isPdfDisabled}
             className={cn(
               'h-12 w-full rounded-2xl px-5 font-bold',
               accent.badge,
-              isDisabled && 'opacity-50',
+              isPdfDisabled && 'opacity-50',
             )}
           >
-            <Download className="mr-2 size-4" />
-            Exportar PDF
+            {isExportingPdf ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 size-4" />
+            )}
+            {isExportingPdf ? 'Gerando PDF...' : 'Exportar PDF'}
           </Button>
 
           <Button
             onClick={onExportCSV}
-            disabled={isDisabled}
+            disabled={isSpreadsheetDisabled}
             variant="outline"
             className="h-12 w-full rounded-2xl border-border-subtle bg-background px-5 font-bold text-text-primary"
           >

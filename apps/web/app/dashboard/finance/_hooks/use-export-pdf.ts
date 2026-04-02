@@ -3,67 +3,57 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { parseApiError } from '@/lib/api-error';
+import {
+  financeService,
+  type FinanceDashboardParams,
+} from '@/services/finance-service';
 import { PDFService } from '@/services/pdf-service';
-import type { FinanceSummary, RecentRide } from '@/services/finance-service';
-import type { PeriodId } from '../_types';
 
 interface UseExportPdfParams {
-  viewStats: FinanceSummary | null;
-  rides: RecentRide[];
-  selectedPeriod: PeriodId;
+  dashboardParams: FinanceDashboardParams;
+  expectedRideCount: number;
+  isFinanceDataPending: boolean;
   userName: string;
 }
 
-interface ExportPayload {
-  period: PeriodId;
-  rides: RecentRide[];
-}
-
 export function useExportPdf({
-  viewStats,
-  rides,
-  selectedPeriod,
+  dashboardParams,
+  expectedRideCount,
+  isFinanceDataPending,
   userName,
 }: UseExportPdfParams) {
-  const [isPixModalOpen, setIsPixModalOpen] = useState(false);
-  const [pixKey, setPixKey] = useState('');
-  const [statsToExport, setStatsToExport] = useState<ExportPayload | null>(
-    null,
-  );
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
-  const handleExportPDF = () => {
-    if (!viewStats || !rides.length) {
+  const handleExportPDF = async () => {
+    if (isFinanceDataPending || isExportingPdf) {
       return;
     }
 
-    setStatsToExport({ period: selectedPeriod, rides });
-    setIsPixModalOpen(true);
-  };
-
-  const confirmExport = async (includePix: boolean) => {
-    if (!statsToExport) {
-      return;
-    }
+    setIsExportingPdf(true);
 
     try {
-      await PDFService.generateReport(statsToExport.rides, {
-        period: statsToExport.period,
+      const report = await financeService.getReport(dashboardParams);
+
+      if (expectedRideCount > 0 && report.rides.length === 0) {
+        throw new Error(
+          'Nao foi possivel montar o PDF com as corridas do filtro atual.',
+        );
+      }
+
+      await PDFService.generateReport(report.rides, {
+        period: dashboardParams.period,
         userName,
-        pixKey: includePix && pixKey.trim() ? pixKey : undefined,
+        dateRange: report.period,
       });
-      setIsPixModalOpen(false);
-      setStatsToExport(null);
     } catch (error) {
       toast.error(parseApiError(error, 'Erro ao exportar PDF.'));
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
   return {
-    isPixModalOpen,
-    setIsPixModalOpen,
-    pixKey,
-    setPixKey,
+    isExportingPdf,
     handleExportPDF,
-    confirmExport,
   };
 }

@@ -280,7 +280,11 @@ export class RidesService {
       data,
     );
 
-    const result = await this.ridesRepository.updateStatus(userId, id, updateData);
+    const result = await this.ridesRepository.updateStatus(
+      userId,
+      id,
+      updateData,
+    );
 
     if (!result) {
       throw new NotFoundException('Corrida não encontrada.');
@@ -321,8 +325,27 @@ export class RidesService {
     clientId: string,
     limit: number = 20,
     cursor?: string,
+    filters?: {
+      status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+      paymentStatus?: 'PENDING' | 'PAID';
+      startDate?: string;
+      endDate?: string;
+      search?: string;
+    },
   ) {
-    return this.ridesRepository.findByClient(userId, clientId, limit, cursor);
+    const parsedFilters = {
+      ...filters,
+      startDate: filters?.startDate ? new Date(filters.startDate) : undefined,
+      endDate: filters?.endDate ? new Date(filters.endDate) : undefined,
+    };
+
+    return this.ridesRepository.findByClient(
+      userId,
+      clientId,
+      limit,
+      cursor,
+      parsedFilters,
+    );
   }
 
   async getStats(userId: string, query: GetStatsDto) {

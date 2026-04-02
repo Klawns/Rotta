@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { parseApiError } from '@/lib/api-error';
-import { clientKeys } from '@/lib/query-keys';
+import { upsertClientCaches } from '@/lib/client-cache';
 import { clientsService } from '@/services/clients-service';
 import { type Client } from '@/types/rides';
 
@@ -29,7 +29,7 @@ function getInitialFormValues(clientToEdit?: Client): ClientFormPayload {
 interface ClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess?: (client: Client) => void;
   clientToEdit?: Client;
 }
 
@@ -53,12 +53,12 @@ function ClientModalForm({
 
       return clientsService.createClient(payload);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: clientKeys.all });
+    onSuccess: (client) => {
+      upsertClientCaches(queryClient, client);
       toast.success(
         clientToEdit ? 'Cliente atualizado com sucesso.' : 'Cliente cadastrado com sucesso.',
       );
-      onSuccess();
+      onSuccess?.(client);
       onClose();
     },
     onError: (error) => {

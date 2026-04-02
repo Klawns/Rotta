@@ -49,3 +49,13 @@ export interface FinanceDashboardResponse {
   byStatus: FinanceByStatusItem[];
   recentRides: RecentRideItem[];
 }
+
+export interface FinanceReportPeriod {
+  start: string;
+  end: string;
+}
+
+export interface FinanceReportResponse {
+  period: FinanceReportPeriod;
+  rides: RecentRideItem[];
+}

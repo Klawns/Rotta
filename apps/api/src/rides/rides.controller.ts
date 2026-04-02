@@ -100,11 +100,18 @@ export class RidesController {
     @Param('clientId') clientId: string,
     @ZodQuery(findAllRidesSchema) query: FindAllRidesDto,
   ) {
+    const { limit, cursor, status, paymentStatus, startDate, endDate } = query;
     const { rides, ...meta } = await this.ridesService.findByClient(
       req.user.id,
       clientId,
-      query.limit,
-      query.cursor,
+      limit,
+      cursor,
+      {
+        status,
+        paymentStatus,
+        startDate,
+        endDate,
+      },
     );
 
     return {

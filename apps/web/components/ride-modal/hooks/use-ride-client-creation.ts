@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { parseApiError } from '@/lib/api-error';
-import { clientKeys } from '@/lib/query-keys';
+import { upsertClientCaches } from '@/lib/client-cache';
 import { rideModalService } from '../services/ride-modal-service';
 
 interface UseRideClientCreationProps {
@@ -30,8 +30,8 @@ export function useRideClientCreation({
 
       return rideModalService.createClient(trimmedName);
     },
-    onSuccess: async (client) => {
-      await queryClient.invalidateQueries({ queryKey: clientKeys.all });
+    onSuccess: (client) => {
+      upsertClientCaches(queryClient, client);
       setSelectedClientId(client.id);
       setNewClientName('');
       setCurrentStep(2);

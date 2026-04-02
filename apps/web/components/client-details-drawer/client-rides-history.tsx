@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
-import { Calendar, Pencil, Trash2 } from 'lucide-react';
-import { HybridInfiniteList } from '@/components/ui/hybrid-infinite-list';
-import { PaymentComposition } from '@/components/ui/payment-composition';
-import { RidePaymentAction } from '@/components/ui/ride-payment-action';
-import { resolveRideDateValue } from '@/lib/date-utils';
-import { type Ride } from '@/types/rides';
+import type { RefObject } from "react";
+import { Calendar, Pencil, Trash2 } from "lucide-react";
+import { ClientRidesCardsContainer } from "@/components/ui/client-rides-cards-container";
+import { PaymentComposition } from "@/components/ui/payment-composition";
+import { RidePaymentAction } from "@/components/ui/ride-payment-action";
+import { resolveRideDateValue } from "@/lib/date-utils";
+import { type Ride } from "@/types/rides";
 
 interface ClientRidesHistoryProps {
   rides: Ride[];
@@ -13,14 +14,55 @@ interface ClientRidesHistoryProps {
   isFetchingNextPage: boolean;
   hasNextPage: boolean;
   fetchNextPage: () => void;
-  containerRef: React.RefObject<HTMLDivElement | null>;
+  containerRef?: RefObject<HTMLElement | null>;
   onEditRide: (ride: Ride) => void;
   onDeleteRide: (ride: Ride) => void;
   onChangePaymentStatus: (
     ride: Ride,
-    status: 'PAID' | 'PENDING',
+    status: "PAID" | "PENDING",
   ) => void | Promise<unknown>;
   isPaymentUpdating: (rideId: string) => boolean;
+}
+
+function LoadingState() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={index}
+          className="animate-pulse rounded-2xl border border-border-subtle bg-card-background/40 p-4"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 flex-1 items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-secondary/30" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="h-4 w-40 rounded bg-secondary/30" />
+                <div className="h-3 w-24 rounded bg-secondary/20" />
+              </div>
+            </div>
+            <div className="h-8 w-20 rounded bg-secondary/20" />
+          </div>
+          <div className="mt-4 h-8 w-full rounded-xl bg-secondary/20" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="flex flex-1 items-center justify-center rounded-[1.75rem] border border-dashed border-border-subtle bg-card-background/40 p-8 text-center">
+      <div className="max-w-xs space-y-2">
+        <p className="text-base font-semibold text-text-primary">
+          O historico ainda esta vazio.
+        </p>
+        <p className="text-sm text-text-secondary">
+          Use a acao Nova corrida para adicionar o primeiro registro deste
+          cliente.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export function ClientRidesHistory({
@@ -35,48 +77,62 @@ export function ClientRidesHistory({
   onChangePaymentStatus,
   isPaymentUpdating,
 }: ClientRidesHistoryProps) {
-  return (
-    <section className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold text-text-primary">Histórico de Corridas</h3>
-        <span className="text-xs font-bold text-text-secondary uppercase bg-secondary/10 px-3 py-1 rounded-full border border-border-subtle">Recentes</span>
-      </div>
+  const rideCountLabel =
+    rides.length === 1
+      ? "1 corrida carregada"
+      : `${rides.length} corridas carregadas`;
 
-      <HybridInfiniteList<Ride>
-        items={rides}
-        estimateSize={110}
-        containerRef={containerRef}
-        hasMore={hasNextPage}
-        onLoadMore={fetchNextPage}
-        isLoading={isLoading && rides.length === 0}
-        isFetchingNextPage={isFetchingNextPage}
-        gap={16}
-        className="pb-10"
-        renderItem={(ride: Ride) => {
-          const rideDate = resolveRideDateValue(ride.rideDate, ride.createdAt);
+  const ridesList = (
+    <ClientRidesCardsContainer<Ride>
+      items={rides}
+      containerRef={containerRef}
+      hasMore={hasNextPage}
+      onLoadMore={fetchNextPage}
+      isFetchingNextPage={isFetchingNextPage}
+      renderItem={(ride: Ride) => {
+        const rideDate = resolveRideDateValue(ride.rideDate, ride.createdAt);
+        const formattedDate = rideDate
+          ? rideDate.toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })
+          : "Data indisponivel";
+        const formattedTime = rideDate
+          ? rideDate.toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : null;
+        const shortId = String(ride.id).split("-")[0];
 
-          return (
-            <div key={ride.id} className="flex items-center gap-4 p-5 bg-card-background/50 rounded-2xl border border-border-subtle group hover:bg-card-background transition-colors shadow-sm hover:shadow-md">
-              <div className="p-3 bg-icon-info/10 rounded-xl text-icon-info border border-icon-info/10">
-                <Calendar size={20} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-text-primary truncate">ID: {String(ride.id).split("-")[0]}</h4>
-                <p className="text-[10px] text-text-secondary mt-0.5 font-medium">
-                  {rideDate?.toLocaleString('pt-BR') || 'Data indisponivel'}
-                </p>
-                <div className="flex gap-2 mt-2">
-                  <RidePaymentAction
-                    paymentStatus={ride.paymentStatus}
-                    onChangeStatus={(status) =>
-                      onChangePaymentStatus(ride, status)
-                    }
-                    isLoading={isPaymentUpdating(ride.id)}
-                    size="xs"
-                  />
+        return (
+          <div
+            key={ride.id}
+            className="rounded-2xl border border-border-subtle bg-card-background/55 p-4 shadow-sm transition-colors hover:bg-card-background"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex min-w-0 flex-1 items-start gap-3">
+                <div className="rounded-xl border border-icon-info/10 bg-icon-info/10 p-3 text-icon-info">
+                  <Calendar size={18} />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="truncate font-semibold text-text-primary">
+                    {formattedDate}
+                  </h4>
+                  <p className="mt-1 text-xs text-text-secondary">
+                    {formattedTime ? `${formattedTime} - ` : ""}
+                    ID {shortId}
+                  </p>
+                  {ride.location ? (
+                    <p className="mt-2 line-clamp-1 text-sm text-text-secondary">
+                      {ride.location}
+                    </p>
+                  ) : null}
                 </div>
               </div>
-              <div className="text-right flex flex-col items-end justify-center min-w-[80px]">
+
+              <div className="flex shrink-0 flex-col items-end justify-center text-right">
                 <PaymentComposition
                   size="sm"
                   totalValue={ride.value}
@@ -86,26 +142,64 @@ export function ClientRidesHistory({
                   compact={true}
                 />
               </div>
-              <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 bg-card-background/90 backdrop-blur-sm p-1 rounded-lg">
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle pt-3">
+              <RidePaymentAction
+                paymentStatus={ride.paymentStatus}
+                onChangeStatus={(status) => onChangePaymentStatus(ride, status)}
+                isLoading={isPaymentUpdating(ride.id)}
+                size="xs"
+              />
+
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => onEditRide(ride)}
-                  className="p-2 bg-icon-info/10 hover:bg-icon-info text-icon-info hover:text-white rounded-lg transition-all active:scale-90 border border-icon-info/10"
-                  title="Editar"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border-subtle bg-secondary/10 px-3 py-2 text-xs font-semibold text-text-secondary transition-all hover:bg-secondary/15 hover:text-text-primary active:scale-95"
+                  title="Editar corrida"
                 >
                   <Pencil size={14} />
+                  Editar
                 </button>
                 <button
                   onClick={() => onDeleteRide(ride)}
-                  className="p-2 bg-icon-destructive/10 hover:bg-icon-destructive text-icon-destructive hover:text-white rounded-lg transition-all active:scale-90 border border-icon-destructive/10"
-                  title="Excluir"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border-destructive/15 bg-button-destructive-subtle px-3 py-2 text-xs font-semibold text-icon-destructive transition-all hover:bg-button-destructive-subtle/80 active:scale-95"
+                  title="Excluir corrida"
                 >
                   <Trash2 size={14} />
+                  Excluir
                 </button>
               </div>
             </div>
-          );
-        }}
-      />
+          </div>
+        );
+      }}
+    />
+  );
+
+  return (
+    <section className="flex flex-col gap-5">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h3 className="text-xl font-bold text-text-primary">
+            Historico de corridas
+          </h3>
+          <p className="mt-1 text-sm text-text-secondary">
+            {rides.length === 0 && !isLoading
+              ? "Nenhuma corrida registrada para este cliente."
+              : rideCountLabel}
+          </p>
+        </div>
+        {hasNextPage ? (
+          <span className="rounded-full border border-border-subtle bg-secondary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-text-secondary">
+            Mais registros ao rolar
+          </span>
+        ) : null}
+      </div>
+
+      {isLoading && rides.length === 0 ? <LoadingState /> : null}
+      {!isLoading && rides.length === 0 ? <EmptyState /> : null}
+      {rides.length > 0 ? ridesList : null}
     </section>
   );
 }

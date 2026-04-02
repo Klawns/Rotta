@@ -69,6 +69,7 @@ export function useFinanceDashboard() {
     user,
     clients,
     data: query.data || null,
+    dashboardParams,
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     refetch: query.refetch,

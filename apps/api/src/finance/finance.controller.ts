@@ -21,4 +21,14 @@ export class FinanceController {
   ) {
     return this.financeService.getDashboard(req.user.id, query);
   }
+
+  @Get('report')
+  @Header('Cache-Control', 'private, no-store, max-age=0')
+  @Header('Pragma', 'no-cache')
+  getReport(
+    @Request() req: RequestWithUser,
+    @ZodQuery(getFinanceStatsSchema) query: GetFinanceStatsDto,
+  ) {
+    return this.financeService.getReport(req.user.id, query);
+  }
 }

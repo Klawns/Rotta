@@ -1,6 +1,20 @@
 /**
  * Transforms a period string into explicit Start and End dates.
  */
+function parseDateOnly(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number);
+
+  if (
+    Number.isInteger(year) &&
+    Number.isInteger(month) &&
+    Number.isInteger(day)
+  ) {
+    return new Date(year, month - 1, day);
+  }
+
+  return new Date(value);
+}
+
 export function getDatesFromPeriod(
   period: 'today' | 'week' | 'month' | 'year' | 'custom',
   start?: string,
@@ -26,9 +40,9 @@ export function getDatesFromPeriod(
     startDate.setHours(0, 0, 0, 0);
     endDate.setHours(23, 59, 59, 999);
   } else if (period === 'custom' && start && end) {
-    startDate = new Date(start);
+    startDate = parseDateOnly(start);
     startDate.setHours(0, 0, 0, 0);
-    endDate = new Date(end);
+    endDate = parseDateOnly(end);
     endDate.setHours(23, 59, 59, 999);
   } else {
     // Fallback default

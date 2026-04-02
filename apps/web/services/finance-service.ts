@@ -48,6 +48,16 @@ export interface FinanceDashboardData {
   recentRides: RecentRide[];
 }
 
+export interface FinanceReportPeriod {
+  start: string;
+  end: string;
+}
+
+export interface FinanceReportData {
+  period: FinanceReportPeriod;
+  rides: RecentRide[];
+}
+
 interface RawFinanceSummary {
   totalValue?: number | string | null;
   count?: number | string | null;
@@ -85,6 +95,14 @@ interface RawFinanceDashboardData {
   byClient?: RawFinanceByClient[] | null;
   byStatus?: RawFinanceByStatus[] | null;
   recentRides?: RawRecentRide[] | null;
+}
+
+interface RawFinanceReportData {
+  period?: {
+    start?: string | null;
+    end?: string | null;
+  } | null;
+  rides?: RawRecentRide[] | null;
 }
 
 function normalizeNumber(value: number | string | null | undefined) {
@@ -163,6 +181,16 @@ function normalizeDashboardData(
   };
 }
 
+function normalizeReportData(data: RawFinanceReportData): FinanceReportData {
+  return {
+    period: {
+      start: data.period?.start || '',
+      end: data.period?.end || '',
+    },
+    rides: (data.rides || []).map(normalizeRecentRide),
+  };
+}
+
 export const financeService = {
   async getDashboard(
     params: FinanceDashboardParams,
@@ -174,6 +202,18 @@ export const financeService = {
     );
 
     return normalizeDashboardData(data);
+  },
+
+  async getReport(
+    params: FinanceDashboardParams,
+    signal?: AbortSignal,
+  ): Promise<FinanceReportData> {
+    const data = await apiClient.get<RawFinanceReportData>('/finance/report', {
+      params,
+      signal,
+    });
+
+    return normalizeReportData(data);
   },
 };
 

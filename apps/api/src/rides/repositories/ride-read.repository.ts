@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument -- Drizzle is consumed through a dialect-agnostic runtime boundary in this repository. */
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, gte, lte, sql, desc, or, like } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, desc, or, ilike } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.provider';
 import type { DrizzleClient } from '../../database/database.provider';
 import type {
@@ -34,7 +34,9 @@ export class RideReadRepository {
     }
 
     if (filters?.paymentStatus) {
-      conditions.push(eq(this.schema.rides.paymentStatus, filters.paymentStatus));
+      conditions.push(
+        eq(this.schema.rides.paymentStatus, filters.paymentStatus),
+      );
     }
 
     if (filters?.clientId && filters.clientId !== 'all') {
@@ -51,9 +53,9 @@ export class RideReadRepository {
 
     if (filters?.search) {
       const searchCondition = or(
-        like(this.schema.clients.name, `%${filters.search}%`),
-        like(this.schema.rides.notes, `%${filters.search}%`),
-        like(this.schema.rides.location, `%${filters.search}%`),
+        ilike(this.schema.clients.name, `%${filters.search}%`),
+        ilike(this.schema.rides.notes, `%${filters.search}%`),
+        ilike(this.schema.rides.location, `%${filters.search}%`),
       );
 
       if (searchCondition) {
@@ -93,9 +95,10 @@ export class RideReadRepository {
     rides: RideWithClient[];
     total: number;
     nextCursor?: string;
-    hasMore: boolean;
+    hasNextPage: boolean;
   }> {
-    const conditions = this.buildFindAllConditions(userId, filters);
+    const baseConditions = this.buildFindAllConditions(userId, filters);
+    const conditions = [...baseConditions];
 
     if (cursor) {
       const cursorCondition = this.rideCursorService.buildCondition(
@@ -123,30 +126,35 @@ export class RideReadRepository {
           desc(this.schema.rides.id),
         )
         .limit(limit + 1),
-      this.db
-        .select({ count: sql<number>`count(*)` })
-        .from(this.schema.rides)
-        .leftJoin(
-          this.schema.clients,
-          eq(this.schema.rides.clientId, this.schema.clients.id),
-        )
-        .where(and(...conditions)),
+      filters?.search
+        ? this.db
+            .select({ count: sql<number>`count(*)` })
+            .from(this.schema.rides)
+            .leftJoin(
+              this.schema.clients,
+              eq(this.schema.rides.clientId, this.schema.clients.id),
+            )
+            .where(and(...baseConditions))
+        : this.db
+            .select({ count: sql<number>`count(*)` })
+            .from(this.schema.rides)
+            .where(and(...baseConditions)),
     ]);
 
-    const hasMore = results.length > limit;
-    const items = hasMore ? results.slice(0, limit) : results;
+    const hasNextPage = results.length > limit;
+    const items = hasNextPage ? results.slice(0, limit) : results;
 
     return {
       rides: items as RideWithClient[],
       total: Number(countResult[0]?.count || 0),
-      nextCursor: hasMore
+      nextCursor: hasNextPage
         ? this.rideCursorService.encode({
             id: items[items.length - 1].id,
             rideDate: items[items.length - 1].rideDate,
             createdAt: items[items.length - 1].createdAt,
           })
         : undefined,
-      hasMore,
+      hasNextPage,
     };
   }
 
@@ -155,16 +163,19 @@ export class RideReadRepository {
     clientId: string,
     limit: number = 20,
     cursor?: string,
+    filters?: Omit<FindAllFilters, 'clientId'>,
   ): Promise<{
     rides: Ride[];
     total: number;
     nextCursor?: string;
-    hasMore: boolean;
+    hasNextPage: boolean;
   }> {
-    const conditions = [
-      eq(this.schema.rides.userId, userId),
-      eq(this.schema.rides.clientId, clientId),
-    ];
+    const baseConditions = this.buildFindAllConditions(userId, {
+      ...filters,
+      clientId,
+    });
+
+    const conditions = [...baseConditions];
 
     if (cursor) {
       const cursorCondition = this.rideCursorService.buildCondition(
@@ -191,23 +202,23 @@ export class RideReadRepository {
       this.db
         .select({ count: sql<number>`count(*)` })
         .from(this.schema.rides)
-        .where(and(...conditions)),
+        .where(and(...baseConditions)),
     ]);
 
-    const hasMore = results.length > limit;
-    const items = hasMore ? results.slice(0, limit) : results;
+    const hasNextPage = results.length > limit;
+    const items = hasNextPage ? results.slice(0, limit) : results;
 
     return {
       rides: items as Ride[],
       total: Number(countResult[0]?.count || 0),
-      nextCursor: hasMore
+      nextCursor: hasNextPage
         ? this.rideCursorService.encode({
             id: items[items.length - 1].id,
             rideDate: items[items.length - 1].rideDate,
             createdAt: items[items.length - 1].createdAt,
           })
         : undefined,
-      hasMore,
+      hasNextPage,
     };
   }
 

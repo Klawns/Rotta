@@ -1,18 +1,25 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { User, Star, Bike, ChevronRight, Settings2 } from "lucide-react";
+import { User, Star, Bike, ChevronRight, Pencil, Settings2, Trash2 } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Client } from "@/types/rides";
 
 interface ClientCardProps {
     client: Client;
     onEdit: (client: Client) => void;
+    onDelete: (client: Client) => void;
     onPin: (client: Client) => void;
     onQuickRide: (client: Client) => void;
     onViewHistory: (client: Client) => void;
 }
 
-export const ClientCard = React.memo(({ client, onEdit, onPin, onQuickRide, onViewHistory }: ClientCardProps) => {
+export const ClientCard = React.memo(({ client, onEdit, onDelete, onPin, onQuickRide, onViewHistory }: ClientCardProps) => {
     return (
         <motion.div
             animate={{ opacity: 1, y: 0 }}
@@ -57,16 +64,52 @@ export const ClientCard = React.memo(({ client, onEdit, onPin, onQuickRide, onVi
                         >
                             <Star size={20} className={cn(client.isPinned && "fill-icon-warning")} />
                         </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onEdit(client);
-                            }}
-                            className="h-11 w-11 flex items-center justify-center bg-muted/50 text-text-secondary hover:text-text-primary border border-border-subtle rounded-xl transition-all active:scale-90"
-                            title="Editar Dados"
-                        >
-                            <Settings2 size={20} />
-                        </button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                    }}
+                                    className="h-11 w-11 flex items-center justify-center rounded-xl border border-border-subtle bg-muted/50 text-text-secondary transition-all hover:text-text-primary active:scale-90"
+                                    title="Abrir acoes do cliente"
+                                    aria-label={`Abrir menu de acoes para ${client?.name ? client.name : "este cliente"}`}
+                                >
+                                    <Settings2 size={20} />
+                                </button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent
+                                align="center"
+                                className="min-w-40 rounded-2xl border-border-subtle bg-card-background p-1.5"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                }}
+                            >
+                                <DropdownMenuItem
+                                    onSelect={(event) => {
+                                        event.preventDefault();
+                                        onEdit(client);
+                                    }}
+                                    className="rounded-xl font-medium text-text-primary"
+                                >
+                                    <Pencil className="text-icon-info" size={14} />
+                                    Editar
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem
+                                    variant="destructive"
+                                    onSelect={(event) => {
+                                        event.preventDefault();
+                                        onDelete(client);
+                                    }}
+                                    className="rounded-xl font-medium"
+                                >
+                                    <Trash2 size={14} />
+                                    Excluir
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();

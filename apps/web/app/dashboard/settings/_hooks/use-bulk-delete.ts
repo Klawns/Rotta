@@ -2,9 +2,13 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { authKeys, clientKeys, financeKeys, rideKeys } from "@/lib/query-keys";
+import { clearClientCaches } from "@/lib/client-cache";
+import { clearRideCaches } from "@/lib/ride-cache";
+import { authKeys, financeKeys, rideKeys } from "@/lib/query-keys";
 import { clientsService } from "@/services/clients-service";
 import { ridesService } from "@/services/rides-service";
+
+const RIDE_STATS_KEY = [...rideKeys.all, "stats"] as const;
 
 export function useBulkDelete() {
     const { toast } = useToast();
@@ -12,11 +16,15 @@ export function useBulkDelete() {
 
     const deleteClientsMutation = useMutation({
         mutationFn: () => clientsService.deleteAllClients(),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: clientKeys.all });
-            queryClient.invalidateQueries({ queryKey: rideKeys.all });
-            queryClient.invalidateQueries({ queryKey: financeKeys.all });
-            queryClient.invalidateQueries({ queryKey: authKeys.user() });
+        onSuccess: async () => {
+            clearClientCaches(queryClient);
+            clearRideCaches(queryClient);
+
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: RIDE_STATS_KEY }),
+                queryClient.invalidateQueries({ queryKey: financeKeys.all }),
+                queryClient.invalidateQueries({ queryKey: authKeys.user() }),
+            ]);
 
             toast({
                 title: "Todos os clientes excluidos",
@@ -35,10 +43,14 @@ export function useBulkDelete() {
 
     const deleteRidesMutation = useMutation({
         mutationFn: () => ridesService.deleteAllRides(),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: rideKeys.all });
-            queryClient.invalidateQueries({ queryKey: financeKeys.all });
-            queryClient.invalidateQueries({ queryKey: authKeys.user() });
+        onSuccess: async () => {
+            clearRideCaches(queryClient);
+
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: RIDE_STATS_KEY }),
+                queryClient.invalidateQueries({ queryKey: financeKeys.all }),
+                queryClient.invalidateQueries({ queryKey: authKeys.user() }),
+            ]);
 
             toast({
                 title: "Todas as corridas excluidas",

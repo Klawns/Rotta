@@ -1,5 +1,4 @@
 "use client";
-
 import { ClientDetailsDrawer } from "@/components/client-details-drawer";
 import { useRidePaymentStatus } from "@/hooks/use-ride-payment-status";
 
@@ -22,17 +21,18 @@ export default function ClientsPage() {
     // Data Hooks
     const { 
         clients, search, setSearch, isLoading, isFetching,
-        hasNextPage, isFetchingNextPage, fetchNextPage, total, fetchClients 
+        hasNextPage, isFetchingNextPage, fetchNextPage, total
     } = useClients();
     
-    const state = useClientsPageState();
+    const state = useClientsPageState(clients);
     
     const {
         rides, balance, isLoading: isDetailsLoading,
         hasNextPage: hasNextRidesPage,
         isFetchingNextPage: isFetchingNextRidesPage,
         fetchNextPage: fetchNextRidesPage,
-        refreshDetails, generatePDF, generateExcel
+        refreshDetails, generatePDF, generateExcel,
+        isDetailsPending, isExportingPdf, isExportingExcel
     } = useClientDetailsData(state.selectedClient);
 
     const {
@@ -41,17 +41,18 @@ export default function ClientsPage() {
     } = useClientActions();
 
     const handlePinClient = async (client: Client) => {
-        const success = await togglePin(client.id, !!client.isPinned);
-        if (success) fetchClients();
+        await togglePin(client);
     };
 
     const onConfirmDeleteClient = async () => {
-        if (!state.selectedClient) return;
-        const success = await deleteClient(state.selectedClient.id);
+        if (!state.clientToDelete) return;
+        const deletedClientId = state.clientToDelete.id;
+        const success = await deleteClient(deletedClientId);
         if (success) {
-            state.setSelectedClient(null);
-            fetchClients();
-            state.setIsDeleteConfirmOpen(false);
+            if (state.selectedClient?.id === deletedClientId) {
+                state.closeClientHistory();
+            }
+            state.closeDeleteConfirm();
         }
     };
 
@@ -64,9 +65,15 @@ export default function ClientsPage() {
         }
     };
 
+    const handleClientSuccess = (client: Client) => {
+        if (state.modalClient?.id === client.id) {
+            state.setModalClient(client);
+        }
+    };
+
     const onConfirmDeleteRide = async () => {
         if (!state.rideToDelete) return;
-        const success = await deleteRide(state.rideToDelete.id);
+        const success = await deleteRide(state.rideToDelete);
         if (success) {
             state.setRideToDelete(null);
             refreshDetails();
@@ -74,24 +81,34 @@ export default function ClientsPage() {
     };
 
     return (
-        <div className="space-y-8 pb-20">
-            <ClientHeader onNewClient={state.openNewClientModal} />
+        <>
+            <div
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide"
+                data-scroll-lock-root="true"
+            >
+                <div className="mx-auto flex w-full max-w-[1400px] flex-col pb-6">
+                    <div className="shrink-0 pb-8">
+                        <ClientHeader onNewClient={state.openNewClientModal} />
+                    </div>
 
-            <ClientListSection 
-                clients={clients}
-                isLoading={isLoading}
-                isFetching={isFetching}
-                search={search}
-                onSearchChange={setSearch}
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                onLoadMore={fetchNextPage}
-                total={total}
-                onEdit={state.openEditClientModal}
-                onPin={handlePinClient}
-                onQuickRide={state.openQuickRideModal}
-                onViewHistory={state.openClientHistory}
-            />
+                    <ClientListSection 
+                        clients={clients}
+                        isLoading={isLoading}
+                        isFetching={isFetching}
+                        search={search}
+                        onSearchChange={setSearch}
+                        hasNextPage={hasNextPage}
+                        isFetchingNextPage={isFetchingNextPage}
+                        onLoadMore={fetchNextPage}
+                        total={total}
+                        onEdit={state.openEditClientModal}
+                        onDelete={state.openDeleteClientConfirm}
+                        onPin={handlePinClient}
+                        onQuickRide={state.openQuickRideModal}
+                        onViewHistory={state.openClientHistory}
+                    />
+                </div>
+            </div>
 
             <ClientDetailsDrawer
                 client={state.selectedClient}
@@ -102,14 +119,15 @@ export default function ClientsPage() {
                 isFetchingNextPage={isFetchingNextRidesPage}
                 fetchNextPage={fetchNextRidesPage}
                 isSettling={isSettling}
-                isDeleting={isDeleting}
-                onClose={() => state.setSelectedClient(null)}
+                isExportingPdf={isExportingPdf}
+                isExportingExcel={isExportingExcel}
+                isExportDisabled={isDetailsPending}
+                onClose={state.closeClientHistory}
                 onNewRide={() => state.setIsRideModalOpen(true)}
                 onCloseDebt={() => state.setIsCloseDebtConfirmOpen(true)}
                 onAddPayment={() => state.setIsPaymentModalOpen(true)}
                 onGeneratePDF={generatePDF}
                 onGenerateExcel={generateExcel}
-                onDeleteClient={() => state.setIsDeleteConfirmOpen(true)}
                 onEditRide={state.openEditRideModal}
                 onDeleteRide={state.setRideToDelete}
                 onChangePaymentStatus={paymentStatus.setPaymentStatus}
@@ -118,7 +136,9 @@ export default function ClientsPage() {
 
             <ClientModals 
                 selectedClient={state.selectedClient}
+                modalClient={state.modalClient}
                 clientToEdit={state.clientToEdit}
+                clientToDelete={state.clientToDelete}
                 rideToEdit={state.rideToEdit}
                 rideToDelete={state.rideToDelete}
                 isClientModalOpen={state.isClientModalOpen}
@@ -132,16 +152,16 @@ export default function ClientsPage() {
                 onCloseClientModal={state.closeClientModal}
                 onCloseRideModal={state.closeRideModal}
                 onClosePaymentModal={() => state.setIsPaymentModalOpen(false)}
-                onCloseDeleteConfirm={() => state.setIsDeleteConfirmOpen(false)}
+                onCloseDeleteConfirm={state.closeDeleteConfirm}
                 onCloseCloseDebtConfirm={() => state.setIsCloseDebtConfirmOpen(false)}
                 onCloseDeleteRideConfirm={() => state.setRideToDelete(null)}
                 onConfirmDeleteClient={onConfirmDeleteClient}
                 onConfirmCloseDebt={onConfirmCloseDebt}
                 onConfirmDeleteRide={onConfirmDeleteRide}
-                onSuccessClient={fetchClients}
+                onSuccessClient={handleClientSuccess}
                 onSuccessPayment={refreshDetails}
                 onSuccessRide={refreshDetails}
             />
-        </div>
+        </>
     );
 }

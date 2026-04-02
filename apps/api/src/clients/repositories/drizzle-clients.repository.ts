@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument -- Drizzle is consumed through a dialect-agnostic runtime boundary in this repository. */
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { eq, and, or, like, sql, desc, lt, gt, count } from 'drizzle-orm';
+import { eq, and, or, ilike, sql, desc, lt, gt, count } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
 import { DRIZZLE } from '../../database/database.provider';
@@ -41,13 +41,15 @@ export class DrizzleClientsRepository implements IClientsRepository {
     clients: Client[];
     total: number;
     nextCursor?: string;
-    hasMore: boolean;
+    hasNextPage: boolean;
   }> {
-    const conditions = [eq(this.schema.clients.userId, userId)];
+    const baseConditions = [eq(this.schema.clients.userId, userId)];
 
     if (search) {
-      conditions.push(like(this.schema.clients.name, `%${search}%`));
+      baseConditions.push(ilike(this.schema.clients.name, `%${search}%`));
     }
+
+    const conditions = [...baseConditions];
 
     if (cursor) {
       try {
@@ -104,15 +106,15 @@ export class DrizzleClientsRepository implements IClientsRepository {
     const countQuery = this.db
       .select({ value: count() })
       .from(this.schema.clients)
-      .where(and(...conditions));
+      .where(and(...baseConditions));
 
     const [results, countResult] = await Promise.all([query, countQuery]);
 
-    const hasMore = results.length > limit;
-    const items = hasMore ? results.slice(0, limit) : results;
+    const hasNextPage = results.length > limit;
+    const items = hasNextPage ? results.slice(0, limit) : results;
 
     let nextCursorHash: string | undefined;
-    if (hasMore) {
+    if (hasNextPage) {
       const lastItem = items[items.length - 1];
       const nextCursorData = {
         isPinned: lastItem.isPinned,
@@ -126,9 +128,9 @@ export class DrizzleClientsRepository implements IClientsRepository {
 
     return {
       clients: items,
-      total: countResult[0]?.value || 0,
+      total: Number(countResult[0]?.value || 0),
       nextCursor: nextCursorHash,
-      hasMore,
+      hasNextPage,
     };
   }
 

@@ -38,15 +38,38 @@ export function drawDivider(doc: jsPDF, currentY: number) {
 }
 
 export function drawPixKey(doc: jsPDF, pixKey: string, currentY: number) {
+  return drawInfoBox(doc, `Chave PIX para pagamento: ${pixKey}`, currentY, {
+    fill: [236, 253, 245],
+    stroke: [16, 185, 129],
+    text: [5, 150, 105],
+  });
+}
+
+export function drawInfoBox(
+  doc: jsPDF,
+  message: string,
+  currentY: number,
+  colors: {
+    fill: [number, number, number];
+    stroke: [number, number, number];
+    text: [number, number, number];
+  } = {
+    fill: [248, 250, 252],
+    stroke: [148, 163, 184],
+    text: [71, 85, 105],
+  },
+) {
   const nextY = currentY + 3;
-  doc.setFillColor(236, 253, 245);
-  doc.setDrawColor(16, 185, 129);
-  doc.rect(14, nextY - 5, 182, 10, 'FD');
-  doc.setTextColor(5, 150, 105);
+  const wrappedMessage = doc.splitTextToSize(message, 176);
+  const height = Math.max(10, wrappedMessage.length * 5 + 4);
+  doc.setFillColor(...colors.fill);
+  doc.setDrawColor(...colors.stroke);
+  doc.rect(14, nextY - 5, 182, height, 'FD');
+  doc.setTextColor(...colors.text);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Chave PIX para pagamento: ${pixKey}`, 17, nextY + 2);
+  doc.text(wrappedMessage, 17, nextY + 2);
   doc.setFont('helvetica', 'normal');
-  return nextY + 10;
+  return nextY + height;
 }
 
 export function drawFooter(doc: jsPDF) {

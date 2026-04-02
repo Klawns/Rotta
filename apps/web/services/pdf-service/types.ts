@@ -5,6 +5,10 @@ export interface ExportOptions {
   clients?: string[];
   period: 'today' | 'week' | 'month' | 'year' | 'custom';
   userName: string;
+  dateRange?: {
+    start: string;
+    end: string;
+  };
   pixKey?: string;
 }
 

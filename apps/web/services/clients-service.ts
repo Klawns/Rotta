@@ -12,6 +12,12 @@ interface ClientPayload {
   address?: string | null;
 }
 
+export interface CloseDebtResult {
+  success: boolean;
+  settledRides: number;
+  generatedBalance: number;
+}
+
 function normalizeDate(value: unknown) {
   if (typeof value === 'string') {
     return value;
@@ -69,6 +75,10 @@ export const clientsService = {
     return apiClient.post('/clients', data);
   },
 
+  async getClient(clientId: string, signal?: AbortSignal): Promise<Client> {
+    return apiClient.get(`/clients/${clientId}`, { signal });
+  },
+
   async updateClient(clientId: string, data: ClientPayload): Promise<Client> {
     return apiClient.patch(`/clients/${clientId}`, data);
   },
@@ -116,7 +126,7 @@ export const clientsService = {
     return apiClient.patch(`/clients/${clientId}`, { isPinned: !isPinned });
   },
 
-  async closeDebt(clientId: string): Promise<void> {
+  async closeDebt(clientId: string): Promise<CloseDebtResult> {
     return apiClient.post(`/clients/${clientId}/close-debt`);
   },
 };

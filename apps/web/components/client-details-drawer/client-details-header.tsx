@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { User, X } from 'lucide-react';
-import { type Client } from '@/types/rides';
+import { Star, User, X } from "lucide-react";
+import { type Client } from "@/types/rides";
 
 interface ClientDetailsHeaderProps {
   client: Client;
@@ -13,19 +13,34 @@ export function ClientDetailsHeader({
   onClose,
 }: ClientDetailsHeaderProps) {
   return (
-    <header className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <div className="p-4 bg-icon-info/10 rounded-2xl text-icon-info font-black shadow-inner border border-icon-info/10">
-          <User size={32} />
+    <header className="flex items-start justify-between gap-4">
+      <div className="flex min-w-0 items-start gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-icon-info/10 bg-icon-info/10 text-icon-info shadow-inner">
+          <User size={22} />
         </div>
-        <div>
-          <h2 className="text-3xl font-bold text-text-primary tracking-tight">{client.name}</h2>
-          <p className="text-text-secondary text-sm font-medium">ID: {client.id.split("-")[0]}</p>
+        <div className="min-w-0 space-y-3">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-2xl font-bold tracking-tight text-text-primary lg:text-3xl">
+                {client.name}
+              </h2>
+              {client.isPinned && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-icon-warning/20 bg-icon-warning/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-icon-warning">
+                  <Star size={12} className="fill-current" />
+                  Fixado
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-text-secondary">
+              Resumo financeiro e corridas recentes do cliente.
+            </p>
+          </div>
         </div>
       </div>
       <button
         onClick={onClose}
-        className="p-2 hover:bg-secondary/10 rounded-xl text-text-secondary hover:text-text-primary transition-colors active:scale-95 border border-transparent hover:border-border-subtle"
+        className="rounded-xl border border-transparent p-2 text-text-secondary transition-colors hover:border-border-subtle hover:bg-secondary/10 hover:text-text-primary active:scale-95"
+        aria-label="Fechar detalhes do cliente"
       >
         <X size={24} />
       </button>

@@ -44,7 +44,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
     rides: RideWithClient[];
     total: number;
     nextCursor?: string;
-    hasMore: boolean;
+    hasNextPage: boolean;
   }> {
     return this.rideReadRepository.findAll(userId, limit, cursor, filters);
   }
@@ -140,13 +140,20 @@ export class DrizzleRidesRepository implements IRidesRepository {
     clientId: string,
     limit: number = 20,
     cursor?: string,
+    filters?: Omit<FindAllFilters, 'clientId'>,
   ): Promise<{
     rides: Ride[];
     total: number;
     nextCursor?: string;
-    hasMore: boolean;
+    hasNextPage: boolean;
   }> {
-    return this.rideReadRepository.findByClient(userId, clientId, limit, cursor);
+    return this.rideReadRepository.findByClient(
+      userId,
+      clientId,
+      limit,
+      cursor,
+      filters,
+    );
   }
 
   async getStats(

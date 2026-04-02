@@ -13,6 +13,7 @@ interface ClientListSectionProps {
     onLoadMore: () => void;
     total: number;
     onEdit: (client: Client) => void;
+    onDelete: (client: Client) => void;
     onPin: (client: Client) => void;
     onQuickRide: (client: Client) => void;
     onViewHistory: (client: Client) => void;
@@ -29,27 +30,33 @@ export function ClientListSection({
     onLoadMore,
     total,
     onEdit,
+    onDelete,
     onPin,
     onQuickRide,
-    onViewHistory
+    onViewHistory,
 }: ClientListSectionProps) {
     return (
-        <>
-            <ClientSearch value={search} onChange={onSearchChange} />
+        <section className="flex flex-col overflow-hidden">
+            <div className="shrink-0 pb-6">
+                <ClientSearch value={search} onChange={onSearchChange} />
+            </div>
 
-            <ClientsListContainer 
-                clients={clients}
-                isLoading={isLoading}
-                isFetching={isFetching}
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                onLoadMore={onLoadMore}
-                total={total}
-                onEdit={onEdit}
-                onPin={onPin}
-                onQuickRide={onQuickRide}
-                onViewHistory={onViewHistory}
-            />
-        </>
+            <div className="min-h-0 overflow-hidden">
+                <ClientsListContainer 
+                    clients={clients}
+                    isLoading={isLoading}
+                    isFetching={isFetching}
+                    hasNextPage={hasNextPage}
+                    isFetchingNextPage={isFetchingNextPage}
+                    onLoadMore={onLoadMore}
+                    total={total}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onPin={onPin}
+                    onQuickRide={onQuickRide}
+                    onViewHistory={onViewHistory}
+                />
+            </div>
+        </section>
     );
 }

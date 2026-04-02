@@ -13,6 +13,16 @@ export interface Response<T> {
   meta?: any;
 }
 
+function hasStructuredMetadata(metadata: Record<string, unknown>) {
+  return Object.values(metadata).some(
+    (value) =>
+      !!value &&
+      typeof value === 'object' &&
+      !(value instanceof Date) &&
+      !Array.isArray(value),
+  );
+}
+
 /**
  * Interceptor global de resposta para padronização V2.
  * Garante o formato { data: T, meta: { ... } }.
@@ -50,12 +60,13 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
             !Array.isArray(finalData)
           ) {
             const { clients, rides, items, ...rest } = finalData;
+            const collectionData = clients || rides || items;
+
             if (
-              clients !== undefined ||
-              rides !== undefined ||
-              items !== undefined
+              collectionData !== undefined &&
+              !hasStructuredMetadata(rest as Record<string, unknown>)
             ) {
-              finalData = clients || rides || items;
+              finalData = collectionData;
               finalMeta = { ...finalMeta, ...rest };
             }
           }
