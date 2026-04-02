@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { normalizeDateValue } from '@/lib/date-utils';
 import { formatCurrency } from '@/lib/utils';
+import type { FinancePeriod } from '@/services/finance-service';
 import { type PDFReportRide } from './types';
 
 export function resolveRideDate(ride: PDFReportRide) {
@@ -59,7 +60,7 @@ function formatDateRangeValue(value: string) {
 }
 
 export function getPeriodLabel(
-  period: string,
+  period: FinancePeriod,
   dateRange?: { start: string; end: string },
 ) {
   if (period === 'custom' && dateRange?.start && dateRange?.end) {
@@ -83,7 +84,7 @@ export function getPeriodLabel(
 }
 
 export function getFinancialReportFileName(
-  period: string,
+  period: FinancePeriod,
   dateRange?: { start: string; end: string },
 ) {
   const now = new Date();

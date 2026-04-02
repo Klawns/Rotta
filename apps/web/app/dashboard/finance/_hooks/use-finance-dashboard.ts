@@ -8,6 +8,7 @@ import { financeKeys } from '@/lib/query-keys';
 import {
   financeService,
   type FinanceDashboardParams,
+  type FinanceDashboardQueryKey,
 } from '@/services/finance-service';
 import { getSelectedClientName } from '../_lib/finance-metrics';
 import { PERIODS, type Period, type PeriodId } from '../_types';
@@ -21,7 +22,31 @@ export interface FinanceFiltersState {
 
 function buildDashboardParams(
   filters: FinanceFiltersState,
-): FinanceDashboardParams {
+): FinanceDashboardParams | null {
+  const clientId = filters.clientId !== 'all' ? filters.clientId : undefined;
+
+  if (filters.period === 'custom') {
+    if (!filters.startDate || !filters.endDate) {
+      return null;
+    }
+
+    return {
+      period: 'custom',
+      clientId,
+      start: filters.startDate,
+      end: filters.endDate,
+    };
+  }
+
+  return {
+    period: filters.period,
+    clientId,
+  };
+}
+
+function buildDashboardQueryKey(
+  filters: FinanceFiltersState,
+): FinanceDashboardQueryKey {
   return {
     period: filters.period,
     clientId: filters.clientId !== 'all' ? filters.clientId : undefined,
@@ -46,12 +71,20 @@ export function useFinanceDashboard() {
     () => buildDashboardParams(filters),
     [filters],
   );
-  const isEnabled =
-    !!user &&
-    (filters.period !== 'custom' || (!!filters.startDate && !!filters.endDate));
+  const dashboardQueryKey = useMemo(
+    () => buildDashboardQueryKey(filters),
+    [filters],
+  );
+  const isEnabled = !!user && dashboardParams !== null;
   const query = useQuery({
-    queryKey: financeKeys.dashboard(dashboardParams),
-    queryFn: ({ signal }) => financeService.getDashboard(dashboardParams, signal),
+    queryKey: financeKeys.dashboard(dashboardQueryKey),
+    queryFn: ({ signal }) => {
+      if (!dashboardParams) {
+        throw new Error('Finance dashboard params are incomplete.');
+      }
+
+      return financeService.getDashboard(dashboardParams, signal);
+    },
     enabled: isEnabled,
     staleTime: 0,
     gcTime: 300000,

@@ -1,4 +1,6 @@
-export type PeriodId = 'today' | 'week' | 'month' | 'year' | 'custom';
+import type { FinancePeriod } from '@/services/finance-service';
+
+export type PeriodId = FinancePeriod;
 
 export interface Period {
   id: PeriodId;

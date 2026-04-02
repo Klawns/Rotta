@@ -1,16 +1,33 @@
-import autoTable from 'jspdf-autotable';
+import autoTable, { type CellInput } from 'jspdf-autotable';
 import { type ClientPayment } from '@/types/client-payments';
 import { formatResolvedDateValue } from '@/lib/date-utils';
 import { formatCurrency } from '@/lib/utils';
 import { formatDebtValue, formatRideValue, resolveRideDate } from './formatters';
 import { type AutoTableDoc, type PDFReportRide } from './types';
 
-function buildEmptyRideTableBody() {
+function buildEmptyRideTableBody(): CellInput[][] {
   return [
     [
       {
         content: 'Nenhuma corrida encontrada para este filtro.',
         colSpan: 5,
+        styles: {
+          halign: 'center',
+          fontStyle: 'italic',
+          textColor: [100, 116, 139],
+          fillColor: [248, 250, 252],
+        },
+      },
+    ],
+  ];
+}
+
+function buildEmptyPendingRideTableBody(): CellInput[][] {
+  return [
+    [
+      {
+        content: 'Nenhuma corrida pendente encontrada para este cliente.',
+        colSpan: 3,
         styles: {
           halign: 'center',
           fontStyle: 'italic',
@@ -76,20 +93,7 @@ export function drawPendingRidesTable(
           ride.location || '---',
           formatDebtValue(ride),
         ])
-      : [
-          [
-            {
-              content: 'Nenhuma corrida pendente encontrada para este cliente.',
-              colSpan: 3,
-              styles: {
-                halign: 'center',
-                fontStyle: 'italic',
-                textColor: [100, 116, 139],
-                fillColor: [248, 250, 252],
-              },
-            },
-          ],
-        ],
+      : buildEmptyPendingRideTableBody(),
     theme: 'striped',
     headStyles: { fillColor: [59, 130, 246], textColor: 255 },
     styles: { fontSize: 9 },

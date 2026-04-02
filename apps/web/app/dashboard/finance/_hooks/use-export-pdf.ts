@@ -10,7 +10,7 @@ import {
 import { PDFService } from '@/services/pdf-service';
 
 interface UseExportPdfParams {
-  dashboardParams: FinanceDashboardParams;
+  dashboardParams: FinanceDashboardParams | null;
   expectedRideCount: number;
   isFinanceDataPending: boolean;
   userName: string;
@@ -25,7 +25,7 @@ export function useExportPdf({
   const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const handleExportPDF = async () => {
-    if (isFinanceDataPending || isExportingPdf) {
+    if (isFinanceDataPending || isExportingPdf || !dashboardParams) {
       return;
     }
 

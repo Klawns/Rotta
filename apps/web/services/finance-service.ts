@@ -1,7 +1,25 @@
 import { apiClient } from '@/services/api';
 
-export interface FinanceDashboardParams {
-  period: string;
+export type FinancePeriod = 'today' | 'week' | 'month' | 'year' | 'custom';
+
+interface FinanceDashboardBaseParams {
+  clientId?: string;
+}
+
+export type FinanceDashboardParams =
+  | (FinanceDashboardBaseParams & {
+      period: Exclude<FinancePeriod, 'custom'>;
+      start?: never;
+      end?: never;
+    })
+  | (FinanceDashboardBaseParams & {
+      period: 'custom';
+      start: string;
+      end: string;
+    });
+
+export interface FinanceDashboardQueryKey {
+  period: FinancePeriod;
   start?: string;
   end?: string;
   clientId?: string;
