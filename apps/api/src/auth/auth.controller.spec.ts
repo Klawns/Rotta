@@ -15,6 +15,7 @@ describe('AuthController', () => {
     register: jest.Mock;
     refresh: jest.Mock;
     logout: jest.Mock;
+    getRequiredProfile: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -24,6 +25,7 @@ describe('AuthController', () => {
       register: jest.fn(),
       refresh: jest.fn(),
       logout: jest.fn(),
+      getRequiredProfile: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -135,6 +137,45 @@ describe('AuthController', () => {
         'admin-refresh-token',
       );
       expect(mockRes.clearCookie).toHaveBeenCalledTimes(4);
+    });
+  });
+
+  describe('getProfile', () => {
+    it('should return the authenticated user profile', async () => {
+      authServiceMock.getRequiredProfile.mockResolvedValue({
+        id: 'user-1',
+        email: 'test@test.com',
+        role: 'user',
+        name: 'Test User',
+        hasSeenTutorial: false,
+        subscription: null,
+      });
+
+      const result = await controller.getProfile({
+        user: { id: 'user-1', role: 'user' },
+      } as any);
+
+      expect(authServiceMock.getRequiredProfile).toHaveBeenCalledWith('user-1');
+      expect(result).toEqual({
+        id: 'user-1',
+        email: 'test@test.com',
+        role: 'user',
+        name: 'Test User',
+        hasSeenTutorial: false,
+        subscription: null,
+      });
+    });
+
+    it('should throw UnauthorizedException when the session user does not exist', async () => {
+      authServiceMock.getRequiredProfile.mockRejectedValue(
+        new UnauthorizedException('Usuario nao encontrado.'),
+      );
+
+      await expect(
+        controller.getProfile({
+          user: { id: 'missing-user', role: 'user' },
+        } as any),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 

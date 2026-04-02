@@ -93,6 +93,28 @@ describe('AuthService', () => {
     );
   });
 
+  it('should delegate required profile lookup to AuthProfileService', async () => {
+    const profile = {
+      id: 'user-1',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'user',
+      taxId: null,
+      cellphone: null,
+      hasSeenTutorial: false,
+      subscription: null,
+      createdAt: new Date('2026-03-27T18:00:00.000Z'),
+    };
+    authProfileServiceMock.getRequiredProfile.mockResolvedValue(profile);
+
+    const result = await service.getRequiredProfile('user-1');
+
+    expect(result).toEqual(profile);
+    expect(authProfileServiceMock.getRequiredProfile).toHaveBeenCalledWith(
+      'user-1',
+    );
+  });
+
   it('should use the complete profile in login responses', async () => {
     authProfileServiceMock.getRequiredProfile.mockResolvedValue({
       id: 'user-1',

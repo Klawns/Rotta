@@ -64,7 +64,7 @@ export class AuthController {
     return {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict' as const,
+      sameSite: 'lax' as const,
       domain: this.configService.get('COOKIE_DOMAIN') || undefined,
       path: '/',
     };
@@ -151,7 +151,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getProfile(@Req() req: RequestWithUser) {
-    const profile = await this.authService.getLatestProfile(req.user.id);
+    const profile = await this.authService.getRequiredProfile(req.user.id);
     this.logger.log(`Buscando perfil para user ID: ${req.user.id}.`);
     return userResponseSchema.parse(profile);
   }

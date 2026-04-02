@@ -37,7 +37,10 @@ export default function AreaRestritaPage() {
 
     const loginMutation = useMutation({
         mutationFn: (credentials: LoginCredentials) =>
-            apiClient.post<LoginResponse>("/auth/login", credentials),
+            apiClient.post<LoginResponse>("/auth/login", credentials, {
+                _skipRedirect: true,
+                _skipRefresh: true,
+            }),
         onSuccess: (data) => {
             login(data.user, resolveRestrictedRedirect(data.user.role));
         },

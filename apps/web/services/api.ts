@@ -12,6 +12,7 @@ export type { ApiEnvelope } from './api-envelope';
 declare module 'axios' {
   export interface AxiosRequestConfig {
     _skipRedirect?: boolean;
+    _skipRefresh?: boolean;
     _retry?: boolean;
   }
 }

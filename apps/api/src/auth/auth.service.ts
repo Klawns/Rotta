@@ -205,4 +205,8 @@ export class AuthService {
   async getLatestProfile(userId: string): Promise<UserResponseDto | null> {
     return this.authProfileService.getLatestProfile(userId);
   }
+
+  async getRequiredProfile(userId: string): Promise<UserResponseDto> {
+    return this.authProfileService.getRequiredProfile(userId);
+  }
 }

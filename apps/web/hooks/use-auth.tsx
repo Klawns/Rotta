@@ -55,8 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const isPublicAuthRoute =
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/area-restrita';
   const { data: user = null, isLoading: isUserLoading, refetch } =
-    useCurrentUserQuery();
+    useCurrentUserQuery({ enabled: !isPublicAuthRoute });
 
   const isLoading = isUserLoading;
 
