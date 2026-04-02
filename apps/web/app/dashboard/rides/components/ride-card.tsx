@@ -1,137 +1,194 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Bike, Clock, Calendar, MessageSquare, Trash2, ChevronRight, Settings2, Wallet } from "lucide-react";
+import { Bike, Calendar, Check, ChevronDown, LoaderCircle, MapPin, Pencil, Trash2, Wallet } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { resolveRideDateValue } from "@/lib/date-utils";
-import { RidePaymentAction } from "@/components/ui/ride-payment-action";
 import { Ride } from "@/types/rides";
-import { PaymentComposition } from "@/components/ui/payment-composition";
+import { cn, formatCurrency } from "@/lib/utils";
 
 interface RideCardProps {
     ride: Ride;
-    index: number;
     onEdit: (ride: Ride) => void;
     onDelete: (ride: Ride) => void;
     onChangePaymentStatus: (ride: Ride, status: 'PAID' | 'PENDING') => void | Promise<unknown>;
     isPaymentUpdating: boolean;
 }
 
-export const RideCard = React.memo(({ ride, index, onEdit, onDelete, onChangePaymentStatus, isPaymentUpdating }: RideCardProps) => {
+export const RideCard = React.memo(({ ride, onEdit, onDelete, onChangePaymentStatus, isPaymentUpdating }: RideCardProps) => {
     const rideDate = resolveRideDateValue(ride.rideDate, ride.createdAt);
+    const rideLabel = `Corrida #${ride.id.split("-")[0]}`;
+    const clientName = ride.clientName || "Passageiro";
+    const hasBalanceUsage = Number(ride.paidWithBalance ?? 0) > 0;
+    const location = ride.location?.trim();
+    const isPaid = ride.paymentStatus === "PAID";
+
+    const handleStatusChange = (status: "PAID" | "PENDING") => {
+        if (ride.paymentStatus === status || isPaymentUpdating) {
+            return;
+        }
+
+        void onChangePaymentStatus(ride, status);
+    };
 
     return (
         <motion.div
             animate={{ opacity: 1, x: 0 }}
-            onClick={() => onEdit(ride)}
-            className="p-4 sm:p-5 rounded-[2rem] sm:rounded-[2.5rem] border border-border-subtle bg-card-background hover:bg-hover-accent transition-all group flex flex-col gap-4 sm:gap-6 cursor-pointer active:scale-[0.98] shadow-sm hover:shadow-md"
+            className="group flex h-full flex-col gap-4 rounded-[1.75rem] border border-border-subtle bg-card-background p-4 shadow-sm transition-all hover:bg-hover-accent hover:shadow-md sm:rounded-[2rem] sm:gap-5 sm:p-5"
         >
-            <div className="flex items-start gap-3 sm:gap-4">
-                <div className="p-3 sm:p-4 bg-icon-info/10 border border-icon-info/10 rounded-xl sm:rounded-2xl text-icon-info group-hover:scale-110 transition-transform flex-shrink-0 shadow-sm">
+            <div className="flex items-start gap-3">
+                <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-icon-info/15 bg-icon-info/10 text-icon-info shadow-sm transition-transform group-hover:scale-[1.03]">
                     <Bike size={24} />
                 </div>
 
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between sm:justify-start gap-2 mb-1">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <h4 className="font-display font-extrabold text-text-primary text-base sm:text-lg truncate tracking-tight flex items-center gap-2">
-                                Corrida #{ride.id.split("-")[0]}
-                                {Number(ride.paidWithBalance ?? 0) > 0 && (
-                                    <div className="p-1.5 bg-brand/10 border border-brand/20 rounded-lg text-brand" title="Uso de Saldo">
-                                        <Wallet size={12} strokeWidth={3} />
-                                    </div>
-                                )}
-                            </h4>
-                            <RidePaymentAction
-                                paymentStatus={ride.paymentStatus}
-                                onChangeStatus={(status) => onChangePaymentStatus(ride, status)}
-                                isLoading={isPaymentUpdating}
-                                size="sm"
-                                className="hidden sm:inline-flex flex-shrink-0"
-                            />
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-text-secondary/70">
+                                {rideLabel}
+                            </p>
+                            <div className="mt-1 flex min-w-0 items-center gap-2">
+                                <h4 className="min-w-0 flex-1 truncate font-display text-lg font-extrabold tracking-tight text-text-primary transition-colors group-hover:text-primary sm:text-xl">
+                                    {clientName}
+                                </h4>
+                                {hasBalanceUsage ? (
+                                    <span
+                                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 text-brand"
+                                        title="Uso de saldo"
+                                    >
+                                        <Wallet size={13} strokeWidth={2.4} />
+                                    </span>
+                                ) : null}
+                            </div>
                         </div>
-                        
-                        <div className="sm:hidden flex flex-col items-end shrink-0 pt-0.5">
-                            <PaymentComposition 
-                                size="sm" 
-                                totalValue={ride.value}
-                                paidWithBalance={ride.paidWithBalance}
-                                debtValue={ride.debtValue}
-                                showLabel={false}
-                                compact={true}
-                            />
 
-                            <RidePaymentAction
-                                paymentStatus={ride.paymentStatus}
-                                onChangeStatus={(status) => onChangePaymentStatus(ride, status)}
-                                isLoading={isPaymentUpdating}
-                                size="xs"
-                                className="mt-2"
-                            />
+                        <div className="shrink-0 text-right">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-text-secondary/70">
+                                Valor
+                            </p>
+                            <p className="mt-1 font-display text-xl font-extrabold tracking-tight text-text-primary sm:text-2xl">
+                                {formatCurrency(ride.value)}
+                            </p>
                         </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <span className="text-xs font-bold text-text-secondary block mb-0.5 uppercase tracking-widest opacity-70">Cliente</span>
-                        <span className="text-lg font-display font-extrabold text-text-primary block tracking-tight break-words line-clamp-1 group-hover:text-primary transition-colors pr-2">
-                            {ride.clientName || "Passageiro"}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Desktop Price & Composition */}
-                <div className="hidden sm:flex text-right flex-col items-end shrink-0 outline-none">
-                    <PaymentComposition 
-                        totalValue={ride.value}
-                        paidWithBalance={ride.paidWithBalance}
-                        debtValue={ride.debtValue}
-                        compact={true}
-                    />
                 </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between pt-4 border-t border-border-subtle">
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 text-text-secondary text-[10px] font-bold uppercase tracking-widest">
-                        <Calendar size={14} className="text-icon-info/50" />
-                        {rideDate?.toLocaleDateString("pt-BR") || "Data indisponivel"}
-                    </div>
-                    <div className="flex items-center gap-2 text-text-secondary text-[10px] font-bold uppercase tracking-widest border-l border-border-subtle pl-3 ml-1">
-                        <Clock size={14} className="text-icon-info/50" />
-                        {rideDate?.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' }) || "--:--"}
-                    </div>
-                    {ride.notes && (
-                        <div className="flex items-center gap-2 bg-secondary/10 px-3 py-1.5 rounded-xl border border-border-subtle shadow-inner max-w-[150px] sm:max-w-none">
-                            <MessageSquare size={14} className="text-text-secondary opacity-50 flex-shrink-0" />
-                            <p className="text-[10px] text-text-secondary italic font-medium truncate">
-                                &ldquo;{ride.notes}&rdquo;
-                            </p>
+            <div className="rounded-2xl border border-border-subtle/80 bg-secondary/5 px-3 py-2.5">
+                <div className="min-w-0">
+                    <div className="flex min-w-0 items-center gap-3 text-sm font-semibold text-text-primary">
+                        <div className="flex shrink-0 items-center gap-2">
+                            <Calendar size={15} className="shrink-0 text-icon-info/70" />
+                            <span>
+                                {rideDate?.toLocaleDateString("pt-BR") || "Data indisponivel"}
+                            </span>
                         </div>
-                    )}
-                </div>
 
-                <div className="flex items-center justify-start sm:justify-end gap-2">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(ride);
-                        }}
-                        className="h-10 w-10 bg-icon-destructive/10 hover:bg-icon-destructive text-icon-destructive hover:text-white rounded-xl transition-all active:scale-95 flex items-center justify-center border border-icon-destructive/10 shadow-sm"
-                        title="Excluir"
-                    >
-                        <Trash2 size={18} />
-                    </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(ride);
-                        }}
-                        className="h-10 w-10 flex items-center justify-center bg-secondary/10 hover:bg-secondary/20 border border-border-subtle rounded-xl text-text-secondary hover:text-text-primary transition-all active:scale-95 shadow-sm"
-                        title="Editar"
-                    >
-                        <Settings2 size={18} />
-                    </button>
-                    <div className="h-10 w-10 flex items-center justify-center bg-secondary/10 border border-border-subtle rounded-xl text-text-secondary shadow-inner">
-                        <ChevronRight size={20} />
+                        {location ? (
+                            <div className="flex min-w-0 flex-1 items-center gap-2 border-l border-border-subtle pl-3 text-text-secondary">
+                                <MapPin size={15} className="shrink-0 text-icon-info/60" />
+                                <span className="truncate">{location}</span>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
+            </div>
+
+            <div className="grid grid-cols-[auto_1fr_1fr] gap-2 border-t border-border-subtle pt-3">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            type="button"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                            }}
+                            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border-subtle bg-secondary/10 text-text-secondary transition-all hover:bg-secondary/20 hover:text-text-primary active:scale-95"
+                            title="Abrir acoes da corrida"
+                            aria-label="Abrir menu de acoes da corrida"
+                        >
+                            <ChevronDown size={16} />
+                        </button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent
+                        align="start"
+                        className="min-w-36 rounded-2xl border-border-subtle bg-card-background p-1.5"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                        }}
+                    >
+                        <DropdownMenuItem
+                            onSelect={(event) => {
+                                event.preventDefault();
+                                onEdit(ride);
+                            }}
+                            className="rounded-xl font-medium text-text-primary"
+                        >
+                            <Pencil className="text-icon-info" size={14} />
+                            Editar
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={(event) => {
+                                event.preventDefault();
+                                onDelete(ride);
+                            }}
+                            className="rounded-xl font-medium"
+                        >
+                            <Trash2 size={14} />
+                            Excluir
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
+                <button
+                    type="button"
+                    onClick={() => {
+                        handleStatusChange("PAID");
+                    }}
+                    disabled={isPaymentUpdating}
+                    className={cn(
+                        "flex min-h-10 w-full items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-[8px] font-black uppercase tracking-[0.12em] transition-all disabled:cursor-not-allowed disabled:opacity-70",
+                        isPaid
+                            ? "border-icon-success bg-icon-success text-white shadow-lg shadow-icon-success/20"
+                            : "border-icon-success/20 bg-icon-success/10 text-icon-success hover:bg-icon-success/20",
+                    )}
+                    title="Marcar corrida como paga"
+                >
+                    {isPaymentUpdating && isPaid ? (
+                        <LoaderCircle className="size-3 animate-spin" />
+                    ) : (
+                        <Check className="size-3" />
+                    )}
+                    Pago
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => {
+                        handleStatusChange("PENDING");
+                    }}
+                    disabled={isPaymentUpdating}
+                    className={cn(
+                        "flex min-h-10 w-full items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-[8px] font-black uppercase tracking-[0.12em] transition-all disabled:cursor-not-allowed disabled:opacity-70",
+                        !isPaid
+                            ? "border-icon-warning bg-icon-warning text-white shadow-lg shadow-icon-warning/20"
+                            : "border-icon-warning/25 bg-icon-warning/10 text-icon-warning hover:bg-icon-warning/20",
+                    )}
+                    title="Marcar corrida como pendente"
+                >
+                    {isPaymentUpdating && !isPaid ? (
+                        <LoaderCircle className="size-3 animate-spin" />
+                    ) : (
+                        <span className="size-2 rounded-full bg-current" />
+                    )}
+                    Pendente
+                </button>
             </div>
         </motion.div>
     );

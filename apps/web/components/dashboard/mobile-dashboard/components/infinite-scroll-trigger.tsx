@@ -9,6 +9,7 @@ interface InfiniteScrollTriggerProps {
     isLoading: boolean;
     error?: unknown;
     retry?: () => void;
+    rootRef?: React.RefObject<HTMLElement | null>;
 }
 
 export function InfiniteScrollTrigger({
@@ -17,11 +18,12 @@ export function InfiniteScrollTrigger({
     isLoading,
     error,
     retry,
-    rootRef
-}: InfiniteScrollTriggerProps & { rootRef?: React.RefObject<HTMLDivElement | null> }) {
+    rootRef,
+}: InfiniteScrollTriggerProps) {
     const observerTarget = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        const root = rootRef?.current || null;
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting && hasMore && !isLoading && !error) {
@@ -30,7 +32,7 @@ export function InfiniteScrollTrigger({
             },
             { 
                 threshold: 0.1,
-                root: rootRef?.current || null,
+                root,
                 rootMargin: '100px' // Margem para carregar um pouco antes de chegar ao fim
             }
         );
@@ -64,7 +66,13 @@ export function InfiniteScrollTrigger({
     if (!hasMore && !isLoading) return null;
 
     return (
-        <div ref={observerTarget} className="flex justify-center p-6 h-20">
+        <div
+            ref={observerTarget}
+            className="flex h-20 justify-center p-6"
+            data-infinite-scroll-trigger="true"
+            data-has-more={hasMore ? "true" : "false"}
+            data-loading={isLoading ? "true" : "false"}
+        >
             {isLoading && <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />}
         </div>
     );

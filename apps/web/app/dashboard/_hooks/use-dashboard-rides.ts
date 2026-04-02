@@ -22,7 +22,7 @@ export function useDashboardRides({ onRideDeleted }: UseDashboardRidesProps = {}
             return;
         }
 
-        deleteRide(dialogs.rideToDelete.id);
+        deleteRide(dialogs.rideToDelete);
     }, [deleteRide, dialogs.rideToDelete]);
 
     return {

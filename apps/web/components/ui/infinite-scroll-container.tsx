@@ -9,6 +9,7 @@ interface InfiniteScrollContainerProps {
     maxHeight?: string;
     hideScrollbar?: boolean;
     style?: React.CSSProperties;
+    qaId?: string;
 }
 
 /**
@@ -18,18 +19,20 @@ interface InfiniteScrollContainerProps {
  * fixa/máxima e permitindo scroll interno.
  */
 export const InfiniteScrollContainer = forwardRef<HTMLDivElement, InfiniteScrollContainerProps>(
-    ({ children, className, maxHeight = "60vh", hideScrollbar = false, style }, ref) => {
+    ({ children, className, maxHeight, hideScrollbar = false, style, qaId }, ref) => {
         return (
             <div
                 ref={ref}
                 className={cn(
-                    "overflow-y-auto px-1 -mx-1 scroll-smooth",
+                    "min-h-0 overflow-y-auto overscroll-contain px-1 -mx-1 scroll-smooth",
                     !hideScrollbar && "custom-scrollbar",
                     hideScrollbar && "scrollbar-hide",
                     className
                 )}
+                data-scroll-container="true"
+                data-qa={qaId}
                 style={{ 
-                    maxHeight,
+                    ...(maxHeight ? { maxHeight } : null),
                     WebkitOverflowScrolling: 'touch', // Suave no iOS
                     ...style
                 }}

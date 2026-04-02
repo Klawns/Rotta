@@ -16,84 +16,86 @@ export default function MobileDashboard(props: MobileDashboardProps) {
     const { trial } = props;
 
     return (
-        <div className="mx-auto flex max-w-md flex-col gap-6 pb-24">
-            <FeatureLockShell
-                isLocked={trial.shouldLockFeatures}
-                title="Financeiro bloqueado"
-                description="Acompanhe seus resultados novamente assim que ativar um plano pago."
-                ctaHref={trial.ctaHref}
-                ctaLabel={trial.ctaLabel}
-            >
-                <FinanceSummary
-                    today={dashboard.stats.today}
-                    week={dashboard.stats.week}
-                    month={dashboard.stats.month}
-                    isLoading={dashboard.stats.isLoading}
-                />
-            </FeatureLockShell>
-
-            <FeatureLockShell
-                isLocked={trial.shouldLockFeatures}
-                title="Clientes bloqueados"
-                description="Sua base continua visivel, mas o gerenciamento fica disponivel somente no plano pago."
-                ctaHref={trial.ctaHref}
-                ctaLabel={trial.ctaLabel}
-            >
-                <ClientGrid
-                    directory={dashboard.clients.directory}
-                    selectedClient={dashboard.clients.selectedClient}
-                    onSelect={dashboard.clients.selectClient}
-                    creationDialog={dashboard.clients.creationDialog}
-                />
-            </FeatureLockShell>
-
-            {dashboard.clients.selectedClient ? (
+        <>
+            <div className="flex flex-col gap-6 pb-24">
                 <FeatureLockShell
                     isLocked={trial.shouldLockFeatures}
-                    title="Registro bloqueado"
-                    description="O formulario continua aparente para reforcar o fluxo, mas o envio depende da assinatura."
+                    title="Financeiro bloqueado"
+                    description="Acompanhe seus resultados novamente assim que ativar um plano pago."
                     ctaHref={trial.ctaHref}
                     ctaLabel={trial.ctaLabel}
                 >
-                    <RideForm
-                        presets={dashboard.rideForm.presets}
-                        form={dashboard.rideForm.form}
-                        actions={dashboard.rideForm.actions}
-                        onDeletePreset={dashboard.rideForm.deletePreset}
+                    <FinanceSummary
+                        today={dashboard.stats.today}
+                        week={dashboard.stats.week}
+                        month={dashboard.stats.month}
+                        isLoading={dashboard.stats.isLoading}
                     />
                 </FeatureLockShell>
-            ) : null}
 
-            <FeatureLockShell
-                isLocked={trial.shouldLockFeatures}
-                title="Historico bloqueado"
-                description="As corridas recentes permanecem visiveis no mobile, mas as interacoes ficam desabilitadas."
-                ctaHref={trial.ctaHref}
-                ctaLabel={trial.ctaLabel}
-            >
-                <RecentRidesList
-                    rides={dashboard.recentRides.rides}
-                    onEdit={dashboard.recentRides.editRide}
-                    onDelete={dashboard.recentRides.deleteRide}
-                    onChangePaymentStatus={dashboard.recentRides.setPaymentStatus}
-                    isPaymentUpdating={dashboard.recentRides.isUpdatingRide}
-                    isLoading={dashboard.recentRides.isLoading}
-                    hasMore={dashboard.recentRides.hasMore}
-                    onLoadMore={dashboard.recentRides.loadMore}
-                    error={dashboard.recentRides.error}
-                    retry={dashboard.recentRides.retry}
-                />
-            </FeatureLockShell>
+                <FeatureLockShell
+                    isLocked={trial.shouldLockFeatures}
+                    title="Clientes bloqueados"
+                    description="Sua base continua visivel, mas o gerenciamento fica disponivel somente no plano pago."
+                    ctaHref={trial.ctaHref}
+                    ctaLabel={trial.ctaLabel}
+                >
+                    <ClientGrid
+                        directory={dashboard.clients.directory}
+                        selectedClient={dashboard.clients.selectedClient}
+                        onSelect={dashboard.clients.selectClient}
+                        creationDialog={dashboard.clients.creationDialog}
+                    />
+                </FeatureLockShell>
 
-            <FeatureLockShell
-                isLocked={trial.shouldLockFeatures}
-                title="Exportacao bloqueada"
-                description="Os atalhos de exportacao continuam aparentes, mas exigem assinatura para uso."
-                ctaHref={trial.ctaHref}
-                ctaLabel={trial.ctaLabel}
-            >
-                <PDFExport userName={dashboard.user?.name || "Motorista"} />
-            </FeatureLockShell>
+                {dashboard.clients.selectedClient ? (
+                    <FeatureLockShell
+                        isLocked={trial.shouldLockFeatures}
+                        title="Registro bloqueado"
+                        description="O formulario continua aparente para reforcar o fluxo, mas o envio depende da assinatura."
+                        ctaHref={trial.ctaHref}
+                        ctaLabel={trial.ctaLabel}
+                    >
+                        <RideForm
+                            presets={dashboard.rideForm.presets}
+                            form={dashboard.rideForm.form}
+                            actions={dashboard.rideForm.actions}
+                            onDeletePreset={dashboard.rideForm.deletePreset}
+                        />
+                    </FeatureLockShell>
+                ) : null}
+
+                <FeatureLockShell
+                    isLocked={trial.shouldLockFeatures}
+                    title="Historico bloqueado"
+                    description="As corridas recentes permanecem visiveis no mobile, mas as interacoes ficam desabilitadas."
+                    ctaHref={trial.ctaHref}
+                    ctaLabel={trial.ctaLabel}
+                >
+                    <RecentRidesList
+                        rides={dashboard.recentRides.rides}
+                        onEdit={dashboard.recentRides.editRide}
+                        onDelete={dashboard.recentRides.deleteRide}
+                        onChangePaymentStatus={dashboard.recentRides.setPaymentStatus}
+                        isPaymentUpdating={dashboard.recentRides.isUpdatingRide}
+                        isLoading={dashboard.recentRides.isLoading}
+                        hasMore={dashboard.recentRides.hasMore}
+                        onLoadMore={dashboard.recentRides.loadMore}
+                        error={dashboard.recentRides.error}
+                        retry={dashboard.recentRides.retry}
+                    />
+                </FeatureLockShell>
+
+                <FeatureLockShell
+                    isLocked={trial.shouldLockFeatures}
+                    title="Exportacao bloqueada"
+                    description="Os atalhos de exportacao continuam aparentes, mas exigem assinatura para uso."
+                    ctaHref={trial.ctaHref}
+                    ctaLabel={trial.ctaLabel}
+                >
+                    <PDFExport userName={dashboard.user?.name || "Motorista"} />
+                </FeatureLockShell>
+            </div>
 
             <RideModal
                 isOpen={!!dashboard.dialogs.rideToEdit}
@@ -110,6 +112,6 @@ export default function MobileDashboard(props: MobileDashboardProps) {
                 description="Tem certeza que deseja excluir esta corrida? Esta acao nao pode ser desfeita."
                 isLoading={dashboard.dialogs.isDeletingRide}
             />
-        </div>
+        </>
     );
 }

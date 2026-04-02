@@ -1,6 +1,4 @@
-import { useRef } from "react";
 import { Bike, SearchX } from "lucide-react";
-import { InfiniteScrollContainer } from "@/components/ui/infinite-scroll-container";
 import { HybridInfiniteList } from "@/components/ui/hybrid-infinite-list";
 import { parseApiError } from "@/lib/api-error";
 import { PaymentStatus, Ride } from "@/types/rides";
@@ -40,117 +38,117 @@ export function RidesListContainer({
     hasActiveFilters,
     onClearFilters,
 }: RidesListContainerProps) {
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
-
     const showSkeletons =
         (isLoading || (isFetching && rides.length === 0)) && !isFetchingNextPage;
 
-    if (showSkeletons) {
-        return (
-            <div className="space-y-6">
-                {[...Array(5)].map((_, index) => (
-                    <RideSkeleton key={index} />
-                ))}
-            </div>
-        );
-    }
-
-    if (error && rides.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center py-24 gap-6 bg-secondary/5 rounded-[3.5rem] border border-border-subtle shadow-inner">
-                <div className="text-center space-y-2 max-w-md px-6">
-                    <h3 className="text-2xl font-display font-extrabold text-text-primary tracking-tight">
-                        Erro ao carregar corridas
-                    </h3>
-                    <p className="text-text-secondary text-sm font-medium opacity-70">
-                        {parseApiError(
-                            error,
-                            "Nao foi possivel carregar o historico agora.",
-                        )}
-                    </p>
+    const renderContent = () => {
+        if (showSkeletons) {
+            return (
+                <div className="flex flex-col gap-4 px-1 sm:gap-6 sm:px-2">
+                    {[...Array(5)].map((_, index) => (
+                        <RideSkeleton key={index} />
+                    ))}
                 </div>
-                {retry ? (
-                    <button
-                        onClick={() => void retry()}
-                        className="bg-button-primary hover:bg-button-primary-hover text-button-primary-foreground px-10 py-4 rounded-2xl font-bold transition-all shadow-xl shadow-button-shadow active:scale-95 mt-2 uppercase tracking-widest text-xs"
-                    >
-                        Tentar novamente
-                    </button>
-                ) : null}
-            </div>
-        );
-    }
+            );
+        }
 
-    if (rides.length === 0 && !isFetching) {
-        return (
-            <div className="flex flex-col items-center justify-center py-24 gap-6 bg-secondary/5 rounded-[3.5rem] border border-border-subtle shadow-inner">
-                <div className="p-8 bg-secondary/10 rounded-full text-text-secondary/20 shadow-sm border border-border-subtle/50">
-                    {hasActiveFilters ? (
-                        <SearchX size={56} opacity={0.3} />
-                    ) : (
-                        <Bike size={56} opacity={0.3} />
+        if (error && rides.length === 0) {
+            return (
+                <div className="flex flex-col items-center justify-center gap-6 rounded-[3.5rem] border border-border-subtle bg-secondary/5 py-24 shadow-inner">
+                    <div className="max-w-md space-y-2 px-6 text-center">
+                        <h3 className="text-2xl font-display font-extrabold tracking-tight text-text-primary">
+                            Erro ao carregar corridas
+                        </h3>
+                        <p className="text-sm font-medium text-text-secondary opacity-70">
+                            {parseApiError(
+                                error,
+                                "Nao foi possivel carregar o historico agora.",
+                            )}
+                        </p>
+                    </div>
+                    {retry ? (
+                        <button
+                            onClick={() => void retry()}
+                            className="mt-2 rounded-2xl bg-button-primary px-10 py-4 text-xs font-bold uppercase tracking-widest text-button-primary-foreground shadow-xl shadow-button-shadow transition-all active:scale-95 hover:bg-button-primary-hover"
+                        >
+                            Tentar novamente
+                        </button>
+                    ) : null}
+                </div>
+            );
+        }
+
+        if (rides.length === 0 && !isFetching) {
+            return (
+                <div className="flex flex-col items-center justify-center gap-6 rounded-[3.5rem] border border-border-subtle bg-secondary/5 py-24 shadow-inner">
+                    <div className="rounded-full border border-border-subtle/50 bg-secondary/10 p-8 text-text-secondary/20 shadow-sm">
+                        {hasActiveFilters ? (
+                            <SearchX size={56} opacity={0.3} />
+                        ) : (
+                            <Bike size={56} opacity={0.3} />
+                        )}
+                    </div>
+                    <div className="space-y-2 text-center">
+                        <h3 className="text-2xl font-display font-extrabold tracking-tight text-text-primary">
+                            {hasActiveFilters ? "Nada encontrado" : "Tudo limpo por aqui"}
+                        </h3>
+                        <p className="mx-auto max-w-xs text-sm font-medium text-text-secondary opacity-70">
+                            {hasActiveFilters
+                                ? "Nao encontramos resultados para seus filtros atuais."
+                                : "Voce ainda nao tem corridas registradas no periodo selecionado."}
+                        </p>
+                    </div>
+                    {hasActiveFilters && (
+                        <button
+                            onClick={onClearFilters}
+                            className="mt-4 rounded-2xl bg-button-primary px-10 py-4 text-xs font-bold uppercase tracking-widest text-button-primary-foreground shadow-xl shadow-button-shadow transition-all active:scale-95 hover:bg-button-primary-hover"
+                        >
+                            Limpar filtros e ver todos
+                        </button>
                     )}
                 </div>
-                <div className="text-center space-y-2">
-                    <h3 className="text-2xl font-display font-extrabold text-text-primary tracking-tight">
-                        {hasActiveFilters ? "Nada encontrado" : "Tudo limpo por aqui"}
-                    </h3>
-                    <p className="text-text-secondary text-sm font-medium opacity-70 max-w-xs mx-auto">
-                        {hasActiveFilters
-                            ? "Nao encontramos resultados para seus filtros atuais."
-                            : "Voce ainda nao tem corridas registradas no periodo selecionado."}
-                    </p>
-                </div>
-                {hasActiveFilters && (
-                    <button
-                        onClick={onClearFilters}
-                        className="bg-button-primary hover:bg-button-primary-hover text-button-primary-foreground px-10 py-4 rounded-2xl font-bold transition-all shadow-xl shadow-button-shadow active:scale-95 mt-4 uppercase tracking-widest text-xs"
-                    >
-                        Limpar filtros e ver todos
-                    </button>
+            );
+        }
+
+        return (
+            <HybridInfiniteList
+                items={rides.filter(Boolean)}
+                renderItem={(ride) => (
+                    <RideCard
+                        key={ride.id}
+                        ride={ride}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        onChangePaymentStatus={onChangePaymentStatus}
+                        isPaymentUpdating={isPaymentUpdating(ride.id)}
+                    />
                 )}
-            </div>
+                estimateSize={140}
+                hasMore={!!hasNextPage}
+                onLoadMore={onLoadMore || (() => {})}
+                isFetchingNextPage={isFetchingNextPage}
+                className="w-full scrollbar-hide"
+                gap={16}
+                listClassName="flex flex-col gap-4 px-1 pb-20 sm:gap-6 sm:px-2"
+                maxHeight="min(68dvh, 56rem)"
+                hideScrollbar={true}
+            />
         );
-    }
+    };
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between px-2 mb-2">
+        <section className="flex flex-col overflow-hidden rounded-[2rem] border border-border-subtle bg-card-background/20 p-1.5 shadow-inner sm:p-2">
+            <div className="flex shrink-0 items-center justify-between px-3 py-2">
                 <div className="flex items-center gap-2">
-                    <h2 className="text-[10px] font-display font-bold text-text-muted uppercase tracking-[0.25em] opacity-80">
+                    <h2 className="text-[10px] font-display font-bold uppercase tracking-[0.25em] text-text-muted opacity-80">
                         Atividades recentes
                     </h2>
                 </div>
             </div>
 
-            <InfiniteScrollContainer
-                ref={scrollContainerRef}
-                maxHeight="calc(100vh - 220px)"
-                hideScrollbar={true}
-                className="w-full"
-            >
-                <HybridInfiniteList
-                    items={rides.filter(Boolean)}
-                    renderItem={(ride, index) => (
-                        <RideCard
-                            key={ride.id}
-                            ride={ride}
-                            index={index}
-                            onEdit={onEdit}
-                            onDelete={onDelete}
-                            onChangePaymentStatus={onChangePaymentStatus}
-                            isPaymentUpdating={isPaymentUpdating(ride.id)}
-                        />
-                    )}
-                    estimateSize={140}
-                    containerRef={scrollContainerRef}
-                    hasMore={!!hasNextPage}
-                    onLoadMore={onLoadMore || (() => {})}
-                    isFetchingNextPage={isFetchingNextPage}
-                    className="flex flex-col gap-6 px-2 pb-20"
-                    gap={24}
-                />
-            </InfiniteScrollContainer>
-        </div>
+            <div className="min-h-0">
+                {renderContent()}
+            </div>
+        </section>
     );
 }

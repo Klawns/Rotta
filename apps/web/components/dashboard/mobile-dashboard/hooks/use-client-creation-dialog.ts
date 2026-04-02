@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { parseApiError } from "@/lib/api-error";
-import { clientKeys } from "@/lib/query-keys";
+import { upsertClientCaches } from "@/lib/client-cache";
 import { clientsService } from "@/services/clients-service";
 import type { Client } from "@/types/rides";
 import type { ClientCreationDialogState } from "./use-client-selection";
@@ -36,7 +36,7 @@ export function useClientCreationDialog({ onCreated }: UseClientCreationDialogPr
         setIsCreating(true);
         try {
             const client = await clientsService.createClient({ name: trimmedName });
-            await queryClient.invalidateQueries({ queryKey: clientKeys.all });
+            upsertClientCaches(queryClient, client);
             close();
             toast({ title: "Cliente cadastrado!" });
             onCreated?.(client);

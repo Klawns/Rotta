@@ -31,14 +31,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Renderização de Loading Inicial
     if (isLoading || !isAuthenticated) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
+            <div className="min-h-dvh bg-background flex items-center justify-center">
                 <div className="h-10 w-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-background text-foreground flex overflow-hidden">
+        <div className="flex h-dvh min-h-dvh overflow-hidden overflow-x-clip bg-background text-foreground">
                 {/* 2. Gerenciador de Modais e Popups */}
                 <PopupsManager 
                     user={user}
@@ -57,8 +57,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 />
 
                 <main
+                    data-dashboard-scroll-root="true"
                     className={cn(
-                        "flex-1 relative overflow-y-auto flex flex-col min-w-0 scrollbar-hide",
+                        "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden scrollbar-hide",
                         sidebar.isSidebarOpen ? "lg:ml-72" : "lg:ml-24"
                     )}
                 >
@@ -74,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <MobileHeader onOpenSidebar={sidebar.toggleSidebar} />
 
                     {/* 6. Conteúdo da Página */}
-                    <div className="p-6 lg:p-10 max-w-7xl w-full mx-auto flex-1">
+                    <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col overflow-hidden p-6 lg:p-10">
                         {children}
                     </div>
                 </main>

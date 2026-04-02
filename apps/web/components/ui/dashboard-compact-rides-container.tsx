@@ -1,11 +1,12 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, RefObject } from "react";
 import { HybridInfiniteList } from "./hybrid-infinite-list";
 
 interface DashboardCompactRidesContainerProps<T extends { id: string | number }> {
     items: T[];
     renderItem: (item: T, index: number) => ReactNode;
+    containerRef?: RefObject<HTMLElement | null>;
     maxHeight?: string;
     gap?: number;
     isLoading?: boolean;
@@ -19,6 +20,7 @@ interface DashboardCompactRidesContainerProps<T extends { id: string | number }>
 export function DashboardCompactRidesContainer<T extends { id: string | number }>({
     items,
     renderItem,
+    containerRef,
     maxHeight = "50vh",
     gap = 12,
     isLoading,
@@ -33,13 +35,14 @@ export function DashboardCompactRidesContainer<T extends { id: string | number }
             items={items}
             renderItem={renderItem}
             estimateSize={90}
+            containerRef={containerRef}
             hasMore={!!hasMore}
             onLoadMore={onLoadMore || (() => {})}
             isLoading={isLoading}
             isFetchingNextPage={isFetchingNextPage}
             error={error}
             retry={retry}
-            maxHeight={maxHeight}
+            maxHeight={containerRef ? undefined : maxHeight}
             gap={gap}
             hideScrollbar={true}
             className="w-full h-full pr-0.5"

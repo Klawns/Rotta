@@ -8,7 +8,7 @@ interface HybridInfiniteListProps<T> {
   items: T[];
   renderItem: (item: T, index: number) => React.ReactNode;
   estimateSize: number;
-  containerRef?: React.RefObject<HTMLDivElement | null>;
+  containerRef?: React.RefObject<HTMLElement | null>;
   hasMore: boolean;
   onLoadMore: () => void;
   isLoading?: boolean;
@@ -51,7 +51,7 @@ export function HybridInfiniteList<T extends { id: string | number }>({
 }: HybridInfiniteListProps<T>) {
   const localRef = useRef<HTMLDivElement>(null);
   const containerRef = (externalRef || localRef) as React.RefObject<
-    HTMLDivElement | null
+    HTMLElement | null
   >;
   const { isVirtualizing } = useHybridList(items, { threshold, enabled });
   const shouldUseVirtualization = isVirtualizing && !listClassName;
@@ -107,9 +107,9 @@ export function HybridInfiniteList<T extends { id: string | number }>({
   if (maxHeight || !externalRef) {
     return (
       <div
-        ref={containerRef}
+        ref={containerRef as React.RefObject<HTMLDivElement | null>}
         className={cn(
-          'overflow-y-auto scroll-smooth w-full',
+          'min-h-0 w-full overflow-y-auto overscroll-contain scroll-smooth',
           hideScrollbar && 'scrollbar-hide',
           !hideScrollbar && 'custom-scrollbar',
           className,

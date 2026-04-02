@@ -11,22 +11,31 @@ export default function DashboardPage() {
 
     return (
         <QueryErrorBoundary message="Nao foi possivel carregar seu dashboard. Por favor, tente novamente.">
-            {dashboard.isMobile ? (
-                <DashboardMobileView
-                    user={dashboard.user}
-                    stats={dashboard.mobileStats}
-                    onRideCreated={dashboard.refreshDashboard}
-                    trial={dashboard.trial}
-                />
-            ) : (
-                <div className="relative">
-                    <DashboardDesktopView
-                        user={dashboard.user}
-                        stats={dashboard.desktopStats}
-                        rides={dashboard.rideActions}
-                        trial={dashboard.trial}
-                    />
+            <div className="relative flex min-h-0 flex-1 flex-col">
+                <div
+                    className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide"
+                    data-scroll-lock-root="true"
+                >
+                    <div className="pb-8">
+                        {dashboard.isMobile ? (
+                            <DashboardMobileView
+                                user={dashboard.user}
+                                stats={dashboard.mobileStats}
+                                onRideCreated={dashboard.refreshDashboard}
+                                trial={dashboard.trial}
+                            />
+                        ) : (
+                            <DashboardDesktopView
+                                user={dashboard.user}
+                                stats={dashboard.desktopStats}
+                                rides={dashboard.rideActions}
+                                trial={dashboard.trial}
+                            />
+                        )}
+                    </div>
+                </div>
 
+                {dashboard.isMobile ? null : (
                     <DashboardModals
                         isRideModalOpen={dashboard.modals.isRideModalOpen}
                         setIsRideModalOpen={dashboard.modals.setIsRideModalOpen}
@@ -38,8 +47,8 @@ export default function DashboardPage() {
                         onDeleteConfirm={dashboard.modals.confirmRideDelete}
                         onSuccess={dashboard.refreshDashboard}
                     />
-                </div>
-            )}
+                )}
+            </div>
         </QueryErrorBoundary>
     );
 }

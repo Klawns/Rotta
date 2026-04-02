@@ -47,13 +47,15 @@ export function useMobileDashboardData(user: User | null) {
 
     const refreshData = useCallback(async () => {
         await Promise.all([
-            queryClient.invalidateQueries({ queryKey: rideKeys.all }),
-            queryClient.invalidateQueries({ queryKey: settingsKeys.all }),
+            queryClient.refetchQueries({
+                queryKey: rideKeys.all,
+                type: "active",
+            }),
+            queryClient.refetchQueries({
+                queryKey: settingsKeys.all,
+                type: "active",
+            }),
         ]);
-        await queryClient.refetchQueries({
-            queryKey: rideKeys.all,
-            type: "active",
-        });
     }, [queryClient]);
 
     return {

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Plus, Star, Users } from "lucide-react";
-import { useMemo } from "react";
+import { RefObject, useMemo } from "react";
 import { DashboardClientGridContainer } from "@/components/ui/dashboard-client-grid-container";
 import { cn } from "@/lib/utils";
 import { Client } from "@/types/rides";
@@ -20,6 +20,7 @@ interface ClientGridProps {
     selectedClient: Client | null;
     onSelect: (client: Client | null) => void;
     creationDialog: ClientCreationDialogState;
+    scrollRootRef?: RefObject<HTMLElement | null>;
 }
 
 function isCreateButton(item: ClientGridItem): item is { kind: "create" } {
@@ -31,6 +32,7 @@ export function ClientGrid({
     selectedClient,
     onSelect,
     creationDialog,
+    scrollRootRef,
 }: ClientGridProps) {
     const gridItems = useMemo<ClientGridItem[]>(
         () => [...directory.clients.filter(Boolean), { kind: "create" }],
@@ -66,7 +68,8 @@ export function ClientGrid({
                     ) : (
                         <DashboardClientGridContainer
                             items={gridItems}
-                            maxHeight="40vh"
+                            containerRef={scrollRootRef}
+                            maxHeight="15.75rem"
                             gap={12}
                             hasMore={directory.hasMore}
                             isLoading={directory.isLoading || directory.isFetchingNextPage}

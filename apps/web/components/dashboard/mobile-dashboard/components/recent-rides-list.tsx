@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock } from "lucide-react";
+import { RefObject } from "react";
 import { DashboardCompactRidesContainer } from "@/components/ui/dashboard-compact-rides-container";
 import { Ride } from "../types";
 import { RideListSkeleton } from "./ride-list-skeleton";
@@ -17,6 +18,7 @@ interface RecentRidesListProps {
     onLoadMore: () => void;
     error: unknown;
     retry: () => void;
+    scrollRootRef?: RefObject<HTMLElement | null>;
 }
 
 export function RecentRidesList({
@@ -30,6 +32,7 @@ export function RecentRidesList({
     onLoadMore,
     error,
     retry,
+    scrollRootRef,
 }: RecentRidesListProps) {
     return (
         <section className="flex min-h-[300px] flex-col overflow-hidden rounded-3xl border border-border-subtle bg-card-background p-4 shadow-sm">
@@ -50,7 +53,7 @@ export function RecentRidesList({
             ) : (
                 <DashboardCompactRidesContainer
                     items={rides}
-                    maxHeight="35vh"
+                    containerRef={scrollRootRef}
                     hasMore={hasMore}
                     isLoading={isLoading}
                     onLoadMore={onLoadMore}

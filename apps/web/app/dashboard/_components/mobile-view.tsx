@@ -23,7 +23,7 @@ export function DashboardMobileView({
     trial,
 }: DashboardMobileViewProps) {
     return (
-        <div className="space-y-6">
+        <div className="mx-auto flex w-full max-w-md flex-col gap-6">
             <header className="flex items-start justify-between">
                 <div>
                     <h1 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Controle de Corrida</h1>

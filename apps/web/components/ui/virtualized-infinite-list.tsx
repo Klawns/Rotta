@@ -12,7 +12,7 @@ interface VirtualizedInfiniteListProps<T> {
     onLoadMore: () => void;
     error?: unknown;
     retry?: () => void;
-    containerRef: React.RefObject<HTMLDivElement | null>;
+    containerRef: React.RefObject<HTMLElement | null>;
     className?: string;
     gap?: number;
     overscan?: number;

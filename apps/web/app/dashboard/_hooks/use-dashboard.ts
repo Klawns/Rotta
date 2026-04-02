@@ -43,7 +43,6 @@ export function useDashboard() {
     const { period, setPeriod, stats, monthRides, isLoading } =
         useDashboardStats(user);
     const refreshDashboard = useCallback(async () => {
-        await queryClient.invalidateQueries({ queryKey: rideKeys.all });
         await queryClient.refetchQueries({
             queryKey: rideKeys.all,
             type: "active",

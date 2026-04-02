@@ -2,7 +2,10 @@
 
 export const MOBILE_SIDEBAR_BREAKPOINT = 1024;
 export const MOBILE_SIDEBAR_DRAWER_WIDTH = 288;
-export const MOBILE_SIDEBAR_EDGE_SWIPE_WIDTH = 24;
+export const MOBILE_SIDEBAR_EDGE_SWIPE_WIDTH = 20;
+export const MOBILE_SIDEBAR_IOS_BACK_GESTURE_INSET = 24;
+export const MOBILE_SIDEBAR_AXIS_LOCK_THRESHOLD = 12;
+export const MOBILE_SIDEBAR_GESTURE_THRESHOLD = 18;
 export const MOBILE_SIDEBAR_OPEN_RATIO_THRESHOLD = 0.4;
 export const MOBILE_SIDEBAR_VELOCITY_THRESHOLD = 450;
 
@@ -20,8 +23,32 @@ export function isSidebarSwipeMobileViewport() {
   return window.innerWidth < MOBILE_SIDEBAR_BREAKPOINT;
 }
 
+export function isSidebarSwipeIosViewport() {
+  const platform = window.navigator.platform;
+  const maxTouchPoints = window.navigator.maxTouchPoints ?? 0;
+  const userAgent = window.navigator.userAgent;
+
+  return (
+    /iP(hone|ad|od)/i.test(userAgent) ||
+    (platform === 'MacIntel' && maxTouchPoints > 1)
+  );
+}
+
 export function isSidebarSwipePointerType(pointerType: string) {
   return pointerType === 'touch' || pointerType === 'pen';
+}
+
+export function getSidebarEdgeSwipeOffset() {
+  return isSidebarSwipeIosViewport() ? MOBILE_SIDEBAR_IOS_BACK_GESTURE_INSET : 0;
+}
+
+export function canStartSidebarEdgeSwipe(clientX: number) {
+  const offset = getSidebarEdgeSwipeOffset();
+
+  return (
+    clientX >= offset &&
+    clientX <= offset + MOBILE_SIDEBAR_EDGE_SWIPE_WIDTH
+  );
 }
 
 export function getSidebarSwipeProgress(translateX: number, drawerWidth: number) {

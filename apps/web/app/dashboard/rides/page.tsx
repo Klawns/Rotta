@@ -12,18 +12,27 @@ export default function RidesPage() {
     const page = useRidesPageController();
 
     return (
-        <div className="p-4 md:p-8 space-y-8 pb-32 max-w-[1400px] mx-auto min-h-screen">
-            <RidesHeader onNewRide={page.header.onNewRide} />
+        <>
+            <div
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide"
+                data-scroll-lock-root="true"
+            >
+                <div className="mx-auto flex w-full max-w-[1400px] flex-col pb-8">
+                    <div className="flex shrink-0 flex-col gap-8 pb-8">
+                        <RidesHeader onNewRide={page.header.onNewRide} />
 
-            <FrequentClients
-                clients={page.frequentClients.clients}
-                isLoading={page.frequentClients.isLoading}
-                onSelectClient={page.frequentClients.onSelectClient}
-            />
+                        <FrequentClients
+                            clients={page.frequentClients.clients}
+                            isLoading={page.frequentClients.isLoading}
+                            onSelectClient={page.frequentClients.onSelectClient}
+                        />
 
-            <RidesFilters {...page.filters} />
+                        <RidesFilters {...page.filters} />
+                    </div>
 
-            <RidesListContainer {...page.ridesList} />
+                    <RidesListContainer {...page.ridesList} />
+                </div>
+            </div>
 
             <RideModal {...page.rideDialog} />
 
@@ -36,6 +45,6 @@ export default function RidesPage() {
                 variant="danger"
                 isLoading={page.deleteDialog.isLoading}
             />
-        </div>
+        </>
     );
 }

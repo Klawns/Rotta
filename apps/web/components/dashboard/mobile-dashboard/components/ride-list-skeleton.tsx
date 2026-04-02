@@ -1,25 +1,32 @@
 "use client";
 
-import { motion } from "framer-motion";
-
 export function RideListSkeleton({ count = 3 }: { count?: number }) {
     return (
-        <div className="flex flex-col gap-3 w-full">
+        <div className="flex w-full flex-col gap-3">
             {Array.from({ length: count }).map((_, i) => (
-                <div 
+                <div
                     key={i}
-                    className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 h-[76px] animate-pulse"
+                    className="flex min-h-[124px] flex-col gap-2.5 rounded-[1.75rem] border border-white/5 bg-white/5 px-3 py-2.5 animate-pulse"
                 >
-                    <div className="flex items-center gap-3 w-2/3">
-                        <div className="w-8 h-8 rounded-xl bg-white/5" />
-                        <div className="flex flex-col gap-2 flex-1">
-                            <div className="h-3 w-24 bg-white/5 rounded" />
-                            <div className="h-2 w-32 bg-white/5 rounded" />
+                    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
+                        <div className="grid shrink-0 grid-cols-1 gap-2 self-start">
+                            <div className="h-9 w-9 rounded-2xl bg-white/5" />
+                        </div>
+
+                        <div className="flex min-w-0 flex-col gap-2 pt-1">
+                            <div className="h-4 w-24 rounded bg-white/5" />
+                            <div className="h-2.5 w-32 rounded bg-white/5" />
+                        </div>
+
+                        <div className="flex shrink-0 flex-col items-end gap-1 pt-1">
+                            <div className="h-2 w-10 rounded bg-white/5" />
+                            <div className="h-5 w-18 rounded bg-white/5" />
                         </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                        <div className="h-4 w-16 bg-white/5 rounded" />
-                        <div className="h-4 w-12 bg-white/5 rounded-lg" />
+
+                    <div className="mt-auto grid grid-cols-2 gap-2">
+                        <div className="h-7 rounded-2xl bg-white/5" />
+                        <div className="h-7 rounded-2xl bg-white/5" />
                     </div>
                 </div>
             ))}

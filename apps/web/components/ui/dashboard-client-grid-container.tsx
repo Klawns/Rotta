@@ -1,10 +1,11 @@
-import { ReactNode, useMemo } from "react";
+import { ReactNode, RefObject, useMemo, useRef } from "react";
 import { InfiniteScrollContainer } from "./infinite-scroll-container";
 import { InfiniteScrollTrigger } from "@/components/dashboard/mobile-dashboard/components/infinite-scroll-trigger";
 
 interface DashboardClientGridContainerProps<T> {
     items: T[];
     renderItem: (row: T[], rowIndex: number) => ReactNode;
+    containerRef?: RefObject<HTMLElement | null>;
     maxHeight?: string;
     gap?: number;
     isLoading?: boolean;
@@ -17,6 +18,7 @@ interface DashboardClientGridContainerProps<T> {
 export function DashboardClientGridContainer<T>({
     items,
     renderItem,
+    containerRef,
     maxHeight = "50vh",
     gap = 16,
     isLoading,
@@ -25,6 +27,9 @@ export function DashboardClientGridContainer<T>({
     error,
     retry
 }: DashboardClientGridContainerProps<T>) {
+    const localRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = (containerRef || localRef) as RefObject<HTMLDivElement | null>;
+
     // Group items into rows of 3 for the 3x3 grid
     const rows = useMemo(() => {
         const r: T[][] = [];
@@ -34,13 +39,9 @@ export function DashboardClientGridContainer<T>({
         return r;
     }, [items]);
 
-    return (
-        <InfiniteScrollContainer 
-            maxHeight={maxHeight}
-            hideScrollbar={true}
-            className="w-full py-2"
-        >
-            <div 
+    const content = (
+        <>
+            <div
                 className="flex flex-col w-full pb-4"
                 style={{ gap: `${gap}px` }}
             >
@@ -51,13 +52,29 @@ export function DashboardClientGridContainer<T>({
                 ))}
             </div>
 
-            <InfiniteScrollTrigger 
+            <InfiniteScrollTrigger
                 onIntersect={onLoadMore || (() => {})}
                 isLoading={!!isLoading}
                 hasMore={!!hasMore}
                 error={error}
                 retry={retry}
+                rootRef={scrollContainerRef}
             />
+        </>
+    );
+
+    if (containerRef) {
+        return <div className="w-full py-2">{content}</div>;
+    }
+
+    return (
+        <InfiniteScrollContainer
+            ref={scrollContainerRef}
+            maxHeight={maxHeight}
+            hideScrollbar={true}
+            className="w-full py-2"
+        >
+            {content}
         </InfiniteScrollContainer>
     );
 }

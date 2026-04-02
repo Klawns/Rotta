@@ -43,41 +43,47 @@ export default function TutorialPage() {
     const canContinue = currentStep !== 2 || !!selectedClient;
 
     return (
-        <div className="max-w-2xl mx-auto min-h-[90vh] flex flex-col justify-center py-4 md:py-12 px-4 text-white">
-            <TutorialProgress 
-                currentStep={currentStep} 
-                totalSteps={steps.length} 
-            />
-
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={currentStep}
-                    initial={{ opacity: 0, x: 30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -30 }}
-                    transition={{ ease: "circOut", duration: 0.5 }}
-                    className="flex-1 space-y-4 md:space-y-10"
-                >
-                    <TutorialHeader 
-                        title={currentStepData.title} 
-                        Icon={currentStepData.icon} 
+        <>
+            <div
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide"
+                data-scroll-lock-root="true"
+            >
+                <div className="mx-auto flex min-h-full max-w-2xl flex-col justify-center px-4 py-4 text-white md:py-12">
+                    <TutorialProgress
+                        currentStep={currentStep}
+                        totalSteps={steps.length}
                     />
 
-                    <div className="min-h-[250px] md:min-h-[350px]">
-                        {currentStepData.content}
-                    </div>
-                </motion.div>
-            </AnimatePresence>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={currentStep}
+                            initial={{ opacity: 0, x: 30 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -30 }}
+                            transition={{ ease: "circOut", duration: 0.5 }}
+                            className="flex-1 space-y-4 md:space-y-10"
+                        >
+                            <TutorialHeader
+                                title={currentStepData.title}
+                                Icon={currentStepData.icon}
+                            />
 
-            <TutorialFooter
-                currentStep={currentStep}
-                totalSteps={steps.length}
-                onPrev={prev}
-                onNext={next}
-                canContinue={canContinue}
-            />
+                            <div className="min-h-[250px] md:min-h-[350px]">
+                                {currentStepData.content}
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
 
-            {/* Custom Animations Style */}
+                    <TutorialFooter
+                        currentStep={currentStep}
+                        totalSteps={steps.length}
+                        onPrev={prev}
+                        onNext={next}
+                        canContinue={canContinue}
+                    />
+                </div>
+            </div>
+
             <style jsx global>{`
                 @keyframes pulse-shadow {
                     0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
@@ -91,6 +97,6 @@ export default function TutorialPage() {
                     box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.2);
                 }
             `}</style>
-        </div>
+        </>
     );
 }
