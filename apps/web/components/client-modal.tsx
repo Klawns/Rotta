@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { parseApiError } from '@/lib/api-error';
 import { upsertClientCaches } from '@/lib/client-cache';
+import { clientKeys } from '@/lib/query-keys';
 import { clientsService } from '@/services/clients-service';
 import { type Client } from '@/types/rides';
 
@@ -53,8 +54,9 @@ function ClientModalForm({
 
       return clientsService.createClient(payload);
     },
-    onSuccess: (client) => {
+    onSuccess: async (client) => {
       upsertClientCaches(queryClient, client);
+      await queryClient.invalidateQueries({ queryKey: clientKeys.directories() });
       toast.success(
         clientToEdit ? 'Cliente atualizado com sucesso.' : 'Cliente cadastrado com sucesso.',
       );

@@ -2,6 +2,11 @@ import { clients } from '@mdc/database';
 
 export type Client = typeof clients.$inferSelect;
 export type CreateClientDto = typeof clients.$inferInsert;
+export interface ClientDirectoryEntry {
+  id: string;
+  name: string;
+  isPinned: boolean;
+}
 
 export const IClientsRepository = Symbol('IClientsRepository');
 
@@ -16,6 +21,17 @@ export interface IClientsRepository {
     total: number;
     nextCursor?: string;
     hasNextPage: boolean;
+  }>;
+  findDirectory(
+    userId: string,
+    search?: string,
+    limit?: number,
+  ): Promise<{
+    clients: ClientDirectoryEntry[];
+    returned: number;
+    limit: number;
+    hasMore: boolean;
+    search?: string;
   }>;
 
   create(data: CreateClientDto, executor?: unknown): Promise<Client>;

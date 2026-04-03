@@ -2,8 +2,8 @@
 
 import { useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useSubmitRideMutation } from "@/hooks/mutations/use-submit-ride-mutation";
 import { parseApiError } from "@/lib/api-error";
-import { submitRideDraft } from "@/components/ride-modal/lib/ride-submission";
 import type { Client, PaymentStatus } from "@/types/rides";
 
 interface UseRideSubmitProps {
@@ -14,7 +14,6 @@ interface UseRideSubmitProps {
     rideDate: string;
     notes: string;
     photo: string | null;
-    setIsSaving: (isSaving: boolean) => void;
     resetForm: () => void;
     onSuccess: () => void | Promise<void>;
 }
@@ -27,13 +26,32 @@ export function useRideSubmit({
     rideDate,
     notes,
     photo,
-    setIsSaving,
     resetForm,
     onSuccess,
 }: UseRideSubmitProps) {
     const { toast } = useToast();
+    const mutation = useSubmitRideMutation({
+        onSuccess: async (_, variables) => {
+            const clientName = selectedClient?.name || "cliente";
+            const rideValue = Number(variables.draft.value);
 
-    return useCallback(async () => {
+            toast({
+                title: "Corrida registrada!",
+                description: `R$ ${rideValue.toFixed(2)} para ${clientName}`,
+            });
+
+            resetForm();
+            await onSuccess();
+        },
+        onError: async (error) => {
+            toast({
+                title: parseApiError(error, "Erro ao registrar"),
+                variant: "destructive",
+            });
+        },
+    });
+
+    const submitRide = useCallback(async () => {
         if (!selectedClient) {
             return;
         }
@@ -45,9 +63,8 @@ export function useRideSubmit({
             return;
         }
 
-        setIsSaving(true);
-        try {
-            await submitRideDraft({
+        await mutation.mutateAsync({
+            draft: {
                 selectedClientId: selectedClient.id,
                 value: String(finalValue),
                 location: customLocation || "",
@@ -55,34 +72,22 @@ export function useRideSubmit({
                 photo,
                 rideDate,
                 paymentStatus,
-            });
-
-            toast({
-                title: "Corrida registrada!",
-                description: `R$ ${finalValue.toFixed(2)} para ${selectedClient.name}`,
-            });
-
-            resetForm();
-            await onSuccess();
-        } catch (error) {
-            toast({
-                title: parseApiError(error, "Erro ao registrar"),
-                variant: "destructive",
-            });
-        } finally {
-            setIsSaving(false);
-        }
+            },
+        });
     }, [
         customLocation,
         customValue,
+        mutation,
         notes,
-        onSuccess,
         paymentStatus,
         photo,
-        resetForm,
         rideDate,
         selectedClient,
-        setIsSaving,
         toast,
     ]);
+
+    return {
+        submitRide,
+        isSubmitting: mutation.isPending,
+    };
 }

@@ -62,6 +62,10 @@ export class ClientsService {
     return this.clientsRepository.findAll(userId, limit, cursor, search);
   }
 
+  async findDirectory(userId: string, search?: string, limit?: number) {
+    return this.clientsRepository.findDirectory(userId, search, limit);
+  }
+
   async create(
     userId: string,
     data: { name: string; phone?: string | null; address?: string | null },

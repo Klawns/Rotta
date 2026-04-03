@@ -4,12 +4,29 @@ import {
   type ClientPaymentStatus,
   type CreateClientPaymentInput,
 } from '@/types/client-payments';
-import { type Client, type ClientBalance, type CursorMeta } from '@/types/rides';
+import {
+  type Client,
+  type ClientBalance,
+  type ClientDirectoryEntry,
+  type CursorMeta,
+} from '@/types/rides';
 
 interface ClientPayload {
   name: string;
   phone?: string | null;
   address?: string | null;
+}
+
+export interface ClientDirectoryFilters {
+  search?: string;
+  limit?: number;
+}
+
+export interface ClientDirectoryMeta {
+  returned: number;
+  limit: number;
+  hasMore: boolean;
+  search?: string;
 }
 
 export interface CloseDebtResult {
@@ -71,6 +88,19 @@ export const clientsService = {
     });
   },
 
+  async getClientDirectory(
+    params?: ClientDirectoryFilters,
+    signal?: AbortSignal,
+  ): Promise<ApiEnvelope<ClientDirectoryEntry[], ClientDirectoryMeta>> {
+    return apiClient.getEnvelope<ClientDirectoryEntry[], ClientDirectoryMeta>(
+      '/clients/directory',
+      {
+        params,
+        signal,
+      },
+    );
+  },
+
   async createClient(data: ClientPayload): Promise<Client> {
     return apiClient.post('/clients', data);
   },
@@ -122,7 +152,7 @@ export const clientsService = {
     return apiClient.delete('/clients/all');
   },
 
-  async togglePin(clientId: string, isPinned: boolean): Promise<void> {
+  async togglePin(clientId: string, isPinned: boolean): Promise<Client> {
     return apiClient.patch(`/clients/${clientId}`, { isPinned: !isPinned });
   },
 

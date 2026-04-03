@@ -24,11 +24,9 @@ export function useClientActions() {
 
   const togglePinMutation = useMutation({
     mutationFn: (client: Client) => clientsService.togglePin(client.id, !!client.isPinned),
-    onSuccess: (_, client) => {
-      upsertClientCaches(queryClient, {
-        ...client,
-        isPinned: !client.isPinned,
-      });
+    onSuccess: async (updatedClient) => {
+      upsertClientCaches(queryClient, updatedClient);
+      await queryClient.invalidateQueries({ queryKey: clientKeys.directories() });
 
       toast.success('Cliente fixado/desfixado!');
     },
@@ -67,6 +65,7 @@ export function useClientActions() {
       removeRideCachesByClient(queryClient, clientId);
 
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: clientKeys.directories() }),
         queryClient.invalidateQueries({ queryKey: [...rideKeys.all, 'stats'] }),
         queryClient.invalidateQueries({ queryKey: financeKeys.all }),
       ]);

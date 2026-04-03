@@ -16,7 +16,6 @@ export function useRideFormState({ onReset }: UseRideFormStateProps = {}) {
     const [rideDate, setRideDate] = useState("");
     const [notes, setNotes] = useState("");
     const [photo, setPhoto] = useState<string | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
 
     const resetForm = useCallback(() => {
         setSelectedPresetId(null);
@@ -75,7 +74,6 @@ export function useRideFormState({ onReset }: UseRideFormStateProps = {}) {
             rideDate,
             notes,
             photo,
-            isSaving,
         },
         setters: {
             setCustomValue,
@@ -83,7 +81,6 @@ export function useRideFormState({ onReset }: UseRideFormStateProps = {}) {
             setPaymentStatus,
             setRideDate,
             setNotes,
-            setIsSaving,
             setPhoto,
         },
         helpers: {

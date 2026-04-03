@@ -1,26 +1,14 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { parseApiError } from '@/lib/api-error';
-import { authKeys, clientKeys, financeKeys, rideKeys } from '@/lib/query-keys';
-import { upsertRideCaches } from '@/lib/ride-cache';
+import { useSubmitRideMutation } from '@/hooks/mutations/use-submit-ride-mutation';
 import { type Ride } from '@/types/rides';
-import { submitRideDraft } from '../lib/ride-submission';
+import { type RideSubmissionDraft } from '../lib/ride-submission';
 
 interface UseRideFormSubmitProps {
-  draft: {
-    selectedClientId: string;
-    value: string;
-    location: string;
-    notes: string;
-    photo: string | null;
-    rideDate: string;
-    paymentStatus: 'PENDING' | 'PAID';
-    useBalance?: boolean;
-  };
+  draft: RideSubmissionDraft;
   rideToEdit?: Ride | null;
-  verify: () => Promise<unknown>;
   resetForm: () => void;
   onSuccess?: () => void;
   onClose?: () => void;
@@ -29,44 +17,13 @@ interface UseRideFormSubmitProps {
 export function useRideFormSubmit({
   draft,
   rideToEdit,
-  verify,
   resetForm,
   onSuccess,
   onClose,
 }: UseRideFormSubmitProps) {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: () => submitRideDraft(draft, rideToEdit),
-    onSuccess: async (ride) => {
-      upsertRideCaches(queryClient, ride);
-
-      const affectedClientIds = Array.from(
-        new Set(
-          [ride.clientId || ride.client?.id, rideToEdit?.clientId || rideToEdit?.client?.id]
-            .filter((value): value is string => Boolean(value)),
-        ),
-      );
-
+  const mutation = useSubmitRideMutation({
+    onSuccess: async () => {
       toast.success(rideToEdit ? 'Corrida atualizada' : 'Corrida registrada');
-
-      await Promise.all([
-        ...affectedClientIds.flatMap((clientId) => [
-          queryClient.invalidateQueries({
-            queryKey: clientKeys.detail(clientId),
-            exact: true,
-          }),
-          queryClient.invalidateQueries({
-            queryKey: clientKeys.balance(clientId),
-            exact: true,
-          }),
-        ]),
-        queryClient.invalidateQueries({ queryKey: rideKeys.frequentClients() }),
-        queryClient.invalidateQueries({ queryKey: financeKeys.all }),
-        queryClient.invalidateQueries({ queryKey: authKeys.user() }),
-      ]);
-
-      await verify();
 
       if (!rideToEdit) {
         resetForm();
@@ -75,7 +32,7 @@ export function useRideFormSubmit({
       onSuccess?.();
       onClose?.();
     },
-    onError: (error) => {
+    onError: async (error) => {
       toast.error(
         parseApiError(
           error,
@@ -95,7 +52,10 @@ export function useRideFormSubmit({
         return;
       }
 
-      await mutation.mutateAsync();
+      await mutation.mutateAsync({
+        draft,
+        rideToEdit,
+      });
     },
   };
 }

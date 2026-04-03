@@ -3,77 +3,35 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
-import { useClientDirectory } from '@/hooks/use-client-directory';
 import { financeKeys } from '@/lib/query-keys';
+import { financeService } from '@/services/finance-service';
 import {
-  financeService,
-  type FinanceDashboardParams,
-  type FinanceDashboardQueryKey,
-} from '@/services/finance-service';
-import { getSelectedClientName } from '../_lib/finance-metrics';
-import { PERIODS, type Period, type PeriodId } from '../_types';
-
-export interface FinanceFiltersState {
-  period: PeriodId;
-  clientId?: string;
-  startDate?: string;
-  endDate?: string;
-}
-
-function buildDashboardParams(
-  filters: FinanceFiltersState,
-): FinanceDashboardParams | null {
-  const clientId = filters.clientId !== 'all' ? filters.clientId : undefined;
-
-  if (filters.period === 'custom') {
-    if (!filters.startDate || !filters.endDate) {
-      return null;
-    }
-
-    return {
-      period: 'custom',
-      clientId,
-      start: filters.startDate,
-      end: filters.endDate,
-    };
-  }
-
-  return {
-    period: filters.period,
-    clientId,
-  };
-}
-
-function buildDashboardQueryKey(
-  filters: FinanceFiltersState,
-): FinanceDashboardQueryKey {
-  return {
-    period: filters.period,
-    clientId: filters.clientId !== 'all' ? filters.clientId : undefined,
-    start: filters.period === 'custom' ? filters.startDate : undefined,
-    end: filters.period === 'custom' ? filters.endDate : undefined,
-  };
-}
+  buildFinanceDashboardParams,
+  buildFinanceDashboardQueryKey,
+  type FinanceFiltersState,
+} from '../_lib/finance-dashboard-query';
+import { PERIODS, type Period } from '../_types';
+import { useFinanceClientAutocomplete } from './use-finance-client-autocomplete';
 
 export function useFinanceDashboard() {
   const { user } = useAuth();
-  const { clients } = useClientDirectory();
   const [filters, setFiltersState] = useState<FinanceFiltersState>({
     period: 'month',
-    clientId: 'all',
   });
+  const clientAutocomplete = useFinanceClientAutocomplete();
 
   const setFilters = (newFilters: Partial<FinanceFiltersState>) => {
     setFiltersState((previous) => ({ ...previous, ...newFilters }));
   };
 
   const dashboardParams = useMemo(
-    () => buildDashboardParams(filters),
-    [filters],
+    () => buildFinanceDashboardParams(filters, clientAutocomplete.appliedClientId),
+    [clientAutocomplete.appliedClientId, filters],
   );
   const dashboardQueryKey = useMemo(
-    () => buildDashboardQueryKey(filters),
-    [filters],
+    () =>
+      buildFinanceDashboardQueryKey(filters, clientAutocomplete.appliedClientId),
+    [clientAutocomplete.appliedClientId, filters],
   );
   const isEnabled = !!user && dashboardParams !== null;
   const query = useQuery({
@@ -86,21 +44,17 @@ export function useFinanceDashboard() {
       return financeService.getDashboard(dashboardParams, signal);
     },
     enabled: isEnabled,
-    staleTime: 0,
+    staleTime: 1000 * 60,
     gcTime: 300000,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
   const currentPeriod: Period = useMemo(
     () => PERIODS.find((period) => period.id === filters.period) || PERIODS[0],
     [filters.period],
   );
-  const isClientView = Boolean(filters.clientId && filters.clientId !== 'all');
-  const selectedClientName = getSelectedClientName(clients, filters.clientId);
+  const isClientView = Boolean(clientAutocomplete.appliedClientId);
 
   return {
-    user,
-    clients,
     data: query.data,
     dashboardParams,
     isPending: query.isPending,
@@ -111,7 +65,8 @@ export function useFinanceDashboard() {
     currentPeriod,
     filters,
     setFilters,
+    clientAutocomplete,
     isClientView,
-    selectedClientName,
+    selectedClientName: clientAutocomplete.appliedClientName,
   };
 }

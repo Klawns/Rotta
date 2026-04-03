@@ -17,6 +17,12 @@ export interface Client {
     createdAt?: string;
 }
 
+export interface ClientDirectoryEntry {
+    id: string;
+    name: string;
+    isPinned: boolean;
+}
+
 export interface ClientBalance {
     totalDebt: number;
     totalPaid: number;

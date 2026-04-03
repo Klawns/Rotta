@@ -3,7 +3,7 @@ import type {
   FinanceByStatus,
   RecentRide,
 } from '@/services/finance-service';
-import type { Client } from '@/types/rides';
+import type { ClientDirectoryEntry } from '@/types/rides';
 
 export function sumStatusValue(
   data: FinanceByStatus[],
@@ -57,10 +57,10 @@ export function getTopLocation(rides: RecentRide[]) {
 }
 
 export function getSelectedClientName(
-  clients: Client[],
+  clients: ClientDirectoryEntry[],
   clientId?: string,
 ) {
-  if (!clientId || clientId === 'all') {
+  if (!clientId) {
     return null;
   }
 

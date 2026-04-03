@@ -20,6 +20,7 @@ export function useRideFormState({ clientId }: UseRideFormStateProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [newClientName, setNewClientName] = useState('');
   const [isCreatingClient, setIsCreatingClient] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
 
   const resetForm = useCallback(() => {
     setSelectedClientId(clientId || '');
@@ -32,6 +33,7 @@ export function useRideFormState({ clientId }: UseRideFormStateProps) {
     setPaymentStatus('PAID');
     setUseBalance(false);
     setCurrentStep(clientId ? 2 : 1);
+    setClientSearch('');
   }, [clientId]);
 
   const handlePresetClick = useCallback((preset: RidePreset) => {
@@ -65,6 +67,8 @@ export function useRideFormState({ clientId }: UseRideFormStateProps) {
     setNewClientName,
     isCreatingClient,
     setIsCreatingClient,
+    clientSearch,
+    setClientSearch,
     resetForm,
     handlePresetClick,
   };

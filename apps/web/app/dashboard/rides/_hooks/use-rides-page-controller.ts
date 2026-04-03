@@ -32,6 +32,17 @@ export function useRidesPageController() {
       hasActiveFilters: rides.hasActiveFilters,
       onClearFilters: rides.clearFilters,
       clients: rides.clients,
+      clientSearch: rides.clientSearch,
+      setClientSearch: rides.setClientSearch,
+      isLoadingClients: rides.isLoadingClients,
+      isFetchingClients: rides.isFetchingClients,
+      isClientDirectoryError: rides.isClientDirectoryError,
+      clientDirectoryError: rides.clientDirectoryError,
+      onRetryClients: () => {
+        void rides.refetchClientDirectory();
+      },
+      isClientDirectoryReady: rides.isClientDirectoryReady,
+      clientDirectoryMeta: rides.clientDirectoryMeta,
     },
     ridesList: {
       rides: rides.rides,

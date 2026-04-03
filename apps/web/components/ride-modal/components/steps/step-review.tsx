@@ -4,11 +4,11 @@ import { motion } from "framer-motion";
 import { User, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDisplayDateValue } from "@/lib/date-utils";
-import { Client, PaymentStatus } from "@/types/rides";
+import { ClientDirectoryEntry, PaymentStatus } from "@/types/rides";
 import { PaymentComposition } from "@/components/ui/payment-composition";
 
 interface StepReviewProps {
-    clients: Client[];
+    clients: ClientDirectoryEntry[];
     selectedClientId: string;
     clientName?: string;
     value: string;

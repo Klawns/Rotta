@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import {
     useInfiniteQuery,
     useQuery,
@@ -41,7 +41,17 @@ function getUniqueRides(rides: Ride[]) {
 
 export function useRidesData({ filters, pageSize }: UseRidesDataProps) {
     const { user } = useAuth();
-    const { clients } = useClientDirectory();
+    const [clientSearch, setClientSearch] = useState("");
+    const deferredClientSearch = useDeferredValue(clientSearch.trim());
+    const selectedClientId =
+        filters.clientFilter && filters.clientFilter !== "all"
+            ? filters.clientFilter
+            : undefined;
+    const clientDirectory = useClientDirectory({
+        search: deferredClientSearch,
+        limit: 20,
+        selectedClientId,
+    });
     const paymentStatus = useRidePaymentStatus();
 
     const activeFilters = useMemo(
@@ -92,7 +102,16 @@ export function useRidesData({ filters, pageSize }: UseRidesDataProps) {
     return {
         rides,
         totalCount: rides.length,
-        clients,
+        clients: clientDirectory.clients,
+        clientSearch,
+        setClientSearch,
+        isLoadingClients: clientDirectory.isLoading,
+        isFetchingClients: clientDirectory.isFetching,
+        isClientDirectoryError: clientDirectory.isError,
+        clientDirectoryError: clientDirectory.error,
+        refetchClientDirectory: clientDirectory.refetch,
+        isClientDirectoryReady: clientDirectory.isReady,
+        clientDirectoryMeta: clientDirectory.meta,
         frequentClients,
         isLoading: isRidesLoading,
         isFetching: isRidesFetching,

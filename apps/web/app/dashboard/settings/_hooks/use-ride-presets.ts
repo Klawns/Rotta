@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useDeleteRidePresetMutation } from "@/hooks/mutations/use-delete-ride-preset-mutation";
 import { useToast } from "@/hooks/use-toast";
 import { parseApiError } from "@/lib/api-error";
 import { settingsKeys } from "@/lib/query-keys";
@@ -49,16 +50,14 @@ export function useRidePresets() {
         },
     });
 
-    const deletePresetMutation = useMutation({
-        mutationFn: (id: string) => settingsService.deleteRidePreset(id),
+    const deletePresetMutation = useDeleteRidePresetMutation({
         onSuccess: async () => {
-            await invalidatePresets();
             toast({
                 title: "Atalho removido",
                 description: "O botao foi excluido com sucesso.",
             });
         },
-        onError: (error) => {
+        onError: async (error) => {
             toast({
                 title: "Erro ao remover",
                 description: parseApiError(error, "Tente novamente mais tarde."),

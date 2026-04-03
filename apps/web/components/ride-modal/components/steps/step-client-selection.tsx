@@ -2,12 +2,17 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Plus, X, Star, Users } from "lucide-react";
+import { parseApiError } from "@/lib/api-error";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Client } from "@/types/rides";
+import { ClientDirectoryEntry } from "@/types/rides";
+import { type ClientDirectoryMeta } from "@/services/clients-service";
 import { DashboardClientGridContainer } from "@/components/ui/dashboard-client-grid-container";
 
 interface StepClientSelectionProps {
-    clients: Client[];
+    clients: ClientDirectoryEntry[];
+    clientSearch: string;
+    setClientSearch: (search: string) => void;
     selectedClientId: string;
     setSelectedClientId: (id: string) => void;
     onNext: () => void;
@@ -17,10 +22,16 @@ interface StepClientSelectionProps {
     setNewClientName: (name: string) => void;
     handleCreateClient: () => Promise<void>;
     isLoadingData: boolean;
+    isFetchingClients?: boolean;
+    isClientDirectoryReady?: boolean;
+    isClientDirectoryError?: boolean;
+    clientDirectoryError?: unknown;
+    retryClientDirectory?: () => Promise<unknown> | unknown;
+    clientDirectoryMeta?: ClientDirectoryMeta | null;
     isSubmittingClient?: boolean;
 }
 
-type ClientGridItem = Client | { kind: "create" };
+type ClientGridItem = ClientDirectoryEntry | { kind: "create" };
 
 function isCreateButton(item: ClientGridItem): item is { kind: "create" } {
     return "kind" in item;
@@ -28,6 +39,8 @@ function isCreateButton(item: ClientGridItem): item is { kind: "create" } {
 
 export function StepClientSelection({
     clients,
+    clientSearch,
+    setClientSearch,
     selectedClientId,
     setSelectedClientId,
     onNext,
@@ -37,6 +50,12 @@ export function StepClientSelection({
     setNewClientName,
     handleCreateClient,
     isLoadingData,
+    isFetchingClients = false,
+    isClientDirectoryReady = false,
+    isClientDirectoryError = false,
+    clientDirectoryError,
+    retryClientDirectory,
+    clientDirectoryMeta = null,
     isSubmittingClient = false,
 }: StepClientSelectionProps) {
     const gridItems: ClientGridItem[] = [
@@ -56,8 +75,58 @@ export function StepClientSelection({
                 <label className="text-[10px] font-bold text-text-secondary uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
                     <User size={12} /> Selecionar Cliente
                 </label>
-                <span className="text-[10px] text-text-secondary font-bold">{clients.length} cadastrados</span>
+                <span className="text-[10px] text-text-secondary font-bold">
+                    {clientDirectoryMeta?.returned ?? clients.length} disponiveis
+                </span>
             </div>
+
+            <Input
+                value={clientSearch}
+                onChange={(event) => setClientSearch(event.target.value)}
+                placeholder="Buscar cliente por nome"
+                className="h-12 rounded-2xl border-border-subtle bg-secondary/10 text-text-primary font-medium shadow-sm"
+            />
+
+            {isLoadingData ? (
+                <p className="text-xs font-medium text-text-secondary">
+                    Carregando clientes para selecao...
+                </p>
+            ) : null}
+
+            {!isLoadingData && isFetchingClients && isClientDirectoryReady ? (
+                <p className="text-xs font-medium text-text-secondary">
+                    Atualizando lista de clientes...
+                </p>
+            ) : null}
+
+            {isClientDirectoryError ? (
+                <div className="rounded-2xl border border-border-destructive/20 bg-button-destructive-subtle px-4 py-3 text-sm text-icon-destructive">
+                    <p>{parseApiError(clientDirectoryError, 'Nao foi possivel carregar os clientes.')}</p>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            void retryClientDirectory?.();
+                        }}
+                        className="mt-2 text-xs font-bold uppercase tracking-widest underline underline-offset-4"
+                    >
+                        Tentar novamente
+                    </button>
+                </div>
+            ) : null}
+
+            {!isLoadingData && !isClientDirectoryError && isClientDirectoryReady && clients.length === 0 ? (
+                <p className="text-xs font-medium text-text-secondary">
+                    {clientSearch.trim()
+                        ? "Nenhum cliente encontrado para a busca informada."
+                        : "Nenhum cliente cadastrado. Crie um novo cliente para continuar."}
+                </p>
+            ) : null}
+
+            {!isLoadingData && !isClientDirectoryError && isClientDirectoryReady && clientDirectoryMeta?.hasMore && !clientSearch.trim() ? (
+                <p className="text-xs font-medium text-text-secondary">
+                    Mostrando {clientDirectoryMeta.returned} clientes. Digite para buscar mais.
+                </p>
+            ) : null}
 
             <DashboardClientGridContainer
                 items={gridItems}

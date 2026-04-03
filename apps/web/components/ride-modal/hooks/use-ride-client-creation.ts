@@ -1,10 +1,8 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { parseApiError } from '@/lib/api-error';
-import { upsertClientCaches } from '@/lib/client-cache';
-import { rideModalService } from '../services/ride-modal-service';
+import { useCreateClientMutation } from '@/hooks/mutations/use-create-client-mutation';
 
 interface UseRideClientCreationProps {
   newClientName: string;
@@ -19,25 +17,14 @@ export function useRideClientCreation({
   setNewClientName,
   setCurrentStep,
 }: UseRideClientCreationProps) {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const trimmedName = newClientName.trim();
-      if (!trimmedName) {
-        throw new Error('Nome do cliente obrigatorio.');
-      }
-
-      return rideModalService.createClient(trimmedName);
-    },
-    onSuccess: (client) => {
-      upsertClientCaches(queryClient, client);
+  const mutation = useCreateClientMutation({
+    onSuccess: async (client) => {
       setSelectedClientId(client.id);
       setNewClientName('');
       setCurrentStep(2);
       toast.success('Cliente cadastrado com sucesso');
     },
-    onError: (error) => {
+    onError: async (error) => {
       toast.error(parseApiError(error, 'Erro ao cadastrar cliente. Tente novamente.'));
     },
   });
@@ -49,7 +36,9 @@ export function useRideClientCreation({
         return;
       }
 
-      await mutation.mutateAsync();
+      await mutation.mutateAsync({
+        name: newClientName.trim(),
+      });
     },
   };
 }

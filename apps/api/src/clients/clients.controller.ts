@@ -39,6 +39,23 @@ export class ClientsController {
     };
   }
 
+  @Get('directory')
+  async findDirectory(
+    @Request() req: RequestWithUser,
+    @ZodQuery(Dtos.getClientDirectorySchema) query: Dtos.GetClientDirectoryDto,
+  ) {
+    const { clients, ...meta } = await this.clientsService.findDirectory(
+      req.user.id,
+      query.search,
+      query.limit,
+    );
+
+    return {
+      data: ClientMapper.toHttpDirectoryList(clients),
+      meta,
+    };
+  }
+
   @Post()
   create(
     @Request() req: RequestWithUser,

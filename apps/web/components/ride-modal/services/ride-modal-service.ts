@@ -1,21 +1,15 @@
 import { clientsService } from '@/services/clients-service';
-import type { ApiEnvelope } from '@/services/api';
 import { ridesService } from '@/services/rides-service';
 import { settingsService } from '@/services/settings-service';
 import {
   Client,
   CreateRideDTO,
-  CursorMeta,
   Ride,
   RidePreset,
   UpdateRideDTO,
 } from '@/types/rides';
 
 export const rideModalService = {
-  async getClients(): Promise<ApiEnvelope<Client[], CursorMeta>> {
-    return clientsService.getClients();
-  },
-
   async getRidePresets(): Promise<RidePreset[]> {
     return settingsService.getRidePresets();
   },

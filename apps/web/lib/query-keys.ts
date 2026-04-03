@@ -1,4 +1,14 @@
-type QueryFilters = object;
+type QueryFilters = Record<string, unknown>;
+
+function hasPrefix(queryKey: readonly unknown[], prefix: readonly unknown[]) {
+  return prefix.every((entry, index) => queryKey[index] === entry);
+}
+
+function isFilterContainer(
+  value: unknown,
+): value is { filters: QueryFilters & Record<string, unknown> } {
+  return !!value && typeof value === 'object' && 'filters' in value;
+}
 
 export const rideKeys = {
   all: ['rides'] as const,
@@ -20,12 +30,73 @@ export const rideKeys = {
 export const clientKeys = {
   all: ['clients'] as const,
   lists: () => [...clientKeys.all, 'list'] as const,
+  list: (filters: QueryFilters = {}) =>
+    [...clientKeys.lists(), { filters }] as const,
+  infiniteLists: () => [...clientKeys.lists(), 'infinite'] as const,
   infinite: (filters: QueryFilters = {}) =>
-    [...clientKeys.all, { filters }, 'infinite'] as const,
-  detail: (id: string) => [...clientKeys.all, 'detail', id] as const,
+    [...clientKeys.infiniteLists(), { filters }] as const,
+  directories: () => [...clientKeys.all, 'directory'] as const,
+  directory: (filters: QueryFilters = {}) =>
+    [...clientKeys.directories(), { filters }] as const,
+  details: () => [...clientKeys.all, 'detail'] as const,
+  detail: (id: string) => [...clientKeys.details(), id] as const,
   balance: (id: string) => [...clientKeys.detail(id), 'balance'] as const,
   payments: (id: string, filters: QueryFilters = {}) =>
     [...clientKeys.detail(id), 'payments', { filters }] as const,
+};
+
+export type ClientListQueryKey = ReturnType<typeof clientKeys.list>;
+export type ClientInfiniteQueryKey = ReturnType<typeof clientKeys.infinite>;
+export type ClientDirectoryQueryKey = ReturnType<typeof clientKeys.directory>;
+export type ClientPaymentsQueryKey = ReturnType<typeof clientKeys.payments>;
+
+export const clientKeyUtils = {
+  isList(queryKey: readonly unknown[]): queryKey is ClientListQueryKey {
+    return (
+      hasPrefix(queryKey, clientKeys.lists()) &&
+      queryKey.length === 3 &&
+      isFilterContainer(queryKey[2])
+    );
+  },
+  isInfinite(queryKey: readonly unknown[]): queryKey is ClientInfiniteQueryKey {
+    return (
+      hasPrefix(queryKey, clientKeys.infiniteLists()) &&
+      queryKey.length === 4 &&
+      isFilterContainer(queryKey[3])
+    );
+  },
+  isDirectory(
+    queryKey: readonly unknown[],
+  ): queryKey is ClientDirectoryQueryKey {
+    return (
+      hasPrefix(queryKey, clientKeys.directories()) &&
+      queryKey.length === 3 &&
+      isFilterContainer(queryKey[2])
+    );
+  },
+  isPayments(
+    queryKey: readonly unknown[],
+    clientId: string,
+  ): queryKey is ClientPaymentsQueryKey {
+    return (
+      hasPrefix(queryKey, clientKeys.detail(clientId)) &&
+      queryKey[3] === 'payments' &&
+      queryKey.length === 5 &&
+      isFilterContainer(queryKey[4])
+    );
+  },
+  getListFilters(queryKey: ClientListQueryKey) {
+    return queryKey[2].filters;
+  },
+  getInfiniteFilters(queryKey: ClientInfiniteQueryKey) {
+    return queryKey[3].filters;
+  },
+  getDirectoryFilters(queryKey: ClientDirectoryQueryKey) {
+    return queryKey[2].filters;
+  },
+  getPaymentsFilters(queryKey: ClientPaymentsQueryKey) {
+    return queryKey[4].filters;
+  },
 };
 
 export const settingsKeys = {

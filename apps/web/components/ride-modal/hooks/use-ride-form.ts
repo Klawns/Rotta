@@ -16,9 +16,10 @@ export function useRideForm({
   clientId,
   rideToEdit,
 }: Partial<RideModalProps>) {
-  const { verify, user } = useAuth();
+  const { user } = useAuth();
   const form = useRideFormState({ clientId });
   const {
+    clientSearch,
     currentStep,
     handlePresetClick,
     isCreatingClient,
@@ -34,6 +35,7 @@ export function useRideForm({
     setCurrentStep,
     setIsCreatingClient,
     setIsCustomValue,
+    setClientSearch,
     setLocation,
     setNewClientName,
     setNotes,
@@ -51,6 +53,7 @@ export function useRideForm({
     isOpen,
     userId: user?.id,
     clientId,
+    clientSearch,
     selectedClientId,
   });
 
@@ -118,7 +121,6 @@ export function useRideForm({
       useBalance,
     },
     rideToEdit,
-    verify,
     resetForm,
     onSuccess,
     onClose,
@@ -193,6 +195,12 @@ export function useRideForm({
     clients: data.clients,
     presets: data.presets,
     isLoadingData: data.isLoadingData,
+    isFetchingClients: data.isFetchingClients,
+    isClientDirectoryError: data.isClientDirectoryError,
+    clientDirectoryError: data.clientDirectoryError,
+    retryClientDirectory: data.retryClientDirectory,
+    isClientDirectoryReady: data.isClientDirectoryReady,
+    clientDirectoryMeta: data.clientDirectoryMeta,
     ...form,
     paidWithBalance,
     debtValue,

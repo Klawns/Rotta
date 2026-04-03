@@ -91,6 +91,14 @@ export const apiClient = {
     return normalizeEnvelope<TData, TMeta>(response.data, response.data as TData);
   },
 
+  async getEnvelope<TData = unknown, TMeta = Record<string, unknown>>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiEnvelope<TData, TMeta>> {
+    const response = await api.get(url, config);
+    return normalizeEnvelope<TData, TMeta>(response.data, response.data as TData);
+  },
+
   async post<TData = unknown>(
     url: string,
     data?: unknown,

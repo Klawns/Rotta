@@ -29,7 +29,7 @@ export default function FinancePage() {
     refetch,
     filters,
     setFilters,
-    clients,
+    clientAutocomplete,
     dashboardParams,
     currentPeriod,
     isClientView,
@@ -91,9 +91,7 @@ export default function FinancePage() {
             />
 
             <FinanceFilters
-              clients={clients || []}
-              selectedClientId={filters.clientId || 'all'}
-              setSelectedClientId={(id) => setFilters({ clientId: id })}
+              clientAutocomplete={clientAutocomplete}
               selectedPeriod={filters.period}
               setSelectedPeriod={(period) => setFilters({ period })}
               startDate={filters.startDate || ''}

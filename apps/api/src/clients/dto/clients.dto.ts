@@ -28,6 +28,13 @@ export const findAllClientsSchema = z.object({
 
 export type FindAllClientsDto = z.infer<typeof findAllClientsSchema>;
 
+export const getClientDirectorySchema = z.object({
+  search: z.string().trim().min(1).optional(),
+  limit: z.coerce.number().min(1).max(50).default(20),
+});
+
+export type GetClientDirectoryDto = z.infer<typeof getClientDirectorySchema>;
+
 export const addPartialPaymentSchema = z.object({
   amount: z.coerce.number().positive(),
   notes: z.string().optional(),

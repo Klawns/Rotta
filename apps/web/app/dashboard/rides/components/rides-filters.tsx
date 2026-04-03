@@ -1,9 +1,11 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { parseApiError } from "@/lib/api-error";
 import { Search, Filter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Client, RidesFilterState } from "@/types/rides";
+import { type ClientDirectoryMeta } from "@/services/clients-service";
+import { ClientDirectoryEntry, RidesFilterState } from "@/types/rides";
 
 interface RidesFiltersProps {
     filters: RidesFilterState;
@@ -16,7 +18,16 @@ interface RidesFiltersProps {
     setIsFiltersOpen: (o: boolean) => void;
     hasActiveFilters: boolean;
     onClearFilters: () => void;
-    clients: Client[];
+    clients: ClientDirectoryEntry[];
+    clientSearch: string;
+    setClientSearch: (search: string) => void;
+    isLoadingClients?: boolean;
+    isFetchingClients?: boolean;
+    isClientDirectoryError?: boolean;
+    clientDirectoryError?: unknown;
+    onRetryClients?: () => void;
+    isClientDirectoryReady?: boolean;
+    clientDirectoryMeta?: ClientDirectoryMeta | null;
 }
 
 export function RidesFilters({
@@ -30,9 +41,20 @@ export function RidesFilters({
     setIsFiltersOpen,
     hasActiveFilters,
     onClearFilters,
-    clients
+    clients,
+    clientSearch,
+    setClientSearch,
+    isLoadingClients = false,
+    isFetchingClients = false,
+    isClientDirectoryError = false,
+    clientDirectoryError,
+    onRetryClients,
+    isClientDirectoryReady = false,
+    clientDirectoryMeta = null,
 }: RidesFiltersProps) {
     const { search, paymentFilter, clientFilter, startDate, endDate } = filters;
+    const isClientSelectDisabled =
+        isLoadingClients || (!isClientDirectoryReady && isClientDirectoryError);
 
     return (
         <div className="space-y-4">
@@ -99,16 +121,61 @@ export function RidesFilters({
 
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-text-secondary uppercase tracking-widest ml-1 opacity-70">Cliente</label>
+                                <input
+                                    type="text"
+                                    value={clientSearch}
+                                    onChange={(event) => setClientSearch(event.target.value)}
+                                    placeholder="Buscar cliente por nome"
+                                    className="w-full bg-card-background border border-border-subtle rounded-xl py-3 px-4 text-xs font-medium text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
+                                />
                                 <select
                                     value={clientFilter}
                                     onChange={(e) => setClientFilter(e.target.value)}
+                                    disabled={isClientSelectDisabled}
                                     className="w-full bg-card-background border border-border-subtle rounded-xl py-3 px-4 text-xs font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm"
                                 >
                                     <option value="all">Todos os Clientes</option>
+                                    {isLoadingClients ? (
+                                        <option value="loading" disabled>Carregando clientes...</option>
+                                    ) : null}
                                     {clients.map(c => (
                                         <option key={c.id} value={c.id}>{c.name}</option>
                                     ))}
                                 </select>
+                                {isLoadingClients ? (
+                                    <p className="text-xs font-medium text-text-secondary">
+                                        Carregando clientes...
+                                    </p>
+                                ) : null}
+                                {!isLoadingClients && isFetchingClients && isClientDirectoryReady ? (
+                                    <p className="text-xs font-medium text-text-secondary">
+                                        Atualizando clientes...
+                                    </p>
+                                ) : null}
+                                {isClientDirectoryError ? (
+                                    <div className="rounded-xl border border-border-destructive/20 bg-button-destructive-subtle px-3 py-2 text-xs text-icon-destructive">
+                                        <p>{parseApiError(clientDirectoryError, 'Nao foi possivel carregar os clientes.')}</p>
+                                        <button
+                                            type="button"
+                                            onClick={onRetryClients}
+                                            className="mt-1 font-bold uppercase tracking-widest underline underline-offset-4"
+                                        >
+                                            Tentar novamente
+                                        </button>
+                                    </div>
+                                ) : null}
+                                {!isLoadingClients && !isClientDirectoryError && isClientDirectoryReady && clients.length === 0 ? (
+                                    <p className="text-xs font-medium text-text-secondary">
+                                        {clientSearch.trim()
+                                            ? "Nenhum cliente encontrado para a busca informada."
+                                            : "Nenhum cliente cadastrado."}
+                                    </p>
+                                ) : null}
+                                {!isLoadingClients && !isClientDirectoryError && isClientDirectoryReady && clientDirectoryMeta?.hasMore && !clientSearch.trim() ? (
+                                    <p className="text-xs font-medium text-text-secondary">
+                                        Mostrando {clientDirectoryMeta.returned} clientes. Digite para refinar.
+                                    </p>
+                                ) : null}
                             </div>
 
                             <div className="space-y-2">

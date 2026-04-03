@@ -21,6 +21,13 @@ describe('ClientsService', () => {
   beforeEach(async () => {
     clientsRepoMock = {
       findAll: jest.fn().mockResolvedValue({ clients: [], total: 0 }),
+      findDirectory: jest.fn().mockResolvedValue({
+        clients: [{ id: 'client-1', name: 'Alice', isPinned: true }],
+        returned: 1,
+        limit: 20,
+        hasMore: false,
+        search: 'Ali',
+      }),
       create: jest
         .fn()
         .mockResolvedValue({ id: 'uuid-123', name: 'Client Test', balance: 0 }),
@@ -109,6 +116,23 @@ describe('ClientsService', () => {
       }),
     );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
+  });
+
+  it('should return client directory entries with the provided search', async () => {
+    const result = await service.findDirectory('user-1', 'Ali', 20);
+
+    expect(clientsRepoMock.findDirectory).toHaveBeenCalledWith(
+      'user-1',
+      'Ali',
+      20,
+    );
+    expect(result).toEqual({
+      clients: [{ id: 'client-1', name: 'Alice', isPinned: true }],
+      returned: 1,
+      limit: 20,
+      hasMore: false,
+      search: 'Ali',
+    });
   });
 
   it('should get client balance using aggregated sql methods', async () => {

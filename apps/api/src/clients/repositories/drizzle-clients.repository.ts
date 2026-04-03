@@ -8,6 +8,7 @@ import type { DrizzleClient } from '../../database/database.provider';
 import {
   IClientsRepository,
   Client,
+  ClientDirectoryEntry,
   CreateClientDto,
 } from '../interfaces/clients-repository.interface';
 
@@ -131,6 +132,51 @@ export class DrizzleClientsRepository implements IClientsRepository {
       total: Number(countResult[0]?.value || 0),
       nextCursor: nextCursorHash,
       hasNextPage,
+    };
+  }
+
+  async findDirectory(
+    userId: string,
+    search?: string,
+    limit: number = 20,
+  ): Promise<{
+    clients: ClientDirectoryEntry[];
+    returned: number;
+    limit: number;
+    hasMore: boolean;
+    search?: string;
+  }> {
+    const normalizedSearch = search?.trim() || undefined;
+    const conditions = [eq(this.schema.clients.userId, userId)];
+
+    if (normalizedSearch) {
+      conditions.push(ilike(this.schema.clients.name, `%${normalizedSearch}%`));
+    }
+
+    const results: Array<Pick<ClientDirectoryEntry, 'id' | 'name' | 'isPinned'>> =
+      await this.db
+        .select({
+          id: this.schema.clients.id,
+          name: this.schema.clients.name,
+          isPinned: this.schema.clients.isPinned,
+        })
+        .from(this.schema.clients)
+        .where(and(...conditions))
+        .orderBy(
+          desc(this.schema.clients.isPinned),
+          sql`lower(${this.schema.clients.name}) asc`,
+          this.schema.clients.id,
+        )
+        .limit(limit + 1);
+    const hasMore = results.length > limit;
+    const clients = hasMore ? results.slice(0, limit) : results;
+
+    return {
+      clients,
+      returned: clients.length,
+      limit,
+      hasMore,
+      search: normalizedSearch,
     };
   }
 

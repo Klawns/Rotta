@@ -18,7 +18,7 @@ export type FinanceDashboardParams =
       end: string;
     });
 
-export interface FinanceDashboardQueryKey {
+export interface FinanceDashboardQueryKey extends Record<string, unknown> {
   period: FinancePeriod;
   start?: string;
   end?: string;

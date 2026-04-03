@@ -1,27 +1,50 @@
 import { type InfiniteData, type QueryClient } from '@tanstack/react-query';
-import { clientKeys } from '@/lib/query-keys';
+import {
+  mergeClientDirectoryEntries,
+  toClientDirectoryEntry,
+} from '@/lib/client-directory';
+import { clientKeyUtils, clientKeys } from '@/lib/query-keys';
 import { type ApiEnvelope } from '@/services/api';
+import { type ClientDirectoryMeta } from '@/services/clients-service';
 import { type ClientPayment } from '@/types/client-payments';
-import { type Client, type CursorMeta } from '@/types/rides';
+import {
+  type Client,
+  type ClientDirectoryEntry,
+  type CursorMeta,
+} from '@/types/rides';
 
 type ClientListEnvelope = ApiEnvelope<Client[], CursorMeta>;
 type ClientInfiniteData = InfiniteData<ClientListEnvelope, string | undefined>;
+type ClientDirectoryEnvelope = ApiEnvelope<
+  ClientDirectoryEntry[],
+  ClientDirectoryMeta
+>;
+
 const EMPTY_CLIENT_META = {
   hasNextPage: false,
   nextCursor: undefined,
   total: 0,
 } satisfies CursorMeta & { total: number };
 
+const EMPTY_DIRECTORY_META: ClientDirectoryMeta = {
+  returned: 0,
+  limit: 20,
+  hasMore: false,
+  search: undefined,
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object';
 }
 
 function isClientListEnvelope(value: unknown): value is ClientListEnvelope {
-  return (
-    isRecord(value) &&
-    Array.isArray(value.data) &&
-    isRecord(value.meta)
-  );
+  return isRecord(value) && Array.isArray(value.data) && isRecord(value.meta);
+}
+
+function isClientDirectoryEnvelope(
+  value: unknown,
+): value is ClientDirectoryEnvelope {
+  return isRecord(value) && Array.isArray(value.data) && isRecord(value.meta);
 }
 
 function isClientInfiniteData(value: unknown): value is ClientInfiniteData {
@@ -32,7 +55,10 @@ function isClientInfiniteData(value: unknown): value is ClientInfiniteData {
   );
 }
 
-function compareClients(left: Client, right: Client) {
+function compareClientLike(
+  left: { id: string; name: string; isPinned?: boolean },
+  right: { id: string; name: string; isPinned?: boolean },
+) {
   if (!!left.isPinned !== !!right.isPinned) {
     return left.isPinned ? -1 : 1;
   }
@@ -51,37 +77,36 @@ function compareClients(left: Client, right: Client) {
 function upsertSortedClients(clients: Client[], client: Client) {
   return Array.from(
     new Map([...clients, client].map((item) => [item.id, item])).values(),
-  ).sort(compareClients);
+  ).sort(compareClientLike);
 }
 
-function removeClient(clients: Client[], clientId: string) {
+function removeClient<T extends { id: string }>(clients: T[], clientId: string) {
   return clients.filter((client) => client.id !== clientId);
 }
 
-function matchesSearch(client: Client, search?: string) {
+function matchesSearch(name: string, search?: string) {
   if (!search?.trim()) {
     return true;
   }
 
-  return client.name.toLowerCase().includes(search.trim().toLowerCase());
+  return name.toLowerCase().includes(search.trim().toLowerCase());
 }
 
-function getSearchFromQueryKey(queryKey: readonly unknown[]) {
-  const filtersEntry = queryKey.find(
-    (entry) => isRecord(entry) && isRecord(entry.filters),
-  ) as { filters?: { search?: unknown } } | undefined;
-
-  return typeof filtersEntry?.filters?.search === 'string'
-    ? filtersEntry.filters.search
-    : undefined;
+function getSearch(filters: Record<string, unknown>) {
+  return typeof filters.search === 'string' ? filters.search : undefined;
 }
 
-function updateEnvelope(
+function getStatusFromPaymentsQueryKey(queryKey: ReturnType<typeof clientKeys.payments>) {
+  const filters = clientKeyUtils.getPaymentsFilters(queryKey);
+  return typeof filters.status === 'string' ? filters.status : undefined;
+}
+
+function updateClientListEnvelope(
   envelope: ClientListEnvelope,
   client: Client,
   search?: string,
 ) {
-  const nextData = matchesSearch(client, search)
+  const nextData = matchesSearch(client.name, search)
     ? upsertSortedClients(envelope.data, client)
     : removeClient(envelope.data, client.id);
 
@@ -91,31 +116,28 @@ function updateEnvelope(
   };
 }
 
-function isInfiniteClientQuery(queryKey: readonly unknown[]) {
-  return queryKey[0] === clientKeys.all[0] && queryKey.at(-1) === 'infinite';
-}
+function updateClientDirectoryEnvelope(
+  envelope: ClientDirectoryEnvelope,
+  client: Client,
+  search?: string,
+) {
+  const directoryEntry = toClientDirectoryEntry(client);
+  const nextData = matchesSearch(directoryEntry.name, search)
+    ? mergeClientDirectoryEntries(envelope.data, directoryEntry).slice(
+        0,
+        envelope.meta.limit,
+      )
+    : removeClient(envelope.data, directoryEntry.id);
 
-function isClientListQuery(queryKey: readonly unknown[]) {
-  return queryKey.length === 2 && queryKey[0] === clientKeys.all[0] && queryKey[1] === 'list';
-}
-
-function isClientPaymentsQuery(queryKey: readonly unknown[], clientId: string) {
-  return (
-    queryKey[0] === clientKeys.all[0] &&
-    queryKey[1] === 'detail' &&
-    queryKey[2] === clientId &&
-    queryKey[3] === 'payments'
-  );
-}
-
-function getStatusFromPaymentsQueryKey(queryKey: readonly unknown[]) {
-  const filtersEntry = queryKey.find(
-    (entry) => isRecord(entry) && isRecord(entry.filters),
-  ) as { filters?: { status?: unknown } } | undefined;
-
-  return typeof filtersEntry?.filters?.status === 'string'
-    ? filtersEntry.filters.status
-    : undefined;
+  return {
+    ...envelope,
+    data: nextData,
+    meta: {
+      ...envelope.meta,
+      returned: nextData.length,
+      hasMore: envelope.meta.hasMore || nextData.length >= envelope.meta.limit,
+    },
+  };
 }
 
 function upsertSortedPayments(payments: ClientPayment[], payment: ClientPayment) {
@@ -132,13 +154,15 @@ export function upsertClientCaches(queryClient: QueryClient, client: Client) {
   });
 
   for (const query of clientQueries) {
-    if (isInfiniteClientQuery(query.queryKey)) {
+    if (clientKeyUtils.isInfinite(query.queryKey)) {
+      const infiniteQueryKey = query.queryKey;
+
       queryClient.setQueryData(query.queryKey, (current: unknown) => {
         if (!isClientInfiniteData(current)) {
           return current;
         }
 
-        const search = getSearchFromQueryKey(query.queryKey);
+        const search = getSearch(clientKeyUtils.getInfiniteFilters(infiniteQueryKey));
         const [firstPage, ...remainingPages] = current.pages;
 
         if (!firstPage) {
@@ -148,7 +172,7 @@ export function upsertClientCaches(queryClient: QueryClient, client: Client) {
         return {
           ...current,
           pages: [
-            updateEnvelope(firstPage, client, search),
+            updateClientListEnvelope(firstPage, client, search),
             ...remainingPages,
           ],
         };
@@ -157,13 +181,37 @@ export function upsertClientCaches(queryClient: QueryClient, client: Client) {
       continue;
     }
 
-    if (isClientListQuery(query.queryKey)) {
+    if (clientKeyUtils.isList(query.queryKey)) {
+      const listQueryKey = query.queryKey;
+
       queryClient.setQueryData(query.queryKey, (current: unknown) => {
         if (!isClientListEnvelope(current)) {
           return current;
         }
 
-        return updateEnvelope(current, client);
+        return updateClientListEnvelope(
+          current,
+          client,
+          getSearch(clientKeyUtils.getListFilters(listQueryKey)),
+        );
+      });
+
+      continue;
+    }
+
+    if (clientKeyUtils.isDirectory(query.queryKey)) {
+      const directoryQueryKey = query.queryKey;
+
+      queryClient.setQueryData(query.queryKey, (current: unknown) => {
+        if (!isClientDirectoryEnvelope(current)) {
+          return current;
+        }
+
+        return updateClientDirectoryEnvelope(
+          current,
+          client,
+          getSearch(clientKeyUtils.getDirectoryFilters(directoryQueryKey)),
+        );
       });
     }
   }
@@ -180,7 +228,7 @@ export function removeClientCaches(queryClient: QueryClient, clientId: string) {
   });
 
   for (const query of clientQueries) {
-    if (isInfiniteClientQuery(query.queryKey)) {
+    if (clientKeyUtils.isInfinite(query.queryKey)) {
       queryClient.setQueryData(query.queryKey, (current: unknown) => {
         if (!isClientInfiniteData(current)) {
           return current;
@@ -198,7 +246,7 @@ export function removeClientCaches(queryClient: QueryClient, clientId: string) {
       continue;
     }
 
-    if (isClientListQuery(query.queryKey)) {
+    if (clientKeyUtils.isList(query.queryKey)) {
       queryClient.setQueryData(query.queryKey, (current: unknown) => {
         if (!isClientListEnvelope(current)) {
           return current;
@@ -207,6 +255,29 @@ export function removeClientCaches(queryClient: QueryClient, clientId: string) {
         return {
           ...current,
           data: removeClient(current.data, clientId),
+        };
+      });
+
+      continue;
+    }
+
+    if (clientKeyUtils.isDirectory(query.queryKey)) {
+      queryClient.setQueryData(query.queryKey, (current: unknown) => {
+        if (!isClientDirectoryEnvelope(current)) {
+          return current;
+        }
+
+        const nextData = removeClient(current.data, clientId);
+
+        return {
+          ...current,
+          data: nextData,
+          meta: {
+            ...current.meta,
+            returned: nextData.length,
+            hasMore:
+              current.meta.hasMore || nextData.length >= current.meta.limit,
+          },
         };
       });
     }
@@ -222,16 +293,18 @@ export function upsertClientPaymentCaches(
   });
 
   for (const query of paymentQueries) {
-    if (!isClientPaymentsQuery(query.queryKey, payment.clientId)) {
+    if (!clientKeyUtils.isPayments(query.queryKey, payment.clientId)) {
       continue;
     }
+
+    const paymentsQueryKey = query.queryKey;
 
     queryClient.setQueryData(query.queryKey, (current: unknown) => {
       if (!Array.isArray(current)) {
         return current;
       }
 
-      const status = getStatusFromPaymentsQueryKey(query.queryKey);
+      const status = getStatusFromPaymentsQueryKey(paymentsQueryKey);
 
       if (status && status !== payment.status) {
         return current;
@@ -244,8 +317,7 @@ export function upsertClientPaymentCaches(
 
 export function clearClientCaches(queryClient: QueryClient) {
   queryClient.removeQueries({
-    predicate: (query) =>
-      query.queryKey[0] === clientKeys.all[0] && query.queryKey[1] === 'detail',
+    queryKey: clientKeys.details(),
   });
 
   const clientQueries = queryClient.getQueryCache().findAll({
@@ -253,7 +325,7 @@ export function clearClientCaches(queryClient: QueryClient) {
   });
 
   for (const query of clientQueries) {
-    if (isInfiniteClientQuery(query.queryKey)) {
+    if (clientKeyUtils.isInfinite(query.queryKey)) {
       queryClient.setQueryData(query.queryKey, () => ({
         pages: [],
         pageParams: [],
@@ -261,7 +333,7 @@ export function clearClientCaches(queryClient: QueryClient) {
       continue;
     }
 
-    if (isClientListQuery(query.queryKey)) {
+    if (clientKeyUtils.isList(query.queryKey)) {
       queryClient.setQueryData(query.queryKey, (current: unknown) => {
         if (!isClientListEnvelope(current)) {
           return {
@@ -276,6 +348,28 @@ export function clearClientCaches(queryClient: QueryClient) {
           meta: {
             ...current.meta,
             ...EMPTY_CLIENT_META,
+          },
+        };
+      });
+
+      continue;
+    }
+
+    if (clientKeyUtils.isDirectory(query.queryKey)) {
+      queryClient.setQueryData(query.queryKey, (current: unknown) => {
+        if (!isClientDirectoryEnvelope(current)) {
+          return {
+            data: [],
+            meta: EMPTY_DIRECTORY_META,
+          };
+        }
+
+        return {
+          ...current,
+          data: [],
+          meta: {
+            ...current.meta,
+            ...EMPTY_DIRECTORY_META,
           },
         };
       });

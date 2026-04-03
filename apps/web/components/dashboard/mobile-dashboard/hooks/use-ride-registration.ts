@@ -35,7 +35,6 @@ export function useRideRegistration({
         rideDate: formState.fields.rideDate,
         notes: formState.fields.notes,
         photo: formState.fields.photo,
-        setIsSaving: formState.setters.setIsSaving,
         resetForm: formState.helpers.resetForm,
         onSuccess,
     });
@@ -51,13 +50,12 @@ export function useRideRegistration({
             rideDate: formState.fields.rideDate,
             notes: formState.fields.notes,
             photo: formState.fields.photo,
-            isSaving: formState.fields.isSaving,
+            isSaving: submitRide.isSubmitting,
             canSubmit: !!selectedClient && !!formState.fields.customValue,
         }),
         [
             formState.fields.customLocation,
             formState.fields.customValue,
-            formState.fields.isSaving,
             formState.fields.notes,
             formState.fields.paymentStatus,
             formState.fields.photo,
@@ -65,6 +63,7 @@ export function useRideRegistration({
             formState.fields.selectedPresetId,
             formState.fields.showCustomForm,
             selectedClient,
+            submitRide.isSubmitting,
         ],
     );
 
@@ -78,7 +77,7 @@ export function useRideRegistration({
         toggleCustomForm: formState.helpers.toggleCustomForm,
         handlePhotoChange: formState.helpers.handlePhotoChange,
         removePhoto: () => formState.setters.setPhoto(null),
-        submitRide,
+        submitRide: submitRide.submitRide,
         resetForm: formState.helpers.resetForm,
     };
 

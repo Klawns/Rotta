@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useCreateClientMutation } from "@/hooks/mutations/use-create-client-mutation";
 import { parseApiError } from "@/lib/api-error";
-import { upsertClientCaches } from "@/lib/client-cache";
-import { clientsService } from "@/services/clients-service";
 import type { Client } from "@/types/rides";
 import type { ClientCreationDialogState } from "./use-client-selection";
 
@@ -14,17 +12,29 @@ interface UseClientCreationDialogProps {
 }
 
 export function useClientCreationDialog({ onCreated }: UseClientCreationDialogProps = {}) {
-    const queryClient = useQueryClient();
     const { toast } = useToast();
 
     const [isOpen, setIsOpen] = useState(false);
     const [name, setName] = useState("");
-    const [isCreating, setIsCreating] = useState(false);
 
     const close = useCallback(() => {
         setIsOpen(false);
         setName("");
     }, []);
+
+    const mutation = useCreateClientMutation({
+        onSuccess: async (client) => {
+            close();
+            toast({ title: "Cliente cadastrado!" });
+            onCreated?.(client);
+        },
+        onError: async (error) => {
+            toast({
+                title: parseApiError(error, "Erro ao cadastrar"),
+                variant: "destructive",
+            });
+        },
+    });
 
     const submit = useCallback(async () => {
         const trimmedName = name.trim();
@@ -33,22 +43,8 @@ export function useClientCreationDialog({ onCreated }: UseClientCreationDialogPr
             return;
         }
 
-        setIsCreating(true);
-        try {
-            const client = await clientsService.createClient({ name: trimmedName });
-            upsertClientCaches(queryClient, client);
-            close();
-            toast({ title: "Cliente cadastrado!" });
-            onCreated?.(client);
-        } catch (error) {
-            toast({
-                title: parseApiError(error, "Erro ao cadastrar"),
-                variant: "destructive",
-            });
-        } finally {
-            setIsCreating(false);
-        }
-    }, [close, name, onCreated, queryClient, toast]);
+        await mutation.mutateAsync({ name: trimmedName });
+    }, [mutation, name]);
 
     return useMemo<ClientCreationDialogState>(
         () => ({
@@ -57,9 +53,9 @@ export function useClientCreationDialog({ onCreated }: UseClientCreationDialogPr
             close,
             name,
             setName,
-            isCreating,
+            isCreating: mutation.isPending,
             submit,
         }),
-        [close, isCreating, isOpen, name, submit],
+        [close, isOpen, mutation.isPending, name, submit],
     );
 }
