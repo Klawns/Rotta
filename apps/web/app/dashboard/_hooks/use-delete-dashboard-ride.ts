@@ -6,7 +6,7 @@ import { parseApiError } from "@/lib/api-error";
 import { clientKeys, financeKeys, rideKeys } from "@/lib/query-keys";
 import { removeRideCaches } from "@/lib/ride-cache";
 import { ridesService } from "@/services/rides-service";
-import type { Ride } from "@/types/rides";
+import type { RideViewModel } from "@/types/rides";
 
 interface UseDeleteDashboardRideProps {
     onDeleted?: () => void;
@@ -21,11 +21,11 @@ export function useDeleteDashboardRide({
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
-        mutationFn: (ride: Ride) => ridesService.deleteRide(ride.id),
+        mutationFn: (ride: RideViewModel) => ridesService.deleteRide(ride.id),
         onSuccess: async (_, ride) => {
             removeRideCaches(queryClient, ride.id);
 
-            const clientId = ride.clientId || ride.client?.id;
+            const clientId = ride.clientId;
             const tasks = [
                 queryClient.invalidateQueries({ queryKey: rideKeys.frequentClients() }),
                 queryClient.invalidateQueries({ queryKey: financeKeys.all }),

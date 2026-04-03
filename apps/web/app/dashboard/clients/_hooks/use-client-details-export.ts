@@ -7,12 +7,12 @@ import { parseApiError } from '@/lib/api-error';
 import { PDFService } from '@/services/pdf-service';
 import { ridesService } from '@/services/rides-service';
 import { type ClientPayment } from '@/types/client-payments';
-import { type Client, type ClientBalance, type Ride } from '@/types/rides';
+import { type Client, type ClientBalance, type RideViewModel } from '@/types/rides';
 import { useExportClientDebt } from './use-export-client-debt';
 
 interface UseClientDetailsExportProps {
   client: Client | null;
-  rides: Ride[];
+  rides: RideViewModel[];
   balance: ClientBalance | null;
   payments: ClientPayment[];
   isDetailsPending: boolean;
@@ -40,7 +40,7 @@ export function useClientDetailsExport({
       return [];
     }
 
-    const pendingRides: Ride[] = [];
+    const pendingRides: RideViewModel[] = [];
     let cursor: string | undefined;
 
     do {

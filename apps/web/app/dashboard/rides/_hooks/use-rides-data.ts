@@ -10,7 +10,7 @@ import { useClientDirectory } from "@/hooks/use-client-directory";
 import { useRidePaymentStatus } from "@/hooks/use-ride-payment-status";
 import { rideKeys } from "@/lib/query-keys";
 import { ridesService } from "@/services/rides-service";
-import { Ride, RidesFilterState } from "@/types/rides";
+import { RideViewModel, RidesFilterState } from "@/types/rides";
 
 interface UseRidesDataProps {
     filters: RidesFilterState;
@@ -29,7 +29,7 @@ function buildRideFilters(filters: RidesFilterState, pageSize: number) {
     };
 }
 
-function getUniqueRides(rides: Ride[]) {
+function getUniqueRides(rides: RideViewModel[]) {
     return Array.from(
         new Map(
             rides

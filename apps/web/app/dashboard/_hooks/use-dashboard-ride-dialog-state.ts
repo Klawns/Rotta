@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { Ride } from "@/types/rides";
+import type { RideViewModel } from "@/types/rides";
 
 export function useDashboardRideDialogState() {
     const [isRideModalOpen, setIsRideModalOpen] = useState(false);
-    const [rideToEdit, setRideToEdit] = useState<Ride | null>(null);
-    const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
+    const [rideToEdit, setRideToEdit] = useState<RideViewModel | null>(null);
+    const [rideToDelete, setRideToDelete] = useState<RideViewModel | null>(null);
 
-    const handleEditRide = useCallback((ride: Ride) => {
+    const handleEditRide = useCallback((ride: RideViewModel) => {
         setRideToEdit(ride);
         setIsRideModalOpen(true);
     }, []);

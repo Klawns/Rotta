@@ -6,14 +6,14 @@ import Link from "next/link";
 import { useRef } from "react";
 import { InfiniteScrollContainer } from "@/components/ui/infinite-scroll-container";
 import { HybridInfiniteList } from "@/components/ui/hybrid-infinite-list";
-import { Ride } from "@/types/rides";
+import { type RideViewModel } from "@/types/rides";
 import { useRecentActivities } from "../_hooks/use-recent-activities";
 import { RecentActivityItem } from "./recent-activity-item";
 
 interface RecentActivitiesProps {
     period: "today" | "week";
-    onEditRide: (ride: Ride) => void;
-    onDeleteRide: (ride: Ride) => void;
+    onEditRide: (ride: RideViewModel) => void;
+    onDeleteRide: (ride: RideViewModel) => void;
 }
 
 export function RecentActivities({
@@ -48,7 +48,7 @@ export function RecentActivities({
                     >
                         <HybridInfiniteList
                             items={recentActivities.rides}
-                            renderItem={(ride: Ride) => (
+                            renderItem={(ride: RideViewModel) => (
                                 <RecentActivityItem
                                     key={ride.id}
                                     ride={ride}

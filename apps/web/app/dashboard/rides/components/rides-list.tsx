@@ -1,12 +1,12 @@
 import { Bike, SearchX } from "lucide-react";
 import { HybridInfiniteList } from "@/components/ui/hybrid-infinite-list";
 import { parseApiError } from "@/lib/api-error";
-import { PaymentStatus, Ride } from "@/types/rides";
+import { PaymentStatus, RideViewModel } from "@/types/rides";
 import { RideCard } from "./ride-card";
 import { RideSkeleton } from "./ride-skeleton";
 
 interface RidesListContainerProps {
-    rides: Ride[];
+    rides: RideViewModel[];
     isLoading: boolean;
     isFetching?: boolean;
     hasNextPage?: boolean;
@@ -14,9 +14,9 @@ interface RidesListContainerProps {
     isFetchingNextPage?: boolean;
     error?: unknown;
     retry?: () => void | Promise<unknown>;
-    onEdit: (ride: Ride) => void;
-    onDelete: (ride: Ride) => void;
-    onChangePaymentStatus: (ride: Ride, status: PaymentStatus) => void | Promise<unknown>;
+    onEdit: (ride: RideViewModel) => void;
+    onDelete: (ride: RideViewModel) => void;
+    onChangePaymentStatus: (ride: RideViewModel, status: PaymentStatus) => void | Promise<unknown>;
     isPaymentUpdating: (rideId: string) => boolean;
     hasActiveFilters: boolean;
     onClearFilters: () => void;
@@ -132,6 +132,7 @@ export function RidesListContainer({
                 listClassName="flex flex-col gap-4 px-1 pb-20 sm:gap-6 sm:px-2"
                 maxHeight="min(68dvh, 56rem)"
                 hideScrollbar={true}
+                scrollBoundaryMode="handoff"
             />
         );
     };

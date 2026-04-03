@@ -3,10 +3,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBackupDownload } from '@/hooks/use-backup-download';
 import { useToast } from '@/hooks/use-toast';
+import { shouldPollBackupJobs } from '@/lib/backup-query-state';
 import { parseApiError } from '@/lib/api-error';
 import { adminKeys } from '@/lib/query-keys';
 import backupsService from '@/services/backups-service';
-import type { BackupJobSummary } from '@/types/backups';
 
 export function useAdminBackups() {
   const { toast } = useToast();
@@ -17,12 +17,7 @@ export function useAdminBackups() {
     queryFn: ({ signal }) => backupsService.listTechnicalBackups(signal),
     retry: false,
     refetchInterval: (query) => {
-      const backups = (query.state.data as BackupJobSummary[] | undefined) ?? [];
-      return backups.some(
-        (backup) => backup.status === 'pending' || backup.status === 'running',
-      )
-        ? 3000
-        : false;
+      return shouldPollBackupJobs(query.state.data) ? 3000 : false;
     },
     refetchIntervalInBackground: true,
   });

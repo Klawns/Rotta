@@ -7,16 +7,16 @@ import {
   submitRideDraft,
   type RideSubmissionDraft,
 } from '@/components/ride-modal/lib/ride-submission';
-import { type Ride } from '@/types/rides';
+import { type RideViewModel } from '@/types/rides';
 
 export interface SubmitRideMutationVariables {
   draft: RideSubmissionDraft;
-  rideToEdit?: Ride | null;
+  rideToEdit?: RideViewModel | null;
 }
 
 interface UseSubmitRideMutationOptions {
   onSuccess?: (
-    ride: Ride,
+    ride: RideViewModel,
     variables: SubmitRideMutationVariables,
   ) => Promise<void> | void;
   onError?: (
@@ -38,7 +38,7 @@ export function useSubmitRideMutation(
 
       const affectedClientIds = Array.from(
         new Set(
-          [ride.clientId || ride.client?.id, variables.rideToEdit?.clientId || variables.rideToEdit?.client?.id]
+          [ride.clientId, variables.rideToEdit?.clientId]
             .filter((value): value is string => Boolean(value)),
         ),
       );

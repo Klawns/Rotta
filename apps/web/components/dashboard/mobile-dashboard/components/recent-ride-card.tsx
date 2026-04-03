@@ -10,13 +10,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { resolveRideDateValue } from "@/lib/date-utils";
 import { cn, formatCurrency } from "@/lib/utils";
-import { Ride } from "../types";
+import { RideViewModel } from "../types";
 
 interface RecentRideCardProps {
-    ride: Ride;
-    onEdit: (ride: Ride) => void;
-    onDelete: (ride: Ride) => void;
-    onChangePaymentStatus: (ride: Ride, status: "PAID" | "PENDING") => void | Promise<unknown>;
+    ride: RideViewModel;
+    onEdit: (ride: RideViewModel) => void;
+    onDelete: (ride: RideViewModel) => void;
+    onChangePaymentStatus: (ride: RideViewModel, status: "PAID" | "PENDING") => void | Promise<unknown>;
     isPaymentUpdating: boolean;
 }
 

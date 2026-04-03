@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { rideKeys } from "@/lib/query-keys";
-import { type Ride } from "@/types/rides";
+import { type RideViewModel } from "@/types/rides";
 import { type Period } from "./dashboard-stats.types";
 import { useDashboardRides } from "./use-dashboard-rides";
 import { useDashboardStats } from "./use-dashboard-stats";
@@ -17,7 +17,7 @@ export interface DashboardDesktopStats {
     setPeriod: (period: Period) => void;
     count?: number;
     totalValue?: number;
-    monthRides?: Ride[];
+    monthRides?: RideViewModel[];
     isPending: boolean;
     isError: boolean;
     error: unknown | null;
@@ -32,8 +32,8 @@ export interface DashboardMobileStats {
 }
 
 export interface DashboardRideActions {
-    editRide: (ride: Ride) => void;
-    requestRideDelete: (ride: Ride) => void;
+    editRide: (ride: RideViewModel) => void;
+    requestRideDelete: (ride: RideViewModel) => void;
 }
 
 export function useDashboard() {

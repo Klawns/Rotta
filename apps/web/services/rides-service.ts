@@ -3,17 +3,21 @@ import {
   CreateRideDTO,
   CursorMeta,
   FrequentClient,
-  Ride,
-  RideResponseDTO,
+  RideViewModel,
   RidesParams,
   UpdateRideDTO,
 } from '@/types/rides';
 import { RidesMapper } from './rides-mapper';
+import {
+  parseRideResponseDTO,
+  parseRideResponseDTOList,
+  parseRideStatsPayload,
+} from './rides-response';
 
 export interface RideStatsResponse {
   count: number;
   totalValue: number;
-  rides: Ride[];
+  rides: RideViewModel[];
 }
 
 interface RideStatsMeta extends Record<string, unknown> {
@@ -21,24 +25,20 @@ interface RideStatsMeta extends Record<string, unknown> {
   totalValue?: number;
 }
 
-interface FlatRideStatsPayload {
-  count?: number;
-  totalValue?: number;
-  rides?: RideResponseDTO[];
-}
-
 export const ridesService = {
   async getRides(
     params: RidesParams,
     signal?: AbortSignal,
-  ): Promise<ApiEnvelope<Ride[], CursorMeta>> {
-    const response = await apiClient.getPaginated<RideResponseDTO[], CursorMeta>(
+  ): Promise<ApiEnvelope<RideViewModel[], CursorMeta>> {
+    const response = await apiClient.getPaginated<unknown, CursorMeta>(
       '/rides',
       { params, signal },
     );
 
     return {
-      data: RidesMapper.toDomainList(response.data || []),
+      data: RidesMapper.toViewModelList(
+        parseRideResponseDTOList(response.data, 'rides list'),
+      ),
       meta: response.meta,
     };
   },
@@ -52,25 +52,17 @@ export const ridesService = {
     },
     signal?: AbortSignal,
   ): Promise<ApiEnvelope<RideStatsResponse>> {
-    const response = await apiClient.getPaginated<
-      FlatRideStatsPayload | RideResponseDTO[],
-      RideStatsMeta
-    >('/rides/stats', { params, signal });
-
-    const rawData = response.data;
-    const rawRides = Array.isArray(rawData) ? rawData : rawData?.rides || [];
-    const count = Array.isArray(rawData)
-      ? Number(response.meta?.count ?? 0)
-      : Number(rawData?.count ?? response.meta?.count ?? 0);
-    const totalValue = Array.isArray(rawData)
-      ? Number(response.meta?.totalValue ?? 0)
-      : Number(rawData?.totalValue ?? response.meta?.totalValue ?? 0);
+    const response = await apiClient.getPaginated<unknown, RideStatsMeta>(
+      '/rides/stats',
+      { params, signal },
+    );
+    const stats = parseRideStatsPayload(response.data, response.meta, 'rides stats');
 
     return {
       data: {
-        count,
-        totalValue,
-        rides: RidesMapper.toDomainList(rawRides),
+        count: stats.count,
+        totalValue: stats.totalValue,
+        rides: RidesMapper.toViewModelList(stats.rides),
       },
       meta: response.meta,
     };
@@ -80,32 +72,34 @@ export const ridesService = {
     return apiClient.get('/rides/frequent-clients', { signal });
   },
 
-  async createRide(ride: CreateRideDTO): Promise<Ride> {
-    const data = await apiClient.post<RideResponseDTO>('/rides', ride);
-    return RidesMapper.toDomain(data);
+  async createRide(ride: CreateRideDTO): Promise<RideViewModel> {
+    const data = await apiClient.post<unknown>('/rides', ride);
+    return RidesMapper.toViewModelFromDTO(parseRideResponseDTO(data, 'create ride'));
   },
 
-  async updateRide(id: string, ride: UpdateRideDTO): Promise<Ride> {
+  async updateRide(id: string, ride: UpdateRideDTO): Promise<RideViewModel> {
     const cleanedPayload = Object.fromEntries(
       Object.entries(ride).filter(([, value]) => value !== undefined),
     );
 
-    const data = await apiClient.patch<RideResponseDTO>(
+    const data = await apiClient.patch<unknown>(
       `/rides/${id}`,
       cleanedPayload,
     );
-    return RidesMapper.toDomain(data);
+    return RidesMapper.toViewModelFromDTO(parseRideResponseDTO(data, 'update ride'));
   },
 
   async updateRideStatus(
     id: string,
     dataPayload: { status?: string; paymentStatus?: string },
-  ): Promise<Ride> {
-    const data = await apiClient.patch<RideResponseDTO>(
+  ): Promise<RideViewModel> {
+    const data = await apiClient.patch<unknown>(
       `/rides/${id}/status`,
       dataPayload,
     );
-    return RidesMapper.toDomain(data);
+    return RidesMapper.toViewModelFromDTO(
+      parseRideResponseDTO(data, 'update ride status'),
+    );
   },
 
   async deleteRide(id: string): Promise<void> {
@@ -129,14 +123,16 @@ export const ridesService = {
       paymentStatus?: string;
     },
     signal?: AbortSignal,
-  ): Promise<ApiEnvelope<Ride[], CursorMeta>> {
-    const response = await apiClient.getPaginated<RideResponseDTO[], CursorMeta>(
+  ): Promise<ApiEnvelope<RideViewModel[], CursorMeta>> {
+    const response = await apiClient.getPaginated<unknown, CursorMeta>(
       `/rides/client/${clientId}`,
       { params, signal },
     );
 
     return {
-      data: RidesMapper.toDomainList(response.data || []),
+      data: RidesMapper.toViewModelList(
+        parseRideResponseDTOList(response.data, 'rides by client list'),
+      ),
       meta: response.meta,
     };
   },

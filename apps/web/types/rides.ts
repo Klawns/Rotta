@@ -40,6 +40,11 @@ export interface FrequentClient extends Client {
 // ===========================
 // Ride Response (API → Frontend)
 // ===========================
+export interface RideClientDTO {
+    id: string;
+    name: string;
+}
+
 export interface RideResponseDTO {
     id: string;
     value: number;
@@ -48,32 +53,47 @@ export interface RideResponseDTO {
     paymentStatus: PaymentStatus;
     rideDate: string;
     createdAt: string;
-    paidWithBalance?: number;
-    debtValue?: number;
+    paidWithBalance?: number | null;
+    debtValue?: number | null;
     location?: string | null;
     photo?: string | null;
-    client: {
-        id: string;
-        name: string;
-    } | null;
+    client: RideClientDTO | null;
 }
 
-/**
- * Backwards-compat alias used by pages/hooks that still expect
- * `clientId`, `clientName` etc. on the ride object.
- * Will be phased out once all consumers move to RideResponseDTO.
- */
-export interface Ride extends Partial<RideResponseDTO> {
+export interface RideDomainModel {
     id: string;
     value: number;
+    notes: string | null;
+    status: RideStatus;
+    paymentStatus: PaymentStatus;
+    rideDate: string;
     createdAt: string;
-    clientId?: string;
-    clientName?: string;
-    paid?: boolean;
-    status?: RideStatus;
-    paymentStatus?: PaymentStatus;
-    rideDate?: string;
+    paidWithBalance?: number;
+    debtValue?: number;
+    location: string | null;
+    photo: string | null;
+    client: RideClientDTO | null;
 }
+
+export interface RideViewModel {
+    id: string;
+    value: number;
+    notes: string | null;
+    status: RideStatus;
+    paymentStatus: PaymentStatus;
+    rideDate: string;
+    createdAt: string;
+    paidWithBalance?: number;
+    debtValue?: number;
+    location: string | null;
+    photo: string | null;
+    client: RideClientDTO | null;
+    clientId: string | null;
+    clientName: string;
+    paid: boolean;
+}
+
+export type Ride = RideViewModel;
 
 // ===========================
 // Ride Mutation Payloads (Frontend → API)
@@ -134,7 +154,7 @@ export interface RideModalProps {
     onSuccess: () => void;
     clientId?: string;
     clientName?: string;
-    rideToEdit?: Ride | null;
+    rideToEdit?: RideViewModel | null;
 }
 
 export interface RideFormData {

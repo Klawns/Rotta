@@ -63,7 +63,7 @@ export function useRideForm({
     }
 
     if (rideToEdit) {
-      setSelectedClientId(rideToEdit.clientId || rideToEdit.client?.id || '');
+      setSelectedClientId(rideToEdit.clientId || '');
       setValue(rideToEdit.value.toString());
       setLocation(rideToEdit.location || '');
       setNotes(rideToEdit.notes || '');

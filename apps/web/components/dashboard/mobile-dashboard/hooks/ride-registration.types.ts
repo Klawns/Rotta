@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import type { PaymentStatus, Ride } from "@/types/rides";
+import type { PaymentStatus, RideViewModel } from "@/types/rides";
 
 export interface RideFormState {
     selectedPresetId: string | null;
@@ -31,10 +31,10 @@ export interface RideFormActions {
 }
 
 export interface RideRegistrationModals {
-    rideToEdit: Ride | null;
-    setRideToEdit: (ride: Ride | null) => void;
-    rideToDelete: Ride | null;
-    setRideToDelete: (ride: Ride | null) => void;
+    rideToEdit: RideViewModel | null;
+    setRideToEdit: (ride: RideViewModel | null) => void;
+    rideToDelete: RideViewModel | null;
+    setRideToDelete: (ride: RideViewModel | null) => void;
     isDeleting: boolean;
     handleDeleteRide: () => Promise<void>;
 }

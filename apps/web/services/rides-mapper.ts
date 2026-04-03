@@ -1,34 +1,53 @@
-import { Ride, RideResponseDTO } from "../types/rides";
+import {
+  type RideDomainModel,
+  type RideResponseDTO,
+  type RideViewModel,
+} from '@/types/rides';
 
-/**
- * Mapper para desacoplar o modelo da API (DTO) do modelo da UI (Domain/Domain-like).
- * Centraliza qualquer transformação necessária ao receber ou enviar dados.
- */
+function normalizeOptionalNumber(value: number | null | undefined) {
+  return typeof value === 'number' ? value : undefined;
+}
+
+function normalizeNullableString(value: string | null | undefined) {
+  return typeof value === 'string' ? value : null;
+}
+
+function resolveClientName(ride: Pick<RideDomainModel, 'client'>) {
+  return ride.client?.name || 'Sem nome';
+}
+
 export class RidesMapper {
-  /**
-   * Converte um RideResponseDTO vindo da API para o modelo Ride usado na UI.
-   * Garante compatibilidade com componentes que esperam clientId/clientName flat.
-   */
-  static toDomain(dto: RideResponseDTO): Ride {
+  static toDomain(dto: RideResponseDTO): RideDomainModel {
     return {
-      ...dto,
-      // Flattening para retrocompatibilidade e facilidade de acesso na UI
-      clientId: dto.client?.id,
-      clientName: dto.client?.name || "Sem nome",
-      paid: dto.paymentStatus === 'PAID'
+      id: dto.id,
+      value: dto.value,
+      notes: normalizeNullableString(dto.notes),
+      status: dto.status,
+      paymentStatus: dto.paymentStatus,
+      rideDate: dto.rideDate,
+      createdAt: dto.createdAt,
+      paidWithBalance: normalizeOptionalNumber(dto.paidWithBalance),
+      debtValue: normalizeOptionalNumber(dto.debtValue),
+      location: normalizeNullableString(dto.location),
+      photo: normalizeNullableString(dto.photo),
+      client: dto.client,
     };
   }
 
-  /**
-   * Converte uma lista de RideResponseDTO para uma lista de Ride.
-   */
-  static toDomainList(dtos: RideResponseDTO[]): Ride[] {
-    if (!dtos) return [];
-    return dtos.map((dto) => this.toDomain(dto));
+  static toViewModel(ride: RideDomainModel): RideViewModel {
+    return {
+      ...ride,
+      clientId: ride.client?.id ?? null,
+      clientName: resolveClientName(ride),
+      paid: ride.paymentStatus === 'PAID',
+    };
   }
 
-  /**
-   * Pode ser expandido para transformações de saída (toDTO) se necessário no futuro,
-   * facilitando a manutenção caso o payload de criação/atualização mude drasticamente.
-   */
+  static toViewModelFromDTO(dto: RideResponseDTO): RideViewModel {
+    return this.toViewModel(this.toDomain(dto));
+  }
+
+  static toViewModelList(dtos: RideResponseDTO[]): RideViewModel[] {
+    return dtos.map((dto) => this.toViewModelFromDTO(dto));
+  }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { startOfDay, subDays } from "date-fns";
-import type { Ride } from "@/types/rides";
+import type { RideViewModel } from "@/types/rides";
 
 interface RecentActivityFilters {
     limit: number;
@@ -19,6 +19,6 @@ export function buildRecentActivityFilters(period: "today" | "week"): RecentActi
     };
 }
 
-export function getUniqueRecentActivityRides(rides: Ride[]) {
+export function getUniqueRecentActivityRides(rides: RideViewModel[]) {
     return Array.from(new Map(rides.map((ride) => [ride.id, ride])).values());
 }

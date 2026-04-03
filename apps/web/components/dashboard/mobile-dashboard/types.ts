@@ -1,12 +1,12 @@
-import { Ride } from "@/types/rides";
+import { type RideViewModel } from "@/types/rides";
 import type { FreeTrialState } from "@/services/free-trial-service";
-export type { Ride };
+export type { RideViewModel };
 export type { Client, RidePreset, PaymentStatus, RideStatus } from "@/types/rides";
 
 export interface DashboardStats {
     count: number;
     totalValue: number;
-    rides: Ride[];
+    rides: RideViewModel[];
 }
 
 export interface MobileDashboardProps {

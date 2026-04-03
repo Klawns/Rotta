@@ -13,10 +13,10 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import { clientsService } from '@/services/clients-service';
 import { ridesService } from '@/services/rides-service';
-import { type Client, type Ride } from '@/types/rides';
+import { type Client, type RideViewModel } from '@/types/rides';
 
-function getRideClientId(ride: Ride) {
-  return ride.clientId || ride.client?.id || '';
+function getRideClientId(ride: RideViewModel) {
+  return ride.clientId || '';
 }
 
 export function useClientActions() {
@@ -78,7 +78,7 @@ export function useClientActions() {
   });
 
   const deleteRideMutation = useMutation({
-    mutationFn: (ride: Ride) => ridesService.deleteRide(ride.id),
+    mutationFn: (ride: RideViewModel) => ridesService.deleteRide(ride.id),
     onSuccess: async (_, ride) => {
       removeRideCaches(queryClient, ride.id);
 
@@ -141,7 +141,7 @@ export function useClientActions() {
         return false;
       }
     },
-    deleteRide: async (ride: Ride) => {
+    deleteRide: async (ride: RideViewModel) => {
       try {
         await deleteRideMutation.mutateAsync(ride);
         return true;

@@ -2,15 +2,15 @@
 
 import { RideModal } from "@/components/ride-modal";
 import { ConfirmModal } from "@/components/confirm-modal";
-import { Ride } from "@/types/rides";
+import { type RideViewModel } from "@/types/rides";
 
 interface DashboardModalsProps {
     isRideModalOpen: boolean;
     setIsRideModalOpen: (open: boolean) => void;
-    rideToEdit: Ride | null;
-    setRideToEdit: (ride: Ride | null) => void;
-    rideToDelete: Ride | null;
-    setRideToDelete: (ride: Ride | null) => void;
+    rideToEdit: RideViewModel | null;
+    setRideToEdit: (ride: RideViewModel | null) => void;
+    rideToDelete: RideViewModel | null;
+    setRideToDelete: (ride: RideViewModel | null) => void;
     isDeletingRide: boolean;
     onDeleteConfirm: () => Promise<void>;
     onSuccess: () => void;

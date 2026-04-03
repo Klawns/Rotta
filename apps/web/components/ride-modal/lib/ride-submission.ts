@@ -6,7 +6,7 @@ import { ridesService } from '@/services/rides-service';
 import {
   type CreateRideDTO,
   type PaymentStatus,
-  type Ride,
+  type RideViewModel,
   type RideStatus,
 } from '@/types/rides';
 
@@ -81,7 +81,7 @@ function assertValidRidePayload(payload: CreateRideDTO) {
 
 export async function submitRideDraft(
   draft: RideSubmissionDraft,
-  rideToEdit?: Ride | null,
+  rideToEdit?: RideViewModel | null,
 ) {
   const { photo, continuedWithoutPhoto } = await resolveRidePhoto(draft.photo);
   const payload = buildRidePayload(

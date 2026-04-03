@@ -3,14 +3,14 @@
 import React, { useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
-import { type ClientBalance, type Client, type Ride } from "@/types/rides";
+import { type ClientBalance, type Client, type RideViewModel } from "@/types/rides";
 import { ClientFinancePanel } from "@/components/client-details-drawer/client-finance-panel";
 import { ClientDetailsHeader } from "@/components/client-details-drawer/client-details-header";
 import { ClientRidesHistory } from "@/components/client-details-drawer/client-rides-history";
 
 interface ClientDetailsDrawerProps {
   client: Client | null;
-  rides: Ride[];
+  rides: RideViewModel[];
   balance: ClientBalance | null;
   isLoading: boolean;
   isFetchingNextPage: boolean;
@@ -25,10 +25,10 @@ interface ClientDetailsDrawerProps {
   onAddPayment: () => void;
   onGeneratePDF: () => void;
   onGenerateExcel: () => void;
-  onEditRide: (ride: Ride) => void;
-  onDeleteRide: (ride: Ride) => void;
+  onEditRide: (ride: RideViewModel) => void;
+  onDeleteRide: (ride: RideViewModel) => void;
   onChangePaymentStatus: (
-    ride: Ride,
+    ride: RideViewModel,
     status: "PAID" | "PENDING",
   ) => void | Promise<unknown>;
   isPaymentUpdating: (rideId: string) => boolean;

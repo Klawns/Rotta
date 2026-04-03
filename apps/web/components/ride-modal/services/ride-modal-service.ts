@@ -4,7 +4,7 @@ import { settingsService } from '@/services/settings-service';
 import {
   Client,
   CreateRideDTO,
-  Ride,
+  RideViewModel,
   RidePreset,
   UpdateRideDTO,
 } from '@/types/rides';
@@ -18,11 +18,11 @@ export const rideModalService = {
     return clientsService.createClient({ name });
   },
 
-  async createRide(payload: CreateRideDTO): Promise<Ride> {
+  async createRide(payload: CreateRideDTO): Promise<RideViewModel> {
     return ridesService.createRide(payload);
   },
 
-  async updateRide(id: string, payload: UpdateRideDTO): Promise<Ride> {
+  async updateRide(id: string, payload: UpdateRideDTO): Promise<RideViewModel> {
     return ridesService.updateRide(id, payload);
   },
 

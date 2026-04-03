@@ -1,6 +1,6 @@
-import { type Ride } from '@/types/rides';
+import { type RideViewModel } from '@/types/rides';
 
-export function getUniqueRides(rides: Ride[]) {
+export function getUniqueRides(rides: RideViewModel[]) {
   return Array.from(
     new Map(
       rides.filter((ride) => ride?.id).map((ride) => [String(ride.id), ride]),

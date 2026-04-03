@@ -6,19 +6,19 @@ import { ClientRidesCardsContainer } from "@/components/ui/client-rides-cards-co
 import { PaymentComposition } from "@/components/ui/payment-composition";
 import { RidePaymentAction } from "@/components/ui/ride-payment-action";
 import { resolveRideDateValue } from "@/lib/date-utils";
-import { type Ride } from "@/types/rides";
+import { type RideViewModel } from "@/types/rides";
 
 interface ClientRidesHistoryProps {
-  rides: Ride[];
+  rides: RideViewModel[];
   isLoading: boolean;
   isFetchingNextPage: boolean;
   hasNextPage: boolean;
   fetchNextPage: () => void;
   containerRef?: RefObject<HTMLElement | null>;
-  onEditRide: (ride: Ride) => void;
-  onDeleteRide: (ride: Ride) => void;
+  onEditRide: (ride: RideViewModel) => void;
+  onDeleteRide: (ride: RideViewModel) => void;
   onChangePaymentStatus: (
-    ride: Ride,
+    ride: RideViewModel,
     status: "PAID" | "PENDING",
   ) => void | Promise<unknown>;
   isPaymentUpdating: (rideId: string) => boolean;
@@ -83,13 +83,13 @@ export function ClientRidesHistory({
       : `${rides.length} corridas carregadas`;
 
   const ridesList = (
-    <ClientRidesCardsContainer<Ride>
+    <ClientRidesCardsContainer<RideViewModel>
       items={rides}
       containerRef={containerRef}
       hasMore={hasNextPage}
       onLoadMore={fetchNextPage}
       isFetchingNextPage={isFetchingNextPage}
-      renderItem={(ride: Ride) => {
+      renderItem={(ride: RideViewModel) => {
         const rideDate = resolveRideDateValue(ride.rideDate, ride.createdAt);
         const formattedDate = rideDate
           ? rideDate.toLocaleDateString("pt-BR", {

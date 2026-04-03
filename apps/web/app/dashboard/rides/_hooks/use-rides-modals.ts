@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { parseApiError } from "@/lib/api-error";
 import { ridesService } from "@/services/rides-service";
-import { Ride } from "@/types/rides";
+import { type RideViewModel } from "@/types/rides";
 
 interface UseRidesModalsProps {
     onSuccess: () => Promise<unknown> | void;
@@ -16,12 +16,12 @@ export function useRidesModals({ onSuccess }: UseRidesModalsProps) {
         id: string;
         name: string;
     } | null>(null);
-    const [rideToEdit, setRideToEdit] = useState<Ride | null>(null);
-    const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
+    const [rideToEdit, setRideToEdit] = useState<RideViewModel | null>(null);
+    const [rideToDelete, setRideToDelete] = useState<RideViewModel | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const { toast } = useToast();
 
-    const handleEditRide = useCallback((ride: Ride) => {
+    const handleEditRide = useCallback((ride: RideViewModel) => {
         setRideToEdit(ride);
         setIsRideModalOpen(true);
     }, []);

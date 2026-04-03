@@ -3,15 +3,15 @@
 import { Clock } from "lucide-react";
 import { RefObject } from "react";
 import { DashboardCompactRidesContainer } from "@/components/ui/dashboard-compact-rides-container";
-import { Ride } from "../types";
+import { RideViewModel } from "../types";
 import { RideListSkeleton } from "./ride-list-skeleton";
 import { RecentRideCard } from "./recent-ride-card";
 
 interface RecentRidesListProps {
-    rides: Ride[];
-    onEdit: (ride: Ride) => void;
-    onDelete: (ride: Ride) => void;
-    onChangePaymentStatus: (ride: Ride, status: 'PAID' | 'PENDING') => void | Promise<unknown>;
+    rides: RideViewModel[];
+    onEdit: (ride: RideViewModel) => void;
+    onDelete: (ride: RideViewModel) => void;
+    onChangePaymentStatus: (ride: RideViewModel, status: 'PAID' | 'PENDING') => void | Promise<unknown>;
     isPaymentUpdating: (rideId: string) => boolean;
     isLoading: boolean;
     hasMore: boolean;
@@ -60,7 +60,7 @@ export function RecentRidesList({
                     error={error}
                     retry={retry}
                     gap={12}
-                    renderItem={(ride: Ride) => (
+                    renderItem={(ride: RideViewModel) => (
                         <RecentRideCard
                             key={ride.id}
                             ride={ride}

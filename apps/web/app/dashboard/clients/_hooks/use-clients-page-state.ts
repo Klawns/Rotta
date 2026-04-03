@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { clientKeys } from '@/lib/query-keys';
 import { clientsService } from '@/services/clients-service';
-import { type Client, type Ride } from '@/types/rides';
+import { type Client, type RideViewModel } from '@/types/rides';
 
 const FALLBACK_CLIENTS_PATH = '/dashboard/clients';
 
@@ -22,8 +22,8 @@ export function useClientsPageState(clients: Client[] = []) {
   const [isCloseDebtConfirmOpen, setIsCloseDebtConfirmOpen] = useState(false);
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
-  const [rideToEdit, setRideToEdit] = useState<Ride | null>(null);
-  const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
+  const [rideToEdit, setRideToEdit] = useState<RideViewModel | null>(null);
+  const [rideToDelete, setRideToDelete] = useState<RideViewModel | null>(null);
   const selectedClientIdFromUrl = searchParams.get('clientId');
   const clientsPagePath = pathname.includes('/clients') ? pathname : FALLBACK_CLIENTS_PATH;
 
@@ -87,7 +87,7 @@ export function useClientsPageState(clients: Client[] = []) {
     replaceSelectedClientInUrl(client.id);
   };
 
-  const openEditRideModal = (ride: Ride) => {
+  const openEditRideModal = (ride: RideViewModel) => {
     setRideToEdit(ride);
     setIsRideModalOpen(true);
   };

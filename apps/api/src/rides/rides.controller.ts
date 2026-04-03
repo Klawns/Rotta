@@ -81,11 +81,19 @@ export class RidesController {
   @Get('stats')
   @Header('Cache-Control', 'private, no-store, max-age=0')
   @Header('Pragma', 'no-cache')
-  getStats(
+  async getStats(
     @Request() req: RequestWithUser,
     @ZodQuery(getStatsSchema) query: GetStatsDto,
   ) {
-    return this.ridesService.getStats(req.user.id, query);
+    const result = await this.ridesService.getStats(req.user.id, query);
+
+    return {
+      data: result.rides,
+      meta: {
+        count: result.count,
+        totalValue: result.totalValue,
+      },
+    };
   }
 
   @Get('count')

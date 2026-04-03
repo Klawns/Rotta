@@ -46,7 +46,7 @@ export function drawRidesTable(doc: AutoTableDoc, currentY: number, rides: PDFRe
     body: rides.length
       ? rides.map((ride) => [
           formatResolvedDateValue(resolveRideDate(ride), null, 'dd/MM/yy HH:mm'),
-          ride.clientName || ride.client?.name || '---',
+          ride.clientName || '---',
           ride.location || '---',
           formatRideValue(ride),
           ride.paymentStatus === 'PAID' ? 'Pago' : 'Pendente',

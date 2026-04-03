@@ -4,12 +4,12 @@ import { format } from "date-fns";
 import * as XLSX from "xlsx-js-style";
 import { formatResolvedDateValue } from "@/lib/date-utils";
 import { type ClientPayment } from "@/types/client-payments";
-import { Client, Ride, ClientBalance } from "@/types/rides";
+import { Client, RideViewModel, ClientBalance } from "@/types/rides";
 
 export function useExportClientDebt() {
   const exportToExcel = (
     client: Client,
-    rides: Ride[],
+    rides: RideViewModel[],
     payments: ClientPayment[],
     balance: ClientBalance,
     options: { userName: string }

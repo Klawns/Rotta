@@ -2,15 +2,15 @@ import { ClientModal } from "@/components/client-modal";
 import { ConfirmModal } from "@/components/confirm-modal";
 import { PaymentModal } from "@/components/payment-modal";
 import { RideModal } from "@/components/ride-modal";
-import { Client, Ride } from "@/types/rides";
+import { Client, RideViewModel } from "@/types/rides";
 
 interface ClientModalsProps {
     selectedClient: Client | null;
     modalClient: Client | null;
     clientToEdit: Client | null;
     clientToDelete: Client | null;
-    rideToEdit: Ride | null;
-    rideToDelete: Ride | null;
+    rideToEdit: RideViewModel | null;
+    rideToDelete: RideViewModel | null;
 
     isClientModalOpen: boolean;
     isRideModalOpen: boolean;

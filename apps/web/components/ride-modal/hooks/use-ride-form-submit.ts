@@ -3,12 +3,12 @@
 import { toast } from 'sonner';
 import { parseApiError } from '@/lib/api-error';
 import { useSubmitRideMutation } from '@/hooks/mutations/use-submit-ride-mutation';
-import { type Ride } from '@/types/rides';
+import { type RideViewModel } from '@/types/rides';
 import { type RideSubmissionDraft } from '../lib/ride-submission';
 
 interface UseRideFormSubmitProps {
   draft: RideSubmissionDraft;
-  rideToEdit?: Ride | null;
+  rideToEdit?: RideViewModel | null;
   resetForm: () => void;
   onSuccess?: () => void;
   onClose?: () => void;

@@ -1,9 +1,9 @@
 import { type InfiniteData, type QueryClient } from '@tanstack/react-query';
 import { rideKeys } from '@/lib/query-keys';
 import { type ApiEnvelope } from '@/services/api';
-import { type CursorMeta, type Ride } from '@/types/rides';
+import { type CursorMeta, type RideViewModel } from '@/types/rides';
 
-type RideListEnvelope = ApiEnvelope<Ride[], CursorMeta>;
+type RideListEnvelope = ApiEnvelope<RideViewModel[], CursorMeta>;
 type RideInfiniteData = InfiniteData<RideListEnvelope, string | undefined>;
 const EMPTY_RIDE_META = {
   hasNextPage: false,
@@ -39,11 +39,11 @@ function isRideListEnvelope(value: unknown): value is RideListEnvelope {
   );
 }
 
-function isRide(value: unknown): value is Ride {
+function isRide(value: unknown): value is RideViewModel {
   return isRecord(value) && typeof value.id === 'string';
 }
 
-function compareRides(left: Ride, right: Ride) {
+function compareRides(left: RideViewModel, right: RideViewModel) {
   const rideDateComparison = (right.rideDate || '').localeCompare(left.rideDate || '');
 
   if (rideDateComparison !== 0) {
@@ -59,22 +59,22 @@ function compareRides(left: Ride, right: Ride) {
   return right.id.localeCompare(left.id);
 }
 
-function removeRide(rides: Ride[], rideId: string) {
+function removeRide(rides: RideViewModel[], rideId: string) {
   return rides.filter((ride) => ride.id !== rideId);
 }
 
-function removeRidesByClient(rides: Ride[], clientId: string) {
+function removeRidesByClient(rides: RideViewModel[], clientId: string) {
   return rides.filter((ride) => getRideClientId(ride) !== clientId);
 }
 
-function upsertSortedRides(rides: Ride[], ride: Ride) {
+function upsertSortedRides(rides: RideViewModel[], ride: RideViewModel) {
   return Array.from(
     new Map([...rides, ride].map((item) => [item.id, item])).values(),
   ).sort(compareRides);
 }
 
-function getRideClientId(ride: Ride) {
-  return ride.clientId || ride.client?.id || '';
+function getRideClientId(ride: RideViewModel) {
+  return ride.clientId || '';
 }
 
 function getFiltersFromQueryKey(queryKey: readonly unknown[]) {
@@ -91,7 +91,7 @@ function getClientIdFromQueryKey(queryKey: readonly unknown[]) {
     : undefined;
 }
 
-function matchesSearch(ride: Ride, search?: unknown) {
+function matchesSearch(ride: RideViewModel, search?: unknown) {
   if (typeof search !== 'string' || !search.trim()) {
     return true;
   }
@@ -99,7 +99,6 @@ function matchesSearch(ride: Ride, search?: unknown) {
   const normalizedSearch = search.trim().toLowerCase();
   const haystack = [
     ride.clientName,
-    ride.client?.name,
     ride.notes,
     ride.location,
   ]
@@ -110,7 +109,7 @@ function matchesSearch(ride: Ride, search?: unknown) {
   return haystack.includes(normalizedSearch);
 }
 
-function matchesDateRange(ride: Ride, startDate?: unknown, endDate?: unknown) {
+function matchesDateRange(ride: RideViewModel, startDate?: unknown, endDate?: unknown) {
   const rideDate = (ride.rideDate || '').slice(0, 10);
 
   if (!rideDate) {
@@ -128,7 +127,7 @@ function matchesDateRange(ride: Ride, startDate?: unknown, endDate?: unknown) {
   return true;
 }
 
-function matchesQuery(ride: Ride, queryKey: readonly unknown[]) {
+function matchesQuery(ride: RideViewModel, queryKey: readonly unknown[]) {
   const filters = getFiltersFromQueryKey(queryKey);
   const clientIdFilter = getClientIdFromQueryKey(queryKey) || filters?.clientId;
 
@@ -158,7 +157,7 @@ function matchesQuery(ride: Ride, queryKey: readonly unknown[]) {
 
 function updateEnvelope(
   envelope: RideListEnvelope,
-  ride: Ride,
+  ride: RideViewModel,
   queryKey: readonly unknown[],
 ) {
   const nextData = matchesQuery(ride, queryKey)
@@ -200,7 +199,7 @@ function includesClientInRideListEnvelope(value: unknown, clientId: string) {
   return value.data.some((ride) => getRideClientId(ride) === clientId);
 }
 
-export function upsertRideCaches(queryClient: QueryClient, ride: Ride) {
+export function upsertRideCaches(queryClient: QueryClient, ride: RideViewModel) {
   queryClient.setQueryData(rideKeys.detail(ride.id), ride);
 
   const rideQueries = queryClient.getQueryCache().findAll({

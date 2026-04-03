@@ -4,13 +4,13 @@ import { Calendar, Pencil, Trash2 } from "lucide-react";
 import { resolveRideDateValue } from "@/lib/date-utils";
 import { PaymentComposition } from "@/components/ui/payment-composition";
 import { RidePaymentAction } from "@/components/ui/ride-payment-action";
-import { Ride } from "@/types/rides";
+import { type RideViewModel } from "@/types/rides";
 
 interface RecentActivityItemProps {
-    ride: Ride;
-    onEditRide: (ride: Ride) => void;
-    onDeleteRide: (ride: Ride) => void;
-    onChangePaymentStatus: (ride: Ride, status: 'PAID' | 'PENDING') => void | Promise<unknown>;
+    ride: RideViewModel;
+    onEditRide: (ride: RideViewModel) => void;
+    onDeleteRide: (ride: RideViewModel) => void;
+    onChangePaymentStatus: (ride: RideViewModel, status: 'PAID' | 'PENDING') => void | Promise<unknown>;
     isPaymentUpdating: boolean;
 }
 

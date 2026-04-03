@@ -8,14 +8,14 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { resolveRideDateValue } from "@/lib/date-utils";
-import { Ride } from "@/types/rides";
+import { type RideViewModel } from "@/types/rides";
 import { cn, formatCurrency } from "@/lib/utils";
 
 interface RideCardProps {
-    ride: Ride;
-    onEdit: (ride: Ride) => void;
-    onDelete: (ride: Ride) => void;
-    onChangePaymentStatus: (ride: Ride, status: 'PAID' | 'PENDING') => void | Promise<unknown>;
+    ride: RideViewModel;
+    onEdit: (ride: RideViewModel) => void;
+    onDelete: (ride: RideViewModel) => void;
+    onChangePaymentStatus: (ride: RideViewModel, status: 'PAID' | 'PENDING') => void | Promise<unknown>;
     isPaymentUpdating: boolean;
 }
 

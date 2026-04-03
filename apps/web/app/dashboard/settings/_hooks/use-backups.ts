@@ -9,14 +9,15 @@ import {
   rideKeys,
   settingsKeys,
 } from "@/lib/query-keys";
+import {
+  shouldPollBackupJobs,
+  shouldPollImportJob,
+} from "@/lib/backup-query-state";
 import { parseApiError } from "@/lib/api-error";
 import { useToast } from "@/hooks/use-toast";
 import backupsService from "@/services/backups-service";
 import type {
-  BackupAutomationStatus,
-  BackupImportExecutionResponse,
   BackupImportJobResponse,
-  BackupJobSummary,
 } from "@/types/backups";
 
 const ACTIVE_IMPORT_STORAGE_KEY = "backups.activeImportJobId";
@@ -93,13 +94,7 @@ export function useBackups() {
     queryKey: settingsKeys.backups(),
     queryFn: ({ signal }) => backupsService.listUserBackups(signal),
     refetchInterval: (query) => {
-      const backups =
-        (query.state.data as BackupJobSummary[] | undefined) ?? [];
-      return backups.some(
-        (backup) => backup.status === "pending" || backup.status === "running",
-      )
-        ? 3000
-        : false;
+      return shouldPollBackupJobs(query.state.data) ? 3000 : false;
     },
     refetchIntervalInBackground: true,
   });
@@ -115,8 +110,7 @@ export function useBackups() {
     queryFn: ({ signal }) =>
       backupsService.getImportStatus(activeImportJobId!, signal),
     refetchInterval: (query) => {
-      const importJob = query.state.data as BackupImportJobResponse | undefined;
-      return importJob?.status === "running" ? 1500 : false;
+      return shouldPollImportJob(query.state.data) ? 1500 : false;
     },
     refetchIntervalInBackground: true,
     retry: false,
@@ -278,8 +272,7 @@ export function useBackups() {
 
   return {
     backups: backupsQuery.data ?? [],
-    backupStatus:
-      (backupStatusQuery.data as BackupAutomationStatus | undefined) ?? null,
+    backupStatus: backupStatusQuery.data ?? null,
     isLoading: backupsQuery.isLoading,
     isStatusLoading: backupStatusQuery.isLoading,
     isRefreshing: backupsQuery.isFetching,
@@ -296,9 +289,6 @@ export function useBackups() {
     previewImport,
     executeImport,
     previewResult: activeImportJob ?? null,
-    importResult:
-      (executeImportMutation.data as
-        | BackupImportExecutionResponse
-        | undefined) ?? null,
+    importResult: executeImportMutation.data ?? null,
   };
 }

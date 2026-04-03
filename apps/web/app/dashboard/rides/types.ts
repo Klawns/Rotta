@@ -3,7 +3,7 @@
  * This file is kept temporarily for backward compatibility.
  */
 export type {
-    Ride,
+    RideViewModel,
     Client,
     FrequentClient,
     RidesFilterState,

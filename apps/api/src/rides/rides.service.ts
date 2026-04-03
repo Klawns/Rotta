@@ -25,6 +25,7 @@ import type {
   UpdateRideStatusDto,
   GetStatsDto,
 } from './dto/rides.dto';
+import type { RideResponseDto } from './dto/ride-response.dto';
 import type { Ride } from './interfaces/rides-repository.interface';
 
 type TransactionRunner = {
@@ -47,6 +48,12 @@ interface BulkDeleteTransaction {
       where(condition: unknown): Promise<RideBalanceRow[]>;
     };
   };
+}
+
+interface RideStatsResult {
+  count: number;
+  totalValue: number;
+  rides: RideResponseDto[];
 }
 
 @Injectable()
@@ -382,7 +389,7 @@ export class RidesService {
     );
   }
 
-  async getStats(userId: string, query: GetStatsDto) {
+  async getStats(userId: string, query: GetStatsDto): Promise<RideStatsResult> {
     const isCacheable =
       process.env.NODE_ENV === 'production' &&
       query.period !== 'custom' &&

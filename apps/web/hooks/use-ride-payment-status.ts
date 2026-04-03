@@ -27,7 +27,7 @@ export function useRidePaymentStatus() {
     onSuccess: async (ride, variables) => {
       upsertRideCaches(queryClient, ride);
 
-      const clientId = ride.clientId || ride.client?.id;
+      const clientId = ride.clientId;
       const tasks = [queryClient.invalidateQueries({ queryKey: financeKeys.all })];
 
       if (clientId) {

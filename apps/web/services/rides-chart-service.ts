@@ -1,7 +1,7 @@
 import { format, parseISO, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { resolveRideDateValue } from '@/lib/date-utils';
-import type { Ride } from '@/types/rides';
+import type { RideViewModel } from '@/types/rides';
 
 export interface RideChartPoint {
   date: string;
@@ -15,7 +15,7 @@ export interface RideChartState {
   hasActivity: boolean;
 }
 
-export function getRidesChartState(rides: Ride[]): RideChartState {
+export function getRidesChartState(rides: RideViewModel[]): RideChartState {
   const last7Days = Array.from({ length: 7 })
     .map((_, index) => format(subDays(new Date(), index), 'yyyy-MM-dd'))
     .reverse();

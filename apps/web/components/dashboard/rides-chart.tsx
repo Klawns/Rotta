@@ -12,14 +12,14 @@ import {
 } from 'recharts';
 import { useRidesChart } from '@/hooks/use-rides-chart';
 import { cn, formatCurrency } from '@/lib/utils';
-import { type Ride } from '@/types/rides';
+import { type RideViewModel } from '@/types/rides';
 import {
   type RideChartPoint,
 } from '@/services/rides-chart-service';
 import { RidesChartEmptyState } from './rides-chart-empty-state';
 
 interface RidesChartProps {
-  rides: Ride[];
+  rides: RideViewModel[];
   className?: string;
 }
 
