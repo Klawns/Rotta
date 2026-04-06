@@ -1,8 +1,13 @@
 import { BadRequestException } from '@nestjs/common';
 import Busboy from 'busboy';
 import type { Request } from 'express';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { basename } from 'node:path';
+import { join } from 'node:path';
 import type { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import {
   DEFAULT_BACKUP_IMPORT_FILE_SIZE_LIMIT_BYTES,
   DEFAULT_BACKUP_IMPORT_MULTIPART_FIELD_COUNT,
@@ -10,21 +15,13 @@ import {
   DEFAULT_BACKUP_IMPORT_MULTIPART_HEADER_PAIR_LIMIT,
   DEFAULT_BACKUP_IMPORT_MULTIPART_PART_COUNT,
 } from '../backups.constants';
+import type { FunctionalBackupImportArchiveSource } from '../services/functional-backup-import.types';
 
 const BACKUP_IMPORT_FILE_FIELD_NAME = 'file';
 const ACCEPTED_ZIP_MIME_TYPES = new Set([
   'application/zip',
   'application/x-zip-compressed',
 ]);
-
-export interface BackupImportUploadSource {
-  completed: Promise<void>;
-  fieldName: string;
-  mimetype: string;
-  originalname: string;
-  stream: Readable;
-  cancel(error?: Error): void;
-}
 
 function toBadRequestException(error: unknown, fallbackMessage: string) {
   if (error instanceof BadRequestException) {
@@ -51,15 +48,32 @@ function isZipUpload(filename: string, mimeType: string) {
   );
 }
 
-export function parseBackupImportUploadRequest(
+async function removeTemporaryUpload(tempDirectory: string) {
+  await rm(tempDirectory, { force: true, recursive: true });
+}
+
+export async function parseBackupImportUploadRequest(
   req: Request,
-): Promise<BackupImportUploadSource> {
+): Promise<FunctionalBackupImportArchiveSource> {
+  const tempDirectory = await mkdtemp(join(tmpdir(), 'mdc-backup-import-'));
+  const tempArchivePath = join(tempDirectory, 'upload.zip');
+
   return new Promise((resolve, reject) => {
     let activeFile: Readable | null = null;
     let completedResolved = false;
     let failed = false;
     let outerResolved = false;
     let fileSeen = false;
+    let fileMetadata:
+      | {
+          fieldName: string;
+          mimetype: string;
+          originalname: string;
+        }
+      | null = null;
+    let temporaryReadStream: Readable | null = null;
+    let fileWritePromise: Promise<void> | null = null;
+    let cleanupPromise: Promise<void> | null = null;
 
     let resolveCompleted!: () => void;
     let rejectCompleted!: (reason?: unknown) => void;
@@ -108,6 +122,14 @@ export function parseBackupImportUploadRequest(
       }
     };
 
+    const cleanupTemporaryUpload = async () => {
+      if (!cleanupPromise) {
+        cleanupPromise = removeTemporaryUpload(tempDirectory);
+      }
+
+      await cleanupPromise;
+    };
+
     const fail = (error: unknown) => {
       const normalizedError = toBadRequestException(
         error,
@@ -129,6 +151,14 @@ export function parseBackupImportUploadRequest(
       }
 
       try {
+        temporaryReadStream?.destroy(
+          normalizedError instanceof Error ? normalizedError : undefined,
+        );
+      } catch {
+        // Ignore teardown errors while aborting the upload.
+      }
+
+      try {
         req.unpipe(parser);
       } catch {
         // The request might already be detached.
@@ -144,6 +174,8 @@ export function parseBackupImportUploadRequest(
         outerResolved = true;
         reject(normalizedError);
       }
+
+      void cleanupTemporaryUpload().catch(() => undefined);
 
       return normalizedError;
     };
@@ -189,20 +221,16 @@ export function parseBackupImportUploadRequest(
       file.once('error', (streamError) => {
         fail(streamError);
       });
+      fileMetadata = {
+        fieldName,
+        mimetype,
+        originalname,
+      };
 
-      if (!outerResolved) {
-        outerResolved = true;
-        resolve({
-          completed,
-          fieldName,
-          mimetype,
-          originalname,
-          stream: file,
-          cancel: (error?: Error) => {
-            fail(error ?? new Error('Upload cancelado.'));
-          },
-        });
-      }
+      fileWritePromise = pipeline(file, createWriteStream(tempArchivePath));
+      void fileWritePromise.catch((streamError) => {
+        fail(streamError);
+      });
     });
 
     parser.on('field', () => {
@@ -238,16 +266,50 @@ export function parseBackupImportUploadRequest(
     });
 
     parser.once('close', () => {
-      if (failed) {
-        return;
-      }
+      void (async () => {
+        if (failed) {
+          return;
+        }
 
-      if (!fileSeen) {
-        fail(new BadRequestException('Arquivo de backup nao enviado.'));
-        return;
-      }
+        if (!fileSeen || !fileMetadata || !fileWritePromise) {
+          fail(new BadRequestException('Arquivo de backup nao enviado.'));
+          return;
+        }
 
-      finalizeCompletedSuccess();
+        try {
+          await fileWritePromise;
+        } catch (error) {
+          fail(error);
+          return;
+        }
+
+        finalizeCompletedSuccess();
+
+        temporaryReadStream = createReadStream(tempArchivePath);
+
+        if (!outerResolved) {
+          outerResolved = true;
+          resolve({
+            completed,
+            fieldName: fileMetadata.fieldName,
+            mimetype: fileMetadata.mimetype,
+            originalname: fileMetadata.originalname,
+            stream: temporaryReadStream,
+            cancel: (error?: Error) => {
+              try {
+                temporaryReadStream?.destroy(
+                  error ?? new Error('Upload cancelado.'),
+                );
+              } finally {
+                void cleanupTemporaryUpload().catch(() => undefined);
+              }
+            },
+            dispose: () => cleanupTemporaryUpload(),
+          });
+        }
+      })().catch((error: unknown) => {
+        fail(error);
+      });
     });
 
     req.once('aborted', () => {

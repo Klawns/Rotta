@@ -126,6 +126,7 @@ describe('BackupsController import preview (e2e)', () => {
     expect(response.body.message).toBe(
       'Apenas um arquivo .zip e aceito por requisicao.',
     );
+    expect(backupsServiceMock.previewFunctionalImport).not.toHaveBeenCalled();
   });
 
   it('rejects uploads that exceed the configured compacted file size limit', async () => {
@@ -141,6 +142,6 @@ describe('BackupsController import preview (e2e)', () => {
     expect(response.body.message).toBe(
       `Arquivo de backup excede o limite de ${DEFAULT_BACKUP_IMPORT_FILE_SIZE_LIMIT_BYTES} bytes.`,
     );
-    expect(backupsServiceMock.previewFunctionalImport).toHaveBeenCalledTimes(1);
+    expect(backupsServiceMock.previewFunctionalImport).not.toHaveBeenCalled();
   });
 });

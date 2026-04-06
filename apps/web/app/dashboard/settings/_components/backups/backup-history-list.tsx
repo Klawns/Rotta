@@ -19,6 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { getBackupOriginLabel } from '@/lib/backup-history-presentation';
 import type { BackupDownloadState } from '@/hooks/use-backup-download';
 import type { BackupJobSummary } from '@/types/backups';
 
@@ -161,7 +162,6 @@ export function BackupHistoryList({
               renderItem={(backup, index) => {
                 const isLastVisibleItem = index === visibleBackups.length - 1;
                 const data = new Date(backup.createdAt);
-                const isAuto = backup.trigger === 'scheduled';
                 const size = backup.sizeBytes
                   ? `${(backup.sizeBytes / 1024 / 1024).toFixed(2)} MB`
                   : '--';
@@ -207,7 +207,7 @@ export function BackupHistoryList({
 
                       <div className="col-span-3 flex flex-row items-center gap-3 md:flex-col md:items-start md:gap-1">
                         <span className="rounded-full border border-border-subtle bg-background/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                          {isAuto ? 'Automatico' : 'Manual'}
+                          {getBackupOriginLabel(backup.trigger)}
                         </span>
                         <span className="text-sm text-muted-foreground">{size}</span>
                       </div>

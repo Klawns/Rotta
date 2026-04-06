@@ -1,4 +1,4 @@
-import { readZipArchive } from './zip-reader.util';
+import { readZipArchive, readZipArchiveFromSource } from './zip-reader.util';
 import { createZipArchive } from './zip-builder.util';
 
 function overwriteLocalHeaderCrc32(archiveBuffer: Buffer, crc32: number) {
@@ -91,5 +91,32 @@ describe('readZipArchive', () => {
         maxTotalUncompressedBytes: 1024,
       }),
     ).rejects.toThrow('Checksum invalido');
+  });
+
+  it('should process entries through onEntry without retaining the full archive result', async () => {
+    const archiveBuffer = createZipArchive([
+      { name: 'manifest.json', content: '{"ok":true}' },
+      { name: 'clients.json', content: '[]' },
+    ]);
+    const processedEntries: Array<{ name: string; content: string }> = [];
+
+    const entries = await readZipArchiveFromSource([archiveBuffer], {
+      allowedEntryNames: ['manifest.json', 'clients.json'],
+      maxEntries: 2,
+      maxEntryBytes: 1024,
+      maxTotalUncompressedBytes: 2048,
+      onEntry: async (entry) => {
+        processedEntries.push({
+          name: entry.name,
+          content: entry.content.toString('utf8'),
+        });
+      },
+    });
+
+    expect(entries).toEqual([]);
+    expect(processedEntries).toEqual([
+      { name: 'manifest.json', content: '{"ok":true}' },
+      { name: 'clients.json', content: '[]' },
+    ]);
   });
 });

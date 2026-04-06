@@ -4,6 +4,7 @@ import { BackupAutomationNotice } from './backups/backup-automation-notice';
 import { BackupHistoryList } from './backups/backup-history-list';
 import { BackupImportCard } from './backups/backup-import-card';
 import { BackupSummaryCard } from './backups/backup-summary-card';
+import { getLatestSuccessfulSummaryBackup } from '@/lib/backup-history-presentation';
 import { useBackups } from '../_hooks/use-backups';
 
 export function BackupsSettings() {
@@ -26,9 +27,7 @@ export function BackupsSettings() {
     refreshBackups,
   } = useBackups();
 
-  const latestSuccessfulBackup = backups.find(
-    (backup) => backup.status === 'success',
-  );
+  const latestSuccessfulBackup = getLatestSuccessfulSummaryBackup(backups);
 
   return (
     <div className="space-y-8">

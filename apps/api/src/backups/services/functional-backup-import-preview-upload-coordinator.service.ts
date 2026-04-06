@@ -2,9 +2,11 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PassThrough } from 'node:stream';
 import { STORAGE_PROVIDER } from '../../storage/interfaces/storage-provider.interface';
 import type { IStorageProvider } from '../../storage/interfaces/storage-provider.interface';
-import type { BackupImportUploadSource } from '../utils/backup-import-upload.util';
 import { FunctionalBackupImportArchiveParserService } from './functional-backup-import-archive-parser.service';
-import type { ParsedFunctionalBackupArchive } from './functional-backup-import.types';
+import type {
+  FunctionalBackupImportArchiveSource,
+  ParsedFunctionalBackupArchive,
+} from './functional-backup-import.types';
 
 @Injectable()
 export class FunctionalBackupImportPreviewUploadCoordinatorService {
@@ -19,7 +21,7 @@ export class FunctionalBackupImportPreviewUploadCoordinatorService {
   ) {}
 
   async uploadAndParseArchive(
-    upload: BackupImportUploadSource,
+    upload: FunctionalBackupImportArchiveSource,
     storageKey: string,
     options: {
       contentDisposition: string;

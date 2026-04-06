@@ -57,6 +57,7 @@ describe('parseBackupImportUploadRequest', () => {
     expect(upload.originalname).toBe('backup.zip');
     expect(upload.mimetype).toBe('application/zip');
     expect(content.toString('utf8')).toBe('zip-content');
+    await expect(upload.dispose?.()).resolves.toBeUndefined();
   });
 
   it('should reject multipart requests with extra form fields', async () => {
@@ -74,7 +75,7 @@ describe('parseBackupImportUploadRequest', () => {
     );
   });
 
-  it('should reject a second uploaded file through the completion promise', async () => {
+  it('should reject a second uploaded file before returning the upload source', async () => {
     const boundary = '----backup-boundary-files';
     const { request } = createMultipartRequest(
       [
@@ -84,10 +85,8 @@ describe('parseBackupImportUploadRequest', () => {
       boundary,
     );
 
-    const upload = await parseBackupImportUploadRequest(request);
-
-    upload.stream.resume();
-
-    await expect(upload.completed).rejects.toBeInstanceOf(BadRequestException);
+    await expect(parseBackupImportUploadRequest(request)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 });

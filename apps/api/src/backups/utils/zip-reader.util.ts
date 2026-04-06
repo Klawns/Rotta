@@ -22,6 +22,7 @@ export interface ZipArchiveReadOptions {
   maxEntries?: number;
   maxEntryBytes?: number;
   maxTotalUncompressedBytes?: number;
+  onEntry?(entry: ZipArchiveEntry): Promise<void> | void;
   onChunk?(chunk: Buffer): Promise<void> | void;
 }
 
@@ -274,8 +275,9 @@ export async function readZipArchiveFromSource(
     options.maxCompressionRatio ??
     DEFAULT_BACKUP_IMPORT_MAX_COMPRESSION_RATIO;
   const shouldBlockNestedZip = options.blockNestedZip ?? true;
-  const extractedEntries = new Map<string, Buffer>();
+  const extractedEntries = options.onEntry ? null : new Map<string, Buffer>();
   const activeFiles = new Set<UnzipFile>();
+  const seenEntries = new Set<string>();
   const entryPromises: Promise<void>[] = [];
   const metadataReader = new ZipLocalFileMetadataReader();
   let archiveError: Error | null = null;
@@ -335,11 +337,13 @@ export async function readZipArchiveFromSource(
       );
     }
 
-    if (extractedEntries.has(entryName)) {
+    if (seenEntries.has(entryName)) {
       throw abortArchive(
         toArchiveError(`Entrada duplicada no ZIP: ${entryName}.`),
       );
     }
+
+    seenEntries.add(entryName);
 
     if (file.size === undefined || file.originalSize === undefined) {
       throw abortArchive(
@@ -498,8 +502,35 @@ export async function readZipArchiveFromSource(
           return;
         }
 
-        extractedEntries.set(entryName, Buffer.concat(chunks, entryBytes));
-        resolve();
+        const completeEntryProcessing = async () => {
+          const entry = {
+            name: entryName,
+            content: Buffer.concat(chunks, entryBytes),
+          };
+
+          if (options.onEntry) {
+            await options.onEntry(entry);
+            return;
+          }
+
+          extractedEntries!.set(entry.name, entry.content);
+        };
+
+        void completeEntryProcessing()
+          .then(() => {
+            resolve();
+          })
+          .catch((processingError: unknown) => {
+            reject(
+              abortArchive(
+                processingError instanceof Error
+                  ? processingError
+                  : toArchiveError(
+                      `Falha ao processar a entrada ${entryName}.`,
+                    ),
+              ),
+            );
+          });
       };
 
       try {
@@ -545,7 +576,7 @@ export async function readZipArchiveFromSource(
     throw archiveError;
   }
 
-  return Array.from(extractedEntries.entries()).map(([name, content]) => ({
+  return Array.from((extractedEntries ?? new Map<string, Buffer>()).entries()).map(([name, content]) => ({
     name,
     content,
   }));

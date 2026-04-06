@@ -24,23 +24,26 @@ import type {
 
 @Injectable()
 export class FunctionalBackupImportArchiveParserService {
+  private readonly requiredFiles = [
+    'manifest.json',
+    'clients.json',
+    'rides.json',
+    'client-payments.json',
+    'balance-transactions.json',
+    'ride-presets.json',
+  ] as const;
+
   async parseArchiveSource(
     source: AsyncIterable<Buffer | Uint8Array | string>,
     onChunk?: (chunk: Buffer) => Promise<void> | void,
   ): Promise<ParsedFunctionalBackupArchive> {
     try {
-      const requiredFiles = [
-        'manifest.json',
-        'clients.json',
-        'rides.json',
-        'client-payments.json',
-        'balance-transactions.json',
-        'ride-presets.json',
-      ] as const;
       const archiveHash = createHash('sha256');
       let sizeBytes = 0;
-      const entries = await readZipArchiveFromSource(source, {
-        allowedEntryNames: requiredFiles,
+      const parsedEntries = this.createParsedEntriesState();
+
+      await readZipArchiveFromSource(source, {
+        allowedEntryNames: this.requiredFiles,
         blockNestedZip: true,
         maxCompressionRatio: DEFAULT_BACKUP_IMPORT_MAX_COMPRESSION_RATIO,
         maxEntries: DEFAULT_BACKUP_IMPORT_MAX_ENTRY_COUNT,
@@ -54,42 +57,13 @@ export class FunctionalBackupImportArchiveParserService {
             await onChunk(chunk);
           }
         },
+        onEntry: async (entry) => {
+          this.assignParsedEntry(parsedEntries, entry.name, entry.content);
+        },
       });
-      const entriesMap = new Map(entries.map((entry) => [entry.name, entry]));
-
-      for (const fileName of requiredFiles) {
-        if (!entriesMap.has(fileName)) {
-          throw new BadRequestException(`Arquivo ausente no ZIP: ${fileName}.`);
-        }
-      }
-
-      const dataset: FunctionalBackupImportDataset = {
-        manifest: this.parseManifest(entriesMap.get('manifest.json')!.content),
-        clients: this.parseJsonArray<ImportedClientRecord>(
-          entriesMap.get('clients.json')!.content,
-          'clients.json',
-        ),
-        rides: this.parseJsonArray<ImportedRideRecord>(
-          entriesMap.get('rides.json')!.content,
-          'rides.json',
-        ),
-        clientPayments: this.parseJsonArray<ImportedClientPaymentRecord>(
-          entriesMap.get('client-payments.json')!.content,
-          'client-payments.json',
-        ),
-        balanceTransactions:
-          this.parseJsonArray<ImportedBalanceTransactionRecord>(
-            entriesMap.get('balance-transactions.json')!.content,
-            'balance-transactions.json',
-          ),
-        ridePresets: this.parseJsonArray<ImportedRidePresetRecord>(
-          entriesMap.get('ride-presets.json')!.content,
-          'ride-presets.json',
-        ),
-      };
 
       return {
-        dataset,
+        dataset: this.buildDataset(parsedEntries),
         archiveChecksum: archiveHash.digest('hex'),
         sizeBytes,
       };
@@ -102,6 +76,103 @@ export class FunctionalBackupImportArchiveParserService {
       }
 
       throw error;
+    }
+  }
+
+  private createParsedEntriesState() {
+    return {
+      manifest: null as FunctionalBackupManifest | null,
+      clients: null as ImportedClientRecord[] | null,
+      rides: null as ImportedRideRecord[] | null,
+      clientPayments: null as ImportedClientPaymentRecord[] | null,
+      balanceTransactions: null as ImportedBalanceTransactionRecord[] | null,
+      ridePresets: null as ImportedRidePresetRecord[] | null,
+    };
+  }
+
+  private assignParsedEntry(
+    parsedEntries: ReturnType<
+      FunctionalBackupImportArchiveParserService['createParsedEntriesState']
+    >,
+    entryName: string,
+    content: Buffer,
+  ) {
+    switch (entryName) {
+      case 'manifest.json':
+        parsedEntries.manifest = this.parseManifest(content);
+        return;
+      case 'clients.json':
+        parsedEntries.clients = this.parseJsonArray<ImportedClientRecord>(
+          content,
+          entryName,
+        );
+        return;
+      case 'rides.json':
+        parsedEntries.rides = this.parseJsonArray<ImportedRideRecord>(
+          content,
+          entryName,
+        );
+        return;
+      case 'client-payments.json':
+        parsedEntries.clientPayments =
+          this.parseJsonArray<ImportedClientPaymentRecord>(content, entryName);
+        return;
+      case 'balance-transactions.json':
+        parsedEntries.balanceTransactions =
+          this.parseJsonArray<ImportedBalanceTransactionRecord>(
+            content,
+            entryName,
+          );
+        return;
+      case 'ride-presets.json':
+        parsedEntries.ridePresets =
+          this.parseJsonArray<ImportedRidePresetRecord>(content, entryName);
+        return;
+      default:
+        throw new BadRequestException(`Arquivo inesperado no ZIP: ${entryName}.`);
+    }
+  }
+
+  private buildDataset(
+    parsedEntries: ReturnType<
+      FunctionalBackupImportArchiveParserService['createParsedEntriesState']
+    >,
+  ): FunctionalBackupImportDataset {
+    for (const fileName of this.requiredFiles) {
+      if (this.getParsedEntry(parsedEntries, fileName) === null) {
+        throw new BadRequestException(`Arquivo ausente no ZIP: ${fileName}.`);
+      }
+    }
+
+    return {
+      manifest: parsedEntries.manifest!,
+      clients: parsedEntries.clients!,
+      rides: parsedEntries.rides!,
+      clientPayments: parsedEntries.clientPayments!,
+      balanceTransactions: parsedEntries.balanceTransactions!,
+      ridePresets: parsedEntries.ridePresets!,
+    };
+  }
+
+  private getParsedEntry(
+    parsedEntries: ReturnType<
+      FunctionalBackupImportArchiveParserService['createParsedEntriesState']
+    >,
+    fileName: (typeof this.requiredFiles)[number],
+  ) {
+    switch (fileName) {
+      case 'manifest.json':
+        return parsedEntries.manifest;
+      case 'clients.json':
+        return parsedEntries.clients;
+      case 'rides.json':
+        return parsedEntries.rides;
+      case 'client-payments.json':
+        return parsedEntries.clientPayments;
+      case 'balance-transactions.json':
+        return parsedEntries.balanceTransactions;
+      case 'ride-presets.json':
+        return parsedEntries.ridePresets;
     }
   }
 
