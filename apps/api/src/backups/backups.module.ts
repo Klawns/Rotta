@@ -9,13 +9,17 @@ import { BackupsController } from './backups.controller';
 import { BackupsRepository } from './backups.repository';
 import { BackupsService } from './backups.service';
 import { BackupJobsWorker } from './queue/backup-jobs.worker';
+import { BackupJobOrchestratorService } from './services/backup-job-orchestrator.service';
+import { BackupRetentionService } from './services/backup-retention.service';
 import { FunctionalBackupArchiveService } from './services/functional-backup-archive.service';
 import { FunctionalBackupImportArchiveParserService } from './services/functional-backup-import-archive-parser.service';
 import { FunctionalBackupImportDatasetValidatorService } from './services/functional-backup-import-dataset-validator.service';
 import { FunctionalBackupImportExecutorService } from './services/functional-backup-import-executor.service';
 import { FunctionalBackupImportPreviewUploadCoordinatorService } from './services/functional-backup-import-preview-upload-coordinator.service';
 import { FunctionalBackupImportService } from './services/functional-backup-import.service';
+import { FunctionalBackupsService } from './services/functional-backups.service';
 import { TechnicalBackupRunnerService } from './services/technical-backup-runner.service';
+import { TechnicalBackupsService } from './services/technical-backups.service';
 
 @Module({
   imports: [
@@ -31,12 +35,16 @@ import { TechnicalBackupRunnerService } from './services/technical-backup-runner
     BackupsService,
     BackupsAutomationService,
     BackupJobsWorker,
+    BackupJobOrchestratorService,
+    BackupRetentionService,
     FunctionalBackupArchiveService,
+    FunctionalBackupsService,
     FunctionalBackupImportArchiveParserService,
     FunctionalBackupImportDatasetValidatorService,
     FunctionalBackupImportExecutorService,
     FunctionalBackupImportPreviewUploadCoordinatorService,
     FunctionalBackupImportService,
+    TechnicalBackupsService,
     TechnicalBackupRunnerService,
   ],
   exports: [BackupsService],

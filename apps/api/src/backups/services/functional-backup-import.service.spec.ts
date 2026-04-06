@@ -14,7 +14,7 @@ import {
 } from '../backups.constants';
 import { getBackupPublicErrorMessage } from '../backups-public-errors';
 import { createZipArchive } from '../utils/zip-builder.util';
-import type { BackupImportUploadSource } from '../utils/backup-import-upload.util';
+import type { FunctionalBackupImportArchiveSource } from './functional-backup-import.types';
 
 jest.mock('drizzle-orm', () => ({
   eq: jest.fn(() => 'eq-condition'),
@@ -223,6 +223,9 @@ describe('FunctionalBackupImportService', () => {
     const cacheServiceMock = {
       invalidate: jest.fn().mockResolvedValue(undefined),
     };
+    const backupRetentionServiceMock = {
+      prunePreImportBackups: jest.fn().mockResolvedValue(undefined),
+    };
 
     const archiveParser = new FunctionalBackupImportArchiveParserService();
     const datasetValidator =
@@ -244,6 +247,7 @@ describe('FunctionalBackupImportService', () => {
           key === 'BACKUP_STORAGE_PREFIX' ? 'backups' : fallback,
         ),
       } as ConfigService,
+      backupRetentionServiceMock as any,
       archiveParser,
       datasetValidator,
       importExecutor,
@@ -258,6 +262,7 @@ describe('FunctionalBackupImportService', () => {
       storageProviderMock,
       archiveServiceMock,
       cacheServiceMock,
+      backupRetentionServiceMock,
       insertedValues,
     };
   };
@@ -265,13 +270,14 @@ describe('FunctionalBackupImportService', () => {
   const createUploadSource = (
     archiveBuffer: Buffer,
     originalname = 'backup.zip',
-  ): BackupImportUploadSource => ({
+  ): FunctionalBackupImportArchiveSource => ({
     completed: Promise.resolve(),
     fieldName: 'file',
     mimetype: 'application/zip',
     originalname,
     stream: Readable.from([archiveBuffer]),
     cancel: jest.fn(),
+    dispose: jest.fn().mockResolvedValue(undefined),
   });
 
   it('should reject invalid enum values during preview before execution', async () => {
@@ -397,6 +403,7 @@ describe('FunctionalBackupImportService', () => {
       storageProviderMock,
       archiveServiceMock,
       cacheServiceMock,
+      backupRetentionServiceMock,
       insertedValues,
     } = createService();
     const archiveBuffer = buildArchiveBuffer({
@@ -538,6 +545,10 @@ describe('FunctionalBackupImportService', () => {
     );
     expect(archiveServiceMock.buildArchive).toHaveBeenCalledWith('user-1');
     expect(storageProviderMock.uploadPrivate).toHaveBeenCalled();
+    expect(backupRetentionServiceMock.prunePreImportBackups).toHaveBeenCalledWith(
+      'user-1',
+      7,
+    );
     expect(cacheServiceMock.invalidate).toHaveBeenCalledWith('user-1');
 
     expect(insertedValues.get('clients')).toEqual([

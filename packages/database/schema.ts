@@ -41,7 +41,6 @@ export const paymentUsedStatusEnum = pgEnum('payment_used_status', [
 export const backupJobKindEnum = pgEnum('backup_job_kind', [
   'functional_user',
   'technical_full',
-  'pre_import',
 ]);
 export const backupJobTriggerEnum = pgEnum('backup_job_trigger', [
   'manual',

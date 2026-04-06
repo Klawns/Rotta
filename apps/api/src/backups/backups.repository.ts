@@ -5,7 +5,7 @@ import {
   backupJobs,
   type InferSelectModel,
 } from '@mdc/database';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { DRIZZLE } from '../database/database.provider';
 import type { DrizzleClient } from '../database/database.provider';
@@ -13,7 +13,6 @@ import {
   BACKUP_MANIFEST_VERSION,
   FUNCTIONAL_BACKUP_KIND,
   MANUAL_BACKUP_TRIGGER,
-  PRE_IMPORT_BACKUP_KIND,
   PRE_IMPORT_BACKUP_TRIGGER,
   SCHEDULED_BACKUP_TRIGGER,
   TECHNICAL_BACKUP_KIND,
@@ -26,8 +25,7 @@ type BackupTrigger =
 
 type BackupKind =
   | typeof FUNCTIONAL_BACKUP_KIND
-  | typeof TECHNICAL_BACKUP_KIND
-  | typeof PRE_IMPORT_BACKUP_KIND;
+  | typeof TECHNICAL_BACKUP_KIND;
 
 type BackupImportPhase =
   | 'validated'
@@ -99,7 +97,7 @@ export class BackupsRepository {
     actorUserId: string,
   ): Promise<BackupJobRecord> {
     return this.createBackupJob({
-      kind: PRE_IMPORT_BACKUP_KIND,
+      kind: FUNCTIONAL_BACKUP_KIND,
       trigger: PRE_IMPORT_BACKUP_TRIGGER,
       scopeUserId: userId,
       actorUserId,
@@ -168,10 +166,7 @@ export class BackupsRepository {
         and(
           eq(this.schema.backupJobs.id, id),
           eq(this.schema.backupJobs.scopeUserId, userId),
-          inArray(this.schema.backupJobs.kind, [
-            FUNCTIONAL_BACKUP_KIND,
-            PRE_IMPORT_BACKUP_KIND,
-          ]),
+          eq(this.schema.backupJobs.kind, FUNCTIONAL_BACKUP_KIND),
         ),
       )
       .limit(1)) as BackupJobRecord[];
@@ -204,10 +199,7 @@ export class BackupsRepository {
       .where(
         and(
           eq(this.schema.backupJobs.scopeUserId, userId),
-          inArray(this.schema.backupJobs.kind, [
-            FUNCTIONAL_BACKUP_KIND,
-            PRE_IMPORT_BACKUP_KIND,
-          ]),
+          eq(this.schema.backupJobs.kind, FUNCTIONAL_BACKUP_KIND),
         ),
       )
       .orderBy(desc(this.schema.backupJobs.createdAt));
@@ -241,6 +233,22 @@ export class BackupsRepository {
         and(
           eq(this.schema.backupJobs.scopeUserId, userId),
           eq(this.schema.backupJobs.kind, FUNCTIONAL_BACKUP_KIND),
+          eq(this.schema.backupJobs.status, 'success'),
+        ),
+      )
+      .orderBy(desc(this.schema.backupJobs.createdAt)) as Promise<
+      BackupJobRecord[]
+    >;
+  }
+
+  listSuccessfulPreImportJobs(userId: string): Promise<BackupJobRecord[]> {
+    return this.db
+      .select()
+      .from(this.schema.backupJobs)
+      .where(
+        and(
+          eq(this.schema.backupJobs.scopeUserId, userId),
+          eq(this.schema.backupJobs.trigger, PRE_IMPORT_BACKUP_TRIGGER),
           eq(this.schema.backupJobs.status, 'success'),
         ),
       )

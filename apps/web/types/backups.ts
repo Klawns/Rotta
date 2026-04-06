@@ -1,6 +1,6 @@
 export interface BackupJobSummary {
   id: string;
-  kind: 'functional_user' | 'technical_full' | 'pre_import';
+  kind: 'functional_user' | 'technical_full';
   trigger: 'manual' | 'scheduled' | 'pre_import';
   status: 'pending' | 'running' | 'success' | 'failed';
   checksum: string | null;

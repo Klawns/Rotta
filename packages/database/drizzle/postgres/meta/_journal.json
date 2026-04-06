@@ -43,6 +43,13 @@
       "when": 1775054139952,
       "tag": "0005_misty_reavers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1775497440703,
+      "tag": "0006_vengeful_avengers",
+      "breakpoints": true
     }
   ]
 }

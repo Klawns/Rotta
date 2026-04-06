@@ -1,3 +1,4 @@
+import type { Readable } from 'node:stream';
 import type { FunctionalBackupManifest } from './functional-backup-archive.service';
 
 export type ImportableBackupModuleName =
@@ -80,6 +81,16 @@ export interface ParsedFunctionalBackupArchive {
   archiveChecksum: string;
   dataset: FunctionalBackupImportDataset;
   sizeBytes: number;
+}
+
+export interface FunctionalBackupImportArchiveSource {
+  completed: Promise<void>;
+  fieldName: string;
+  mimetype: string;
+  originalname: string;
+  stream: Readable;
+  cancel(error?: Error): void;
+  dispose?(): Promise<void>;
 }
 
 export interface FunctionalBackupImportPreview {

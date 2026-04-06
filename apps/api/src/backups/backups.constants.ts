@@ -9,7 +9,6 @@ export const FUNCTIONAL_BACKUP_SCHEDULER_ID = 'functional-backups-scheduler';
 export const TECHNICAL_BACKUP_SCHEDULER_ID = 'technical-backup-scheduler';
 export const FUNCTIONAL_BACKUP_KIND = 'functional_user';
 export const TECHNICAL_BACKUP_KIND = 'technical_full';
-export const PRE_IMPORT_BACKUP_KIND = 'pre_import';
 export const MANUAL_BACKUP_TRIGGER = 'manual';
 export const SCHEDULED_BACKUP_TRIGGER = 'scheduled';
 export const PRE_IMPORT_BACKUP_TRIGGER = 'pre_import';

@@ -13,17 +13,19 @@ import { STORAGE_PROVIDER } from '../../storage/interfaces/storage-provider.inte
 import type { IStorageProvider } from '../../storage/interfaces/storage-provider.interface';
 import { BackupsRepository } from '../backups.repository';
 import {
+  DEFAULT_BACKUP_RETENTION_COUNT,
   DEFAULT_BACKUP_STORAGE_PREFIX,
 } from '../backups.constants';
 import { getBackupPublicErrorMessage } from '../backups-public-errors';
+import { BackupRetentionService } from './backup-retention.service';
 import { FunctionalBackupArchiveService } from './functional-backup-archive.service';
-import type { BackupImportUploadSource } from '../utils/backup-import-upload.util';
 import { ZipArchiveValidationError } from '../utils/zip-reader.util';
 import { FunctionalBackupImportArchiveParserService } from './functional-backup-import-archive-parser.service';
 import { FunctionalBackupImportDatasetValidatorService } from './functional-backup-import-dataset-validator.service';
 import { FunctionalBackupImportExecutorService } from './functional-backup-import-executor.service';
 import { FunctionalBackupImportPreviewUploadCoordinatorService } from './functional-backup-import-preview-upload-coordinator.service';
 import type {
+  FunctionalBackupImportArchiveSource,
   FunctionalBackupImportJobPhase,
   FunctionalBackupImportJobResponse,
   FunctionalBackupImportJobStatus,
@@ -37,10 +39,12 @@ class BackupArchiveValidationException extends BadRequestException {}
 export class FunctionalBackupImportService {
   private readonly logger = new Logger(FunctionalBackupImportService.name);
   private readonly storagePrefix: string;
+  private readonly preImportRetentionCount: number;
 
   constructor(
     private readonly backupsRepository: BackupsRepository,
     private readonly configService: ConfigService,
+    private readonly backupRetentionService: BackupRetentionService,
     private readonly archiveParser: FunctionalBackupImportArchiveParserService,
     private readonly datasetValidator: FunctionalBackupImportDatasetValidatorService,
     private readonly importExecutor: FunctionalBackupImportExecutorService,
@@ -52,6 +56,10 @@ export class FunctionalBackupImportService {
     this.storagePrefix =
       this.configService.get<string>('BACKUP_STORAGE_PREFIX') ??
       DEFAULT_BACKUP_STORAGE_PREFIX;
+    this.preImportRetentionCount = this.configService.get<number>(
+      'BACKUP_RETENTION_COUNT',
+      DEFAULT_BACKUP_RETENTION_COUNT,
+    );
   }
 
   private buildImportStorageKey(userId: string, importJobId: string) {
@@ -187,7 +195,28 @@ export class FunctionalBackupImportService {
     }
   }
 
-  async previewImport(userId: string, upload: BackupImportUploadSource) {
+  private async disposeUploadSource(
+    upload: FunctionalBackupImportArchiveSource,
+    metadata?: Record<string, unknown>,
+  ) {
+    if (!upload.dispose) {
+      return;
+    }
+
+    try {
+      await upload.dispose();
+    } catch (error) {
+      this.logOperationalError('previewImport.disposeUploadSource', error, {
+        ...metadata,
+        originalname: upload.originalname,
+      });
+    }
+  }
+
+  async previewImport(
+    userId: string,
+    upload: FunctionalBackupImportArchiveSource,
+  ) {
     const importJobId = randomUUID();
     const storageKey = this.buildImportStorageKey(userId, importJobId);
     let parsedArchive: ParsedFunctionalBackupArchive | null = null;
@@ -253,6 +282,12 @@ export class FunctionalBackupImportService {
       throw new ServiceUnavailableException(
         getBackupPublicErrorMessage('previewUpload'),
       );
+    } finally {
+      await this.disposeUploadSource(upload, {
+        importJobId,
+        storageKey,
+        userId,
+      });
     }
   }
 
@@ -289,6 +324,10 @@ export class FunctionalBackupImportService {
           payloadChecksum: archive.manifest.sha256,
         }),
       });
+      await this.backupRetentionService.prunePreImportBackups(
+        userId,
+        this.preImportRetentionCount,
+      );
     } catch (error) {
       this.logOperationalError('createPreImportBackup', error, {
         backupJobId: job.id,
