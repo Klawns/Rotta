@@ -76,7 +76,7 @@ export function FinanceFilters({
 
       <div className="mx-2 hidden h-8 w-px bg-border-subtle md:block" />
 
-      <div className="w-full md:w-64">
+      <div className="w-full md:w-74">
         <Popover
           open={clientAutocomplete.isOpen}
           onOpenChange={clientAutocomplete.onOpenChange}
@@ -100,7 +100,7 @@ export function FinanceFilters({
                   clientAutocomplete.setSearchText(event.target.value)
                 }
                 onFocus={clientAutocomplete.onFocus}
-                placeholder="Buscar cliente por nome"
+                placeholder="Busque cliente para ver resumo"
                 className="h-11 rounded-xl border-border-subtle bg-card-background pl-10 pr-10 font-medium text-text-primary shadow-sm md:h-12"
               />
               {(clientAutocomplete.searchText ||
@@ -202,13 +202,6 @@ export function FinanceFilters({
             busca para voltar ao resumo geral.
           </p>
         )}
-
-        {!clientAutocomplete.hasAppliedClient &&
-          !clientAutocomplete.hasSearchValue && (
-            <p className="mt-2 text-xs font-medium text-text-secondary">
-              Digite o nome do cliente para filtrar o resumo.
-            </p>
-          )}
 
         {clientAutocomplete.hasSearchValue &&
           autocompleteStatusMessage &&
