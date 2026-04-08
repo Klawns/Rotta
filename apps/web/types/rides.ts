@@ -3,6 +3,8 @@
 // ===========================
 export type RideStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
 export type PaymentStatus = 'PENDING' | 'PAID';
+export type RidePaymentFilter = 'all' | PaymentStatus;
+export type RidePeriodPreset = 'today' | '7d' | '30d' | 'month' | 'custom';
 
 // ===========================
 // Entities
@@ -117,8 +119,10 @@ export type UpdateRideDTO = Partial<CreateRideDTO>;
 // ===========================
 export interface RidesFilterState {
     search: string;
-    paymentFilter: string;
-    clientFilter: string;
+    paymentFilter: RidePaymentFilter;
+    clientId: string | null;
+    clientName: string | null;
+    periodPreset: RidePeriodPreset | null;
     startDate: string;
     endDate: string;
 }
@@ -141,6 +145,7 @@ export interface InfinitePaginatedResponse<T> {
 }
 
 export interface CursorMeta {
+    total?: number;
     nextCursor?: string;
     hasNextPage?: boolean;
 }

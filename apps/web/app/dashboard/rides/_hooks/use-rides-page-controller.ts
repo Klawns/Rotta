@@ -14,6 +14,8 @@ export function useRidesPageController() {
   return {
     header: {
       onNewRide: rides.openCreateModal,
+      totalCount: rides.totalCount,
+      hasActiveFilters: rides.hasActiveFilters,
     },
     frequentClients: {
       clients: rides.frequentClients,
@@ -22,30 +24,22 @@ export function useRidesPageController() {
     },
     filters: {
       filters: rides.filterState,
+      clientAutocomplete: rides.clientAutocomplete,
+      activeFilterChips: rides.activeFilterChips,
+      activeFilterCount: rides.activeFilterCount,
       setSearch: rides.setSearch,
       setPaymentFilter: rides.setPaymentFilter,
-      setClientFilter: rides.setClientFilter,
       setStartDate: rides.setStartDate,
       setEndDate: rides.setEndDate,
+      setPeriodPreset: rides.setPeriodPreset,
       isFiltersOpen: rides.isFiltersOpen,
       setIsFiltersOpen: rides.setIsFiltersOpen,
       hasActiveFilters: rides.hasActiveFilters,
       onClearFilters: rides.clearFilters,
-      clients: rides.clients,
-      clientSearch: rides.clientSearch,
-      setClientSearch: rides.setClientSearch,
-      isLoadingClients: rides.isLoadingClients,
-      isFetchingClients: rides.isFetchingClients,
-      isClientDirectoryError: rides.isClientDirectoryError,
-      clientDirectoryError: rides.clientDirectoryError,
-      onRetryClients: () => {
-        void rides.refetchClientDirectory();
-      },
-      isClientDirectoryReady: rides.isClientDirectoryReady,
-      clientDirectoryMeta: rides.clientDirectoryMeta,
     },
     ridesList: {
       rides: rides.rides,
+      totalCount: rides.totalCount,
       isLoading: rides.isLoading,
       isFetching: rides.isFetching,
       hasNextPage: rides.hasNextPage,

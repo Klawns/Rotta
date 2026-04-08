@@ -1,48 +1,119 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useMemo } from "react";
-import { RidesFilterState } from "@/types/rides";
+import { useCallback, useMemo, useState } from 'react';
+import { useClientAutocomplete } from '@/hooks/use-client-autocomplete';
+import {
+  buildRidesFilterChips,
+  getDateRangeForRidePreset,
+  normalizeRideDateRange,
+} from '../_lib/rides-filters';
+import {
+  type RidePaymentFilter,
+  type RidePeriodPreset,
+  type RidesFilterState,
+} from '@/types/rides';
 
 export function useRidesFilters() {
-    const [search, setSearch] = useState("");
-    const [paymentFilter, setPaymentFilter] = useState<string>("all");
-    const [clientFilter, setClientFilter] = useState<string>("all");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
-    const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState<RidePaymentFilter>('all');
+  const [periodPreset, setPeriodPresetState] = useState<RidePeriodPreset | null>(null);
+  const [startDate, setStartDateState] = useState('');
+  const [endDate, setEndDateState] = useState('');
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const clientAutocomplete = useClientAutocomplete({
+    limit: 8,
+  });
 
-    const hasActiveFilters = 
-        paymentFilter !== "all" || 
-        clientFilter !== "all" || 
-        startDate !== "" || 
-        endDate !== "" || 
-        search !== "";
+  const handleSetPeriodPreset = useCallback(
+    (nextPreset: RidePeriodPreset) => {
+      if (nextPreset === 'custom') {
+        setPeriodPresetState('custom');
+        return;
+      }
 
-    const clearFilters = useCallback(() => {
-        setPaymentFilter("all");
-        setClientFilter("all");
-        setStartDate("");
-        setEndDate("");
-    }, []);
+      if (periodPreset === nextPreset) {
+        setPeriodPresetState(null);
+        setStartDateState('');
+        setEndDateState('');
+        return;
+      }
 
-    const filterState = useMemo((): RidesFilterState => ({
-        search,
-        paymentFilter,
-        clientFilter,
-        startDate,
-        endDate
-    }), [search, paymentFilter, clientFilter, startDate, endDate]);
+      const nextDateRange = getDateRangeForRidePreset(nextPreset);
+      setPeriodPresetState(nextPreset);
+      setStartDateState(nextDateRange.startDate);
+      setEndDateState(nextDateRange.endDate);
+    },
+    [periodPreset],
+  );
 
-    return {
-        filterState,
-        setSearch,
-        setPaymentFilter,
-        setClientFilter,
-        setStartDate,
-        setEndDate,
-        isFiltersOpen,
-        setIsFiltersOpen,
-        hasActiveFilters,
-        clearFilters
-    };
+  const handleSetStartDate = useCallback(
+    (value: string) => {
+      const nextRange = normalizeRideDateRange(value, endDate, 'start');
+      setPeriodPresetState('custom');
+      setStartDateState(nextRange.startDate);
+      setEndDateState(nextRange.endDate);
+    },
+    [endDate],
+  );
+
+  const handleSetEndDate = useCallback(
+    (value: string) => {
+      const nextRange = normalizeRideDateRange(startDate, value, 'end');
+      setPeriodPresetState('custom');
+      setStartDateState(nextRange.startDate);
+      setEndDateState(nextRange.endDate);
+    },
+    [startDate],
+  );
+
+  const clearFilters = useCallback(() => {
+    setSearch('');
+    setPaymentFilter('all');
+    setPeriodPresetState(null);
+    setStartDateState('');
+    setEndDateState('');
+    clientAutocomplete.onClear();
+  }, [clientAutocomplete]);
+
+  const filterState = useMemo(
+    (): RidesFilterState => ({
+      search,
+      paymentFilter,
+      clientId: clientAutocomplete.appliedClientId ?? null,
+      clientName: clientAutocomplete.appliedClientName,
+      periodPreset,
+      startDate,
+      endDate,
+    }),
+    [
+      clientAutocomplete.appliedClientId,
+      clientAutocomplete.appliedClientName,
+      endDate,
+      paymentFilter,
+      periodPreset,
+      search,
+      startDate,
+    ],
+  );
+
+  const activeFilterChips = useMemo(
+    () => buildRidesFilterChips(filterState),
+    [filterState],
+  );
+
+  return {
+    filterState,
+    clientAutocomplete,
+    activeFilterChips,
+    activeFilterCount: activeFilterChips.length,
+    setSearch,
+    setPaymentFilter,
+    setStartDate: handleSetStartDate,
+    setEndDate: handleSetEndDate,
+    setPeriodPreset: handleSetPeriodPreset,
+    isFiltersOpen,
+    setIsFiltersOpen,
+    hasActiveFilters: activeFilterChips.length > 0,
+    clearFilters,
+  };
 }
