@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/require-await -- Jest mocks in this spec intentionally use partial runtime stubs. */
-import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientsService } from './clients.service';
 import { IClientsRepository } from './interfaces/clients-repository.interface';
@@ -34,7 +33,16 @@ describe('ClientsService', () => {
       findOne: jest
         .fn()
         .mockResolvedValue({ id: 'uuid-123', name: 'Client Test', balance: 0 }),
+      findOneForUpdate: jest
+        .fn()
+        .mockResolvedValue({ id: 'uuid-123', name: 'Client Test', balance: 0 }),
       update: jest
+        .fn()
+        .mockResolvedValue({ id: 'uuid-123', name: 'Client Test', balance: 0 }),
+      incrementBalance: jest
+        .fn()
+        .mockResolvedValue({ id: 'uuid-123', name: 'Client Test', balance: 0 }),
+      decrementBalance: jest
         .fn()
         .mockResolvedValue({ id: 'uuid-123', name: 'Client Test', balance: 0 }),
       delete: jest.fn().mockResolvedValue(undefined),
@@ -161,7 +169,7 @@ describe('ClientsService', () => {
       totalPaid: 50,
       unusedPaymentsCount: 1,
     });
-    clientsRepoMock.findOne.mockResolvedValueOnce({
+    clientsRepoMock.findOneForUpdate.mockResolvedValueOnce({
       id: 'uuid-123',
       name: 'Client Test',
       balance: 10,
@@ -191,7 +199,7 @@ describe('ClientsService', () => {
       totalPaid: 120,
       unusedPaymentsCount: 1,
     });
-    clientsRepoMock.findOne.mockResolvedValueOnce({
+    clientsRepoMock.findOneForUpdate.mockResolvedValueOnce({
       id: 'uuid-123',
       name: 'Client Test',
       balance: 10,
@@ -210,10 +218,15 @@ describe('ClientsService', () => {
       'user-1',
       'tx',
     );
-    expect(clientsRepoMock.update).toHaveBeenCalledWith(
+    expect(clientsRepoMock.findOneForUpdate).toHaveBeenCalledWith(
       'user-1',
       'uuid-123',
-      { balance: 30 },
+      'tx',
+    );
+    expect(clientsRepoMock.incrementBalance).toHaveBeenCalledWith(
+      'user-1',
+      'uuid-123',
+      20,
       'tx',
     );
     expect(balanceTransactionsRepoMock.create).toHaveBeenCalledWith(

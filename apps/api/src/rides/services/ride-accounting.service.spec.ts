@@ -13,7 +13,15 @@ describe('RideAccountingService', () => {
   beforeEach(async () => {
     clientsRepoMock = {
       findOne: jest.fn().mockResolvedValue({ id: 'client-1', balance: 0 }),
-      update: jest.fn().mockResolvedValue(undefined),
+      findOneForUpdate: jest
+        .fn()
+        .mockResolvedValue({ id: 'client-1', balance: 0 }),
+      incrementBalance: jest
+        .fn()
+        .mockResolvedValue({ id: 'client-1', balance: 0 }),
+      decrementBalance: jest
+        .fn()
+        .mockResolvedValue({ id: 'client-1', balance: 0 }),
     };
 
     balanceTransactionsRepoMock = {
@@ -81,10 +89,15 @@ describe('RideAccountingService', () => {
     );
 
     expect(amountUsed).toBe(10);
-    expect(clientsRepoMock.update).toHaveBeenCalledWith(
+    expect(clientsRepoMock.findOneForUpdate).toHaveBeenCalledWith(
       'user-1',
       'client-1',
-      { balance: 0 },
+      'tx',
+    );
+    expect(clientsRepoMock.decrementBalance).toHaveBeenCalledWith(
+      'user-1',
+      'client-1',
+      10,
       'tx',
     );
     expect(balanceTransactionsRepoMock.create).toHaveBeenCalledWith(
@@ -100,11 +113,6 @@ describe('RideAccountingService', () => {
   });
 
   it('should refund client balance and register a credit transaction', async () => {
-    clientsRepoMock.findOne.mockResolvedValueOnce({
-      id: 'client-1',
-      balance: 3,
-    });
-
     await service.refundClientBalance(
       'user-1',
       'client-1',
@@ -113,10 +121,10 @@ describe('RideAccountingService', () => {
       'tx',
     );
 
-    expect(clientsRepoMock.update).toHaveBeenCalledWith(
+    expect(clientsRepoMock.incrementBalance).toHaveBeenCalledWith(
       'user-1',
       'client-1',
-      { balance: 10 },
+      7,
       'tx',
     );
     expect(balanceTransactionsRepoMock.create).toHaveBeenCalledWith(
@@ -137,5 +145,23 @@ describe('RideAccountingService', () => {
     await expect(
       service.getClientOrThrow('user-1', 'missing', 'tx'),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('should skip balance transaction creation when there is no available balance', async () => {
+    clientsRepoMock.findOneForUpdate.mockResolvedValueOnce({
+      id: 'client-1',
+      balance: 0,
+    });
+
+    const amountUsed = await service.consumeClientBalance(
+      'user-1',
+      'client-1',
+      25,
+      'tx',
+    );
+
+    expect(amountUsed).toBe(0);
+    expect(clientsRepoMock.decrementBalance).not.toHaveBeenCalled();
+    expect(balanceTransactionsRepoMock.create).not.toHaveBeenCalled();
   });
 });

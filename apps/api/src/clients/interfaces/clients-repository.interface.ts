@@ -41,6 +41,11 @@ export interface IClientsRepository {
     id: string,
     executor?: unknown,
   ): Promise<Client | undefined>;
+  findOneForUpdate(
+    userId: string,
+    id: string,
+    executor?: unknown,
+  ): Promise<Client | undefined>;
 
   update(
     userId: string,
@@ -48,6 +53,18 @@ export interface IClientsRepository {
     data: Partial<CreateClientDto>,
     executor?: unknown,
   ): Promise<Client>;
+  incrementBalance(
+    userId: string,
+    id: string,
+    amount: number,
+    executor?: unknown,
+  ): Promise<Client | undefined>;
+  decrementBalance(
+    userId: string,
+    id: string,
+    amount: number,
+    executor?: unknown,
+  ): Promise<Client | undefined>;
 
   delete(userId: string, id: string, executor?: unknown): Promise<void>;
   deleteAll(userId: string): Promise<void>;

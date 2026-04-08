@@ -33,6 +33,13 @@ export class DrizzleClientsRepository implements IClientsRepository {
     return executor ?? this.db;
   }
 
+  private getScopedClientCondition(userId: string, id: string) {
+    return and(
+      eq(this.schema.clients.id, id),
+      eq(this.schema.clients.userId, userId),
+    );
+  }
+
   async findAll(
     userId: string,
     limit: number = 20,
@@ -200,13 +207,24 @@ export class DrizzleClientsRepository implements IClientsRepository {
     const results = await this.getExecutor(executor)
       .select()
       .from(this.schema.clients)
-      .where(
-        and(
-          eq(this.schema.clients.id, id),
-          eq(this.schema.clients.userId, userId),
-        ),
-      )
+      .where(this.getScopedClientCondition(userId, id))
       .limit(1);
+
+    return results[0];
+  }
+
+  async findOneForUpdate(
+    userId: string,
+    id: string,
+    executor?: any,
+  ): Promise<Client | undefined> {
+    const results = (await this.getExecutor(executor).execute(sql`
+      select *
+      from ${this.schema.clients}
+      where ${this.schema.clients.id} = ${id}
+        and ${this.schema.clients.userId} = ${userId}
+      for update
+    `)) as Client[];
 
     return results[0];
   }
@@ -220,12 +238,41 @@ export class DrizzleClientsRepository implements IClientsRepository {
     const results = await this.getExecutor(executor)
       .update(this.schema.clients)
       .set(data)
-      .where(
-        and(
-          eq(this.schema.clients.id, id),
-          eq(this.schema.clients.userId, userId),
-        ),
-      )
+      .where(this.getScopedClientCondition(userId, id))
+      .returning();
+
+    return results[0];
+  }
+
+  async incrementBalance(
+    userId: string,
+    id: string,
+    amount: number,
+    executor?: any,
+  ): Promise<Client | undefined> {
+    const results = await this.getExecutor(executor)
+      .update(this.schema.clients)
+      .set({
+        balance: sql`${this.schema.clients.balance} + ${amount}`,
+      })
+      .where(this.getScopedClientCondition(userId, id))
+      .returning();
+
+    return results[0];
+  }
+
+  async decrementBalance(
+    userId: string,
+    id: string,
+    amount: number,
+    executor?: any,
+  ): Promise<Client | undefined> {
+    const results = await this.getExecutor(executor)
+      .update(this.schema.clients)
+      .set({
+        balance: sql`${this.schema.clients.balance} - ${amount}`,
+      })
+      .where(this.getScopedClientCondition(userId, id))
       .returning();
 
     return results[0];
@@ -234,12 +281,7 @@ export class DrizzleClientsRepository implements IClientsRepository {
   async delete(userId: string, id: string, executor?: any): Promise<void> {
     await this.getExecutor(executor)
       .delete(this.schema.clients)
-      .where(
-        and(
-          eq(this.schema.clients.id, id),
-          eq(this.schema.clients.userId, userId),
-        ),
-      );
+      .where(this.getScopedClientCondition(userId, id));
   }
 
   async deleteAll(userId: string): Promise<void> {

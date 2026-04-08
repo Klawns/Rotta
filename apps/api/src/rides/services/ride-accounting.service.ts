@@ -7,6 +7,7 @@ interface ResolvePaymentSnapshotInput {
   value: number;
   paidWithBalance: number;
   paymentStatus?: 'PENDING' | 'PAID';
+  paidExternally?: number;
 }
 
 @Injectable()
@@ -22,21 +23,29 @@ export class RideAccountingService {
     value,
     paidWithBalance,
     paymentStatus,
+    paidExternally,
   }: ResolvePaymentSnapshotInput) {
     const rideTotal = Number(value);
+    const normalizedPaidExternally = Math.max(
+      0,
+      Math.min(
+        Number(
+          paidExternally ??
+            (paymentStatus === 'PAID' ? rideTotal - Number(paidWithBalance || 0) : 0),
+        ),
+        rideTotal,
+      ),
+    );
     const normalizedPaidWithBalance = Math.max(
       0,
-      Math.min(Number(paidWithBalance || 0), rideTotal),
+      Math.min(Number(paidWithBalance || 0), rideTotal - normalizedPaidExternally),
     );
     const remainingAfterBalance = Math.max(
       0,
-      rideTotal - normalizedPaidWithBalance,
+      rideTotal - normalizedPaidExternally - normalizedPaidWithBalance,
     );
-    const requestedPaymentStatus = paymentStatus ?? 'PAID';
     const normalizedPaymentStatus: 'PENDING' | 'PAID' =
-      requestedPaymentStatus === 'PENDING' && remainingAfterBalance > 0
-        ? 'PENDING'
-        : 'PAID';
+      remainingAfterBalance > 0 ? 'PENDING' : 'PAID';
     const debtValue =
       normalizedPaymentStatus === 'PENDING' ? remainingAfterBalance : 0;
 
@@ -49,11 +58,18 @@ export class RideAccountingService {
   }
 
   async getClientOrThrow(userId: string, clientId: string, executor?: unknown) {
-    const client = await this.clientsRepository.findOne(
-      userId,
-      clientId,
-      executor,
-    );
+    return this.getScopedClientOrThrow(userId, clientId, executor);
+  }
+
+  private async getScopedClientOrThrow(
+    userId: string,
+    clientId: string,
+    executor?: unknown,
+    options?: { forUpdate?: boolean },
+  ) {
+    const client = options?.forUpdate
+      ? await this.clientsRepository.findOneForUpdate(userId, clientId, executor)
+      : await this.clientsRepository.findOne(userId, clientId, executor);
 
     if (!client) {
       throw new NotFoundException('Cliente não encontrado.');
@@ -68,7 +84,9 @@ export class RideAccountingService {
     rideValue: number,
     executor: unknown,
   ) {
-    const client = await this.getClientOrThrow(userId, clientId, executor);
+    const client = await this.getScopedClientOrThrow(userId, clientId, executor, {
+      forUpdate: true,
+    });
     const currentBalance = Number(client.balance || 0);
     const amountToUse = Math.min(currentBalance, Number(rideValue));
 
@@ -76,14 +94,16 @@ export class RideAccountingService {
       return 0;
     }
 
-    await this.clientsRepository.update(
+    const updatedClient = await this.clientsRepository.decrementBalance(
       userId,
       clientId,
-      {
-        balance: currentBalance - amountToUse,
-      },
+      amountToUse,
       executor,
     );
+
+    if (!updatedClient) {
+      throw new NotFoundException('Cliente nÃ£o encontrado.');
+    }
 
     await this.balanceTransactionsRepository.create(
       {
@@ -112,17 +132,16 @@ export class RideAccountingService {
       return;
     }
 
-    const client = await this.getClientOrThrow(userId, clientId, executor);
-    const currentBalance = Number(client.balance || 0);
-
-    await this.clientsRepository.update(
+    const updatedClient = await this.clientsRepository.incrementBalance(
       userId,
       clientId,
-      {
-        balance: currentBalance + amount,
-      },
+      amount,
       executor,
     );
+
+    if (!updatedClient) {
+      throw new NotFoundException('Cliente nÃ£o encontrado.');
+    }
 
     await this.balanceTransactionsRepository.create(
       {

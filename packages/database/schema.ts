@@ -1,5 +1,7 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean as pgBoolean,
+  check,
   index as pgIndex,
   integer as pgInteger,
   numeric as pgNumeric,
@@ -103,6 +105,10 @@ export const pgClients = pgTable(
   },
   (table) => ({
     userIdIdx: pgIndex('clients_user_id_idx').on(table.userId),
+    balanceNonNegative: check(
+      'clients_balance_non_negative',
+      sql`${table.balance} >= 0`,
+    ),
   }),
 );
 

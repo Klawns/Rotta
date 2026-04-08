@@ -1,0 +1,1 @@
+ALTER TABLE "clients" ADD CONSTRAINT "clients_balance_non_negative" CHECK ("clients"."balance" >= 0);

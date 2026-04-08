@@ -39,12 +39,11 @@ export class ClientsService {
     userId: string,
     clientId: string,
     executor?: unknown,
+    options?: { forUpdate?: boolean },
   ) {
-    const client = await this.clientsRepository.findOne(
-      userId,
-      clientId,
-      executor,
-    );
+    const client = options?.forUpdate
+      ? await this.clientsRepository.findOneForUpdate(userId, clientId, executor)
+      : await this.clientsRepository.findOne(userId, clientId, executor);
 
     if (!client) {
       throw new NotFoundException('Cliente não encontrado.');
@@ -174,7 +173,7 @@ export class ClientsService {
   async closeDebt(userId: string, clientId: string) {
     const result = await (this.drizzle.db as TransactionRunner).transaction(
       async (tx) => {
-        const client = await this.getClientOrThrow(userId, clientId, tx);
+        await this.getClientOrThrow(userId, clientId, tx, { forUpdate: true });
         const { totalDebt } = await this.ridesRepository.getPendingDebtStats(
           clientId,
           userId,
@@ -199,14 +198,16 @@ export class ClientsService {
 
         const overflow = Number(totalPaid) - Number(totalDebt);
         if (overflow > 0) {
-          await this.clientsRepository.update(
+          const updatedClient = await this.clientsRepository.incrementBalance(
             userId,
             clientId,
-            {
-              balance: Number(client.balance || 0) + overflow,
-            },
+            overflow,
             tx,
           );
+
+          if (!updatedClient) {
+            throw new NotFoundException('Cliente nÃ£o encontrado.');
+          }
 
           await this.balanceTransactionsRepository.create(
             {
