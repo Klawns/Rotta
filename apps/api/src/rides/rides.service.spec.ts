@@ -24,6 +24,26 @@ describe('RidesService', () => {
     repoMock = {
       findAll: jest.fn().mockResolvedValue({ rides: [], total: 0 }),
       create: jest.fn().mockResolvedValue({ id: 'ride-123', value: 25.5 }),
+      findOneWithClient: jest.fn().mockResolvedValue({
+        id: 'ride-123',
+        displayId: 1,
+        clientId: 'client-1',
+        userId: 'user-1',
+        value: 25.5,
+        notes: null,
+        status: 'COMPLETED',
+        paymentStatus: 'PAID',
+        paidWithBalance: 0,
+        debtValue: 0,
+        rideDate: new Date('2026-04-08T12:28:00.000Z'),
+        createdAt: new Date('2026-04-08T12:28:00.000Z'),
+        location: 'Central Park',
+        photo: null,
+        client: {
+          id: 'client-1',
+          name: 'Cliente B',
+        },
+      }),
       findOne: jest.fn().mockResolvedValue(null),
       update: jest.fn().mockResolvedValue({ id: 'ride-123', value: 25.5 }),
       updateStatus: jest
@@ -171,7 +191,16 @@ describe('RidesService', () => {
       useBalance: false,
     });
 
-    expect(result).toEqual({ id: 'ride-123', value: 25.5 });
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'ride-123',
+        clientId: 'client-1',
+        client: {
+          id: 'client-1',
+          name: 'Cliente B',
+        },
+      }),
+    );
     expect(rideAccountingMock.getClientOrThrow).toHaveBeenCalledWith(
       'user-1',
       'client-1',
@@ -211,12 +240,25 @@ describe('RidesService', () => {
   });
 
   it('should zero debt when marking a ride as paid via status update', async () => {
-    repoMock.findOne.mockResolvedValueOnce({
+    repoMock.findOneWithClient.mockResolvedValueOnce({
       id: 'ride-123',
+      displayId: 1,
+      clientId: 'client-1',
+      userId: 'user-1',
       value: 30,
       paidWithBalance: 5,
       paymentStatus: 'PENDING',
       status: 'COMPLETED',
+      debtValue: 25,
+      notes: null,
+      rideDate: new Date('2026-04-08T12:28:00.000Z'),
+      createdAt: new Date('2026-04-08T12:28:00.000Z'),
+      location: null,
+      photo: null,
+      client: {
+        id: 'client-1',
+        name: 'Cliente B',
+      },
     });
 
     await service.updateStatus('user-1', 'ride-123', {
@@ -236,12 +278,25 @@ describe('RidesService', () => {
   });
 
   it('should zero debt when cancelling a ride', async () => {
-    repoMock.findOne.mockResolvedValueOnce({
+    repoMock.findOneWithClient.mockResolvedValueOnce({
       id: 'ride-123',
+      displayId: 1,
+      clientId: 'client-1',
+      userId: 'user-1',
       value: 30,
       paidWithBalance: 5,
       paymentStatus: 'PENDING',
       status: 'COMPLETED',
+      debtValue: 25,
+      notes: null,
+      rideDate: new Date('2026-04-08T12:28:00.000Z'),
+      createdAt: new Date('2026-04-08T12:28:00.000Z'),
+      location: null,
+      photo: null,
+      client: {
+        id: 'client-1',
+        name: 'Cliente B',
+      },
     });
 
     await service.updateStatus('user-1', 'ride-123', {
@@ -259,12 +314,25 @@ describe('RidesService', () => {
   });
 
   it('should restore debt when moving a cancelled ride back to an active status', async () => {
-    repoMock.findOne.mockResolvedValueOnce({
+    repoMock.findOneWithClient.mockResolvedValueOnce({
       id: 'ride-123',
+      displayId: 1,
+      clientId: 'client-1',
+      userId: 'user-1',
       value: 30,
       paidWithBalance: 5,
       paymentStatus: 'PENDING',
       status: 'CANCELLED',
+      debtValue: 25,
+      notes: null,
+      rideDate: new Date('2026-04-08T12:28:00.000Z'),
+      createdAt: new Date('2026-04-08T12:28:00.000Z'),
+      location: null,
+      photo: null,
+      client: {
+        id: 'client-1',
+        name: 'Cliente B',
+      },
     });
     rideStatusMock.prepareStatusUpdate.mockReturnValueOnce({
       status: 'COMPLETED',
@@ -286,6 +354,8 @@ describe('RidesService', () => {
   });
 
   it('should throw not found when updating status for a missing ride', async () => {
+    repoMock.findOneWithClient.mockResolvedValueOnce(null);
+
     await expect(
       service.updateStatus('user-1', 'missing', {
         paymentStatus: 'PAID',

@@ -5,7 +5,6 @@ import { DRIZZLE } from '../../database/database.provider';
 import type { DrizzleClient } from '../../database/database.provider';
 import type {
   FindAllFilters,
-  Ride,
   RideWithClient,
 } from '../interfaces/rides-repository.interface';
 import { RideCursorService } from './ride-cursor.service';
@@ -69,6 +68,9 @@ export class RideReadRepository {
   private buildRideSelect() {
     return {
       id: this.schema.rides.id,
+      displayId: this.schema.rides.displayId,
+      clientId: this.schema.rides.clientId,
+      userId: this.schema.rides.userId,
       value: this.schema.rides.value,
       notes: this.schema.rides.notes,
       status: this.schema.rides.status,
@@ -84,6 +86,26 @@ export class RideReadRepository {
         name: this.schema.clients.name,
       },
     };
+  }
+
+  async findOneWithClient(
+    userId: string,
+    id: string,
+    executor?: any,
+  ): Promise<RideWithClient | undefined> {
+    const results = await (executor ?? this.db)
+      .select(this.buildRideSelect())
+      .from(this.schema.rides)
+      .leftJoin(
+        this.schema.clients,
+        eq(this.schema.rides.clientId, this.schema.clients.id),
+      )
+      .where(
+        and(eq(this.schema.rides.id, id), eq(this.schema.rides.userId, userId)),
+      )
+      .limit(1);
+
+    return results[0] as RideWithClient | undefined;
   }
 
   async findAll(
@@ -165,7 +187,7 @@ export class RideReadRepository {
     cursor?: string,
     filters?: Omit<FindAllFilters, 'clientId'>,
   ): Promise<{
-    rides: Ride[];
+    rides: RideWithClient[];
     total: number;
     nextCursor?: string;
     hasNextPage: boolean;
@@ -190,8 +212,12 @@ export class RideReadRepository {
 
     const [results, countResult] = await Promise.all([
       this.db
-        .select()
+        .select(this.buildRideSelect())
         .from(this.schema.rides)
+        .leftJoin(
+          this.schema.clients,
+          eq(this.schema.rides.clientId, this.schema.clients.id),
+        )
         .where(and(...conditions))
         .orderBy(
           desc(this.schema.rides.rideDate),
@@ -199,17 +225,26 @@ export class RideReadRepository {
           desc(this.schema.rides.id),
         )
         .limit(limit + 1),
-      this.db
-        .select({ count: sql<number>`count(*)` })
-        .from(this.schema.rides)
-        .where(and(...baseConditions)),
+      filters?.search
+        ? this.db
+            .select({ count: sql<number>`count(*)` })
+            .from(this.schema.rides)
+            .leftJoin(
+              this.schema.clients,
+              eq(this.schema.rides.clientId, this.schema.clients.id),
+            )
+            .where(and(...baseConditions))
+        : this.db
+            .select({ count: sql<number>`count(*)` })
+            .from(this.schema.rides)
+            .where(and(...baseConditions)),
     ]);
 
     const hasNextPage = results.length > limit;
     const items = hasNextPage ? results.slice(0, limit) : results;
 
     return {
-      rides: items as Ride[],
+      rides: items as RideWithClient[],
       total: Number(countResult[0]?.count || 0),
       nextCursor: hasNextPage
         ? this.rideCursorService.encode({

@@ -47,6 +47,9 @@ export class RideStatsRepository {
       this.db
         .select({
           id: this.schema.rides.id,
+          displayId: this.schema.rides.displayId,
+          clientId: this.schema.rides.clientId,
+          userId: this.schema.rides.userId,
           value: this.schema.rides.value,
           notes: this.schema.rides.notes,
           status: this.schema.rides.status,

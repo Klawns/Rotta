@@ -26,7 +26,7 @@ import type {
   GetStatsDto,
 } from './dto/rides.dto';
 import type { RideResponseDto } from './dto/ride-response.dto';
-import type { Ride } from './interfaces/rides-repository.interface';
+import type { Ride, RideWithClient } from './interfaces/rides-repository.interface';
 
 type TransactionRunner = {
   transaction<T>(callback: (tx: unknown) => Promise<T>): Promise<T>;
@@ -85,6 +85,28 @@ export class RidesService {
     return ride;
   }
 
+  private async getRideWithClientOrThrow(
+    userId: string,
+    id: string,
+    executor?: unknown,
+  ): Promise<RideWithClient> {
+    const ride = await this.ridesRepository.findOneWithClient(
+      userId,
+      id,
+      executor,
+    );
+
+    if (!ride) {
+      throw new NotFoundException('Corrida nao encontrada.');
+    }
+
+    if (!ride) {
+      throw new NotFoundException('Corrida nÃ£o encontrada.');
+    }
+
+    return ride;
+  }
+
   private async invalidateRideMutations(userId: string) {
     await this.userDashboardCacheService.invalidate(userId);
     await this.cache.del(`profile:${userId}`);
@@ -112,7 +134,7 @@ export class RidesService {
     return this.ridesRepository.findAll(userId, limit, cursor, parsedFilters);
   }
 
-  async create(userId: string, data: CreateRideDto): Promise<Ride> {
+  async create(userId: string, data: CreateRideDto): Promise<RideWithClient> {
     this.logger.log(
       `[RidesService] Criando corrida para usuário ${userId}`,
       'RidesService',
@@ -175,21 +197,25 @@ export class RidesService {
       },
     );
 
-    if (result) {
-      await this.invalidateRideMutations(userId);
-      this.logger.log(
-        `[RidesService] Corrida ${result.id} criada com sucesso`,
-        'RidesService',
-      );
-    }
+    const createdRide = await this.getRideWithClientOrThrow(userId, result.id);
 
-    return result;
+    await this.invalidateRideMutations(userId);
+    this.logger.log(
+      `[RidesService] Corrida ${result.id} criada com sucesso`,
+      'RidesService',
+    );
+
+    return createdRide;
   }
 
-  async update(userId: string, id: string, data: UpdateRideDto): Promise<Ride> {
+  async update(
+    userId: string,
+    id: string,
+    data: UpdateRideDto,
+  ): Promise<RideWithClient> {
     this.logger.log(`[RidesService] Atualizando corrida ${id}`, 'RidesService');
 
-    const existingRide = await this.getRideOrThrow(userId, id);
+    const existingRide = await this.getRideWithClientOrThrow(userId, id);
     const { nextClientId, refundAmount, updateData } =
       this.rideStatusService.prepareRideUpdate(existingRide, data);
 
@@ -219,17 +245,18 @@ export class RidesService {
       throw new NotFoundException('Corrida não encontrada.');
     }
 
+    const updatedRide = await this.getRideWithClientOrThrow(userId, id);
     await this.invalidateRideMutations(userId);
     this.logger.log(
       `[RidesService] Corrida ${id} atualizada com sucesso`,
       'RidesService',
     );
-    return result;
+    return updatedRide;
   }
 
-  async delete(userId: string, id: string): Promise<Ride> {
+  async delete(userId: string, id: string): Promise<RideWithClient> {
     this.logger.log(`[RidesService] Removendo corrida ${id}`, 'RidesService');
-    const existingRide = await this.getRideOrThrow(userId, id);
+    const existingRide = await this.getRideWithClientOrThrow(userId, id);
     const result = await (this.drizzle.db as TransactionRunner).transaction(
       async (tx) => {
         await this.rideAccountingService.refundClientBalance(
@@ -253,7 +280,7 @@ export class RidesService {
       `[RidesService] Corrida ${id} removida com sucesso`,
       'RidesService',
     );
-    return result;
+    return existingRide;
   }
 
   async deleteAll(userId: string): Promise<{ success: true }> {
@@ -315,7 +342,7 @@ export class RidesService {
   }
 
   async updateStatus(userId: string, id: string, data: UpdateRideStatusDto) {
-    const existingRide = await this.getRideOrThrow(userId, id);
+    const existingRide = await this.getRideWithClientOrThrow(userId, id);
     const updateData = this.rideStatusService.prepareStatusUpdate(
       existingRide,
       data,
@@ -331,8 +358,9 @@ export class RidesService {
       throw new NotFoundException('Corrida não encontrada.');
     }
 
+    const updatedRide = await this.getRideWithClientOrThrow(userId, id);
     await this.invalidateRideMutations(userId);
-    return result;
+    return updatedRide;
   }
 
   async getFrequentClients(userId: string) {

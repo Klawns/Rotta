@@ -14,7 +14,7 @@ export interface FindAllFilters {
   search?: string;
 }
 
-export interface RideWithClient extends Omit<Ride, 'clientId' | 'userId'> {
+export interface RideWithClient extends Ride {
   client: {
     id: string;
     name: string;
@@ -43,6 +43,11 @@ export interface IRidesRepository {
     id: string,
     executor?: unknown,
   ): Promise<Ride | undefined>;
+  findOneWithClient(
+    userId: string,
+    id: string,
+    executor?: unknown,
+  ): Promise<RideWithClient | undefined>;
 
   updateStatus(
     userId: string,
@@ -81,7 +86,7 @@ export interface IRidesRepository {
     cursor?: string,
     filters?: Omit<FindAllFilters, 'clientId'>,
   ): Promise<{
-    rides: Ride[];
+    rides: RideWithClient[];
     total: number;
     nextCursor?: string;
     hasNextPage: boolean;

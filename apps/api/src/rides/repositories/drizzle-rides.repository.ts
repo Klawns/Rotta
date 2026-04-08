@@ -74,6 +74,14 @@ export class DrizzleRidesRepository implements IRidesRepository {
     return results[0];
   }
 
+  async findOneWithClient(
+    userId: string,
+    id: string,
+    executor?: any,
+  ): Promise<RideWithClient | undefined> {
+    return this.rideReadRepository.findOneWithClient(userId, id, executor);
+  }
+
   async updateStatus(
     userId: string,
     id: string,
@@ -142,7 +150,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
     cursor?: string,
     filters?: Omit<FindAllFilters, 'clientId'>,
   ): Promise<{
-    rides: Ride[];
+    rides: RideWithClient[];
     total: number;
     nextCursor?: string;
     hasNextPage: boolean;
