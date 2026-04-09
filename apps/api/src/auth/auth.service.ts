@@ -48,6 +48,13 @@ export class AuthService {
     };
   }
 
+  private async loginWithFreshProfile(
+    user: Pick<User, 'id' | 'role'>,
+  ): Promise<AuthTokensResponse> {
+    await this.authProfileService.invalidateProfile(user.id);
+    return this.login(user);
+  }
+
   async login(user: Pick<User, 'id' | 'role'>): Promise<AuthTokensResponse> {
     const payload = this.buildUserPayload(user);
     const accessToken = this.jwtService.sign(payload);
@@ -143,6 +150,8 @@ export class AuthService {
           ...user,
           ...updates,
         };
+
+        return this.loginWithFreshProfile(user);
       }
     }
 
@@ -158,7 +167,6 @@ export class AuthService {
     data: ProfileDto,
   ): Promise<AuthTokensResponse> {
     await this.usersService.update(userId, data);
-    await this.authProfileService.invalidateProfile(userId);
 
     const user = await this.usersService.findById(userId);
 
@@ -166,7 +174,7 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado.');
     }
 
-    return this.login(user);
+    return this.loginWithFreshProfile(user);
   }
 
   async tutorialSeen(userId: string) {

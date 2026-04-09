@@ -225,4 +225,74 @@ describe('AuthService', () => {
       cellphone: '11999999999',
     });
   });
+
+  it('should invalidate cached profile before login when google auth updates an existing user', async () => {
+    usersServiceMock.findByEmail.mockResolvedValue({
+      id: 'user-3',
+      email: 'google@example.com',
+      name: 'Existing User',
+      role: 'user',
+      cellphone: null,
+    });
+    authProfileServiceMock.getRequiredProfile.mockResolvedValue({
+      id: 'user-3',
+      name: 'Existing User',
+      email: 'google@example.com',
+      role: 'user',
+      taxId: null,
+      cellphone: '11999999999',
+      hasSeenTutorial: false,
+      subscription: null,
+      createdAt: new Date('2026-03-27T18:00:00.000Z'),
+    });
+
+    await service.validateGoogleUser(
+      {
+        email: 'google@example.com',
+        firstName: 'Existing',
+        lastName: 'User',
+        accessToken: 'token',
+      },
+      '11999999999',
+    );
+
+    expect(authProfileServiceMock.invalidateProfile).toHaveBeenCalledWith(
+      'user-3',
+    );
+    expect(authProfileServiceMock.invalidateProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not invalidate cached profile when google auth does not change the existing user', async () => {
+    usersServiceMock.findByEmail.mockResolvedValue({
+      id: 'user-3',
+      email: 'google@example.com',
+      name: 'Existing User',
+      role: 'user',
+      cellphone: '11999999999',
+    });
+    authProfileServiceMock.getRequiredProfile.mockResolvedValue({
+      id: 'user-3',
+      name: 'Existing User',
+      email: 'google@example.com',
+      role: 'user',
+      taxId: null,
+      cellphone: '11999999999',
+      hasSeenTutorial: false,
+      subscription: null,
+      createdAt: new Date('2026-03-27T18:00:00.000Z'),
+    });
+
+    await service.validateGoogleUser(
+      {
+        email: 'google@example.com',
+        firstName: 'Existing',
+        lastName: 'User',
+        accessToken: 'token',
+      },
+      '11999999999',
+    );
+
+    expect(usersServiceMock.update).not.toHaveBeenCalled();
+    expect(authProfileServiceMock.invalidateProfile).not.toHaveBeenCalled();
+  });
 });
