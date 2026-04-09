@@ -48,7 +48,8 @@ export class AdminSettingsService {
   }
 
   async updatePlan(id: PaymentPlanId, data: PricingPlanUpdate): Promise<void> {
-    return this.adminSettingsRepository.updatePlan(id, data);
+    await this.adminSettingsRepository.updatePlan(id, data);
+    await this.cache.del('pricing:all_plans');
   }
 
   async getConfigs() {
