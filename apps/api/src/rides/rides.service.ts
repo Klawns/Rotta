@@ -58,6 +58,10 @@ interface RideStatsResult {
   rides: RideResponseDto[];
 }
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'erro desconhecido';
+}
+
 @Injectable()
 export class RidesService {
   private readonly logger = new Logger(RidesService.name);
@@ -110,10 +114,34 @@ export class RidesService {
   }
 
   private async invalidateRideMutations(userId: string) {
-    await Promise.all([
-      this.userDashboardCacheService.invalidate(userId),
-      this.profileCacheService.invalidate(userId),
-    ]);
+    const invalidations = [
+      {
+        cacheName: 'user dashboard',
+        execute: () => this.userDashboardCacheService.invalidate(userId),
+      },
+      {
+        cacheName: 'profile',
+        execute: () => this.profileCacheService.invalidate(userId),
+      },
+    ];
+
+    const results = await Promise.allSettled(
+      invalidations.map(({ execute }) => execute()),
+    );
+
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        return;
+      }
+
+      const { cacheName } = invalidations[index];
+      const error = result.reason;
+
+      this.logger.error(
+        `[RidesService] Falha ao invalidar cache ${cacheName} apos mutacao da corrida para o usuario ${userId}: ${getErrorMessage(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    });
   }
 
   async findAll(

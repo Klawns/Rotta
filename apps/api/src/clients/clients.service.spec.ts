@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/require-await -- Jest mocks in this spec intentionally use partial runtime stubs. */
+import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientsService } from './clients.service';
 import { IClientsRepository } from './interfaces/clients-repository.interface';
@@ -19,8 +20,11 @@ describe('ClientsService', () => {
   let drizzleMock: any;
   let dashboardCacheMock: any;
   let cacheMock: jest.Mocked<ICacheProvider>;
+  let loggerErrorSpy: jest.SpyInstance;
 
   beforeEach(async () => {
+    loggerErrorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
     clientsRepoMock = {
       findAll: jest.fn().mockResolvedValue({ clients: [], total: 0 }),
       findDirectory: jest.fn().mockResolvedValue({
@@ -115,6 +119,10 @@ describe('ClientsService', () => {
     }).compile();
 
     service = module.get<ClientsService>(ClientsService);
+  });
+
+  afterEach(() => {
+    loggerErrorSpy.mockRestore();
   });
 
   it('should be defined', () => {
@@ -324,5 +332,57 @@ describe('ClientsService', () => {
     );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(result).toEqual({ id: 'payment-1' });
+  });
+
+  it('should keep successful client creation even when cache invalidation fails after persistence', async () => {
+    cacheMock.invalidatePrefix.mockRejectedValueOnce(
+      new Error('directory cache invalidation failed'),
+    );
+
+    await expect(
+      service.create('user-1', {
+        name: 'Client Test',
+        phone: '11999999999',
+        address: 'Rua A',
+      }),
+    ).resolves.toEqual({
+      id: 'uuid-123',
+      name: 'Client Test',
+      balance: 0,
+    });
+
+    expect(clientsRepoMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        name: 'Client Test',
+      }),
+    );
+    expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Falha ao invalidar cache client directory'),
+      expect.any(String),
+    );
+  });
+
+  it('should keep successful partial payments even when dashboard cache invalidation fails', async () => {
+    dashboardCacheMock.invalidate.mockRejectedValueOnce(
+      new Error('dashboard cache invalidation failed'),
+    );
+
+    await expect(
+      service.addPartialPayment('user-1', 'uuid-123', 30, 'Pagamento avulso'),
+    ).resolves.toEqual({ id: 'payment-1' });
+
+    expect(paymentsRepoMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        clientId: 'uuid-123',
+        userId: 'user-1',
+        amount: 30,
+      }),
+    );
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Falha ao invalidar cache user dashboard'),
+      expect.any(String),
+    );
   });
 });

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/require-await -- Jest mocks in this spec intentionally use partial runtime stubs. */
-import { NotFoundException } from '@nestjs/common';
+import { Logger, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { RidesService } from './rides.service';
 import { ProfileCacheService } from '../cache/profile-cache.service';
@@ -21,6 +21,7 @@ describe('RidesService', () => {
   let profileCacheMock: any;
   let rideAccountingMock: any;
   let rideStatusMock: any;
+  let loggerErrorSpy: jest.SpyInstance;
 
   const sampleRide = {
     id: 'ride-456',
@@ -44,6 +45,8 @@ describe('RidesService', () => {
   };
 
   beforeEach(async () => {
+    loggerErrorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
     repoMock = {
       findAll: jest.fn().mockResolvedValue({ rides: [], total: 0 }),
       create: jest.fn().mockResolvedValue({ id: 'ride-123', value: 25.5 }),
@@ -204,6 +207,7 @@ describe('RidesService', () => {
 
   afterEach(() => {
     process.env.NODE_ENV = ORIGINAL_NODE_ENV;
+    loggerErrorSpy.mockRestore();
   });
 
   it('should be defined', () => {
@@ -609,8 +613,58 @@ describe('RidesService', () => {
       service.update('user-1', 'ride-123', {
         value: 32,
       }),
-    ).rejects.toThrow('dashboard cache invalidation failed');
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'ride-123',
+      }),
+    );
 
+    expect(repoMock.update).toHaveBeenCalledWith(
+      'user-1',
+      'ride-123',
+      expect.objectContaining({
+        value: 32,
+      }),
+      'tx',
+    );
     expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Falha ao invalidar cache user dashboard'),
+      expect.any(String),
+    );
+  });
+
+  it('should keep successful ride creation even when cache invalidation fails after persistence', async () => {
+    profileCacheMock.invalidate.mockRejectedValueOnce(
+      new Error('profile cache invalidation failed'),
+    );
+
+    await expect(
+      service.create('user-1', {
+        clientId: 'client-1',
+        value: 25.5,
+        location: 'Central Park',
+        status: 'COMPLETED',
+        paymentStatus: 'PAID',
+        useBalance: false,
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'ride-123',
+      }),
+    );
+
+    expect(repoMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        clientId: 'client-1',
+        userId: 'user-1',
+      }),
+      'tx',
+    );
+    expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Falha ao invalidar cache profile'),
+      expect.any(String),
+    );
   });
 });

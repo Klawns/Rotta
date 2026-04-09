@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   IClientsRepository,
@@ -20,8 +20,14 @@ type TransactionRunner = {
 const CLIENT_DIRECTORY_CACHE_TTL_SECONDS = 300;
 const DEFAULT_CLIENT_DIRECTORY_LIMIT = 20;
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'erro desconhecido';
+}
+
 @Injectable()
 export class ClientsService {
+  private readonly logger = new Logger(ClientsService.name);
+
   constructor(
     @Inject(IClientsRepository)
     private readonly clientsRepository: IClientsRepository,
@@ -55,6 +61,33 @@ export class ClientsService {
 
   private async invalidateDirectoryCache(userId: string) {
     await this.cache.invalidatePrefix(this.getDirectoryCachePrefix(userId));
+  }
+
+  private async invalidateCachesAfterWrite(
+    userId: string,
+    context: string,
+    invalidations: Array<{
+      cacheName: string;
+      execute: () => Promise<void>;
+    }>,
+  ) {
+    const results = await Promise.allSettled(
+      invalidations.map(({ execute }) => execute()),
+    );
+
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        return;
+      }
+
+      const { cacheName } = invalidations[index];
+      const error = result.reason;
+
+      this.logger.error(
+        `[ClientsService] Falha ao invalidar cache ${cacheName} apos ${context} do usuario ${userId}: ${getErrorMessage(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    });
   }
 
   private async getClientOrThrow(
@@ -116,9 +149,15 @@ export class ClientsService {
       address: data.address ?? null,
     } as CreateClientDto);
 
-    await Promise.all([
-      this.userDashboardCacheService.invalidate(userId),
-      this.invalidateDirectoryCache(userId),
+    await this.invalidateCachesAfterWrite(userId, 'criacao de cliente', [
+      {
+        cacheName: 'user dashboard',
+        execute: () => this.userDashboardCacheService.invalidate(userId),
+      },
+      {
+        cacheName: 'client directory',
+        execute: () => this.invalidateDirectoryCache(userId),
+      },
     ]);
     return client;
   }
@@ -135,9 +174,15 @@ export class ClientsService {
       throw new NotFoundException('Cliente não encontrado.');
     }
 
-    await Promise.all([
-      this.userDashboardCacheService.invalidate(userId),
-      this.invalidateDirectoryCache(userId),
+    await this.invalidateCachesAfterWrite(userId, 'atualizacao de cliente', [
+      {
+        cacheName: 'user dashboard',
+        execute: () => this.userDashboardCacheService.invalidate(userId),
+      },
+      {
+        cacheName: 'client directory',
+        execute: () => this.invalidateDirectoryCache(userId),
+      },
     ]);
     return updatedClient;
   }
@@ -145,19 +190,35 @@ export class ClientsService {
   async delete(userId: string, id: string) {
     await this.getClientOrThrow(userId, id);
     await this.clientsRepository.delete(userId, id);
-    await Promise.all([
-      this.userDashboardCacheService.invalidate(userId),
-      this.invalidateDirectoryCache(userId),
+    await this.invalidateCachesAfterWrite(userId, 'remocao de cliente', [
+      {
+        cacheName: 'user dashboard',
+        execute: () => this.userDashboardCacheService.invalidate(userId),
+      },
+      {
+        cacheName: 'client directory',
+        execute: () => this.invalidateDirectoryCache(userId),
+      },
     ]);
     return { success: true };
   }
 
   async deleteAll(userId: string) {
     await this.clientsRepository.deleteAll(userId);
-    await Promise.all([
-      this.userDashboardCacheService.invalidate(userId),
-      this.invalidateDirectoryCache(userId),
-    ]);
+    await this.invalidateCachesAfterWrite(
+      userId,
+      'remocao de todos os clientes',
+      [
+        {
+          cacheName: 'user dashboard',
+          execute: () => this.userDashboardCacheService.invalidate(userId),
+        },
+        {
+          cacheName: 'client directory',
+          execute: () => this.invalidateDirectoryCache(userId),
+        },
+      ],
+    );
     return { success: true };
   }
 
@@ -218,7 +279,16 @@ export class ClientsService {
       return result;
     }
 
-    await this.userDashboardCacheService.invalidate(userId);
+    await this.invalidateCachesAfterWrite(
+      userId,
+      'registro de pagamento parcial',
+      [
+        {
+          cacheName: 'user dashboard',
+          execute: () => this.userDashboardCacheService.invalidate(userId),
+        },
+      ],
+    );
     return result;
   }
 
@@ -284,7 +354,12 @@ export class ClientsService {
       },
     );
 
-    await this.userDashboardCacheService.invalidate(userId);
+    await this.invalidateCachesAfterWrite(userId, 'quitacao de divida', [
+      {
+        cacheName: 'user dashboard',
+        execute: () => this.userDashboardCacheService.invalidate(userId),
+      },
+    ]);
     return result;
   }
 
