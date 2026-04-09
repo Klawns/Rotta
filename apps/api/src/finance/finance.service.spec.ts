@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
+import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
 import { FinanceService } from './finance.service';
 import { FinanceSummaryService } from './services/finance-summary.service';
 import { FinanceTrendsService } from './services/finance-trends.service';
@@ -28,6 +30,7 @@ describe('FinanceService', () => {
   let summaryServiceMock: SummaryServiceMock;
   let trendsServiceMock: TrendsServiceMock;
   let breakdownServiceMock: BreakdownServiceMock;
+  let cacheMock: jest.Mocked<ICacheProvider>;
 
   beforeEach(async () => {
     summaryServiceMock = {
@@ -50,10 +53,21 @@ describe('FinanceService', () => {
         .fn()
         .mockResolvedValue([{ id: 'ride-2', value: 84 }]),
     };
+    cacheMock = {
+      get: jest.fn().mockResolvedValue(null),
+      set: jest.fn().mockResolvedValue(undefined),
+      del: jest.fn().mockResolvedValue(undefined),
+      getDel: jest.fn().mockResolvedValue(null),
+      invalidatePrefix: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FinanceService,
+        {
+          provide: CACHE_PROVIDER,
+          useValue: cacheMock,
+        },
         {
           provide: FinanceSummaryService,
           useValue: summaryServiceMock,
@@ -70,6 +84,43 @@ describe('FinanceService', () => {
     }).compile();
 
     service = module.get<FinanceService>(FinanceService);
+  });
+
+  it('should return a cached dashboard without recomputing the aggregates', async () => {
+    const cachedDashboard = {
+      summary: {
+        totalValue: 420,
+        count: 5,
+        ticketMedio: 84,
+        previousPeriodComparison: 0,
+        projection: 0,
+      },
+      trends: [{ date: '2026-03-29', value: 420 }],
+      byClient: [{ clientId: 'client-1', clientName: 'Alice', value: 420 }],
+      byStatus: [{ status: 'PAID' as const, value: 420 }],
+      recentRides: [
+        {
+          id: 'ride-1',
+          value: 420,
+          rideDate: '2026-03-29T12:00:00.000Z',
+          paymentStatus: 'PAID' as const,
+          clientName: 'Alice',
+        },
+      ],
+    };
+    cacheMock.get.mockResolvedValueOnce(cachedDashboard);
+
+    const result = await service.getDashboard('user-1', {
+      period: 'month',
+      clientId: 'all',
+    });
+
+    expect(result).toEqual(cachedDashboard);
+    expect(summaryServiceMock.getSummary).not.toHaveBeenCalled();
+    expect(trendsServiceMock.getTrends).not.toHaveBeenCalled();
+    expect(breakdownServiceMock.getByClient).not.toHaveBeenCalled();
+    expect(breakdownServiceMock.getByStatus).not.toHaveBeenCalled();
+    expect(breakdownServiceMock.getRecentRides).not.toHaveBeenCalled();
   });
 
   it('should compose the dashboard payload from focused services', async () => {
@@ -90,6 +141,7 @@ describe('FinanceService', () => {
       byStatus: [{ status: 'PAID', value: 42 }],
       recentRides: [{ id: 'ride-1', value: 42 }],
     });
+    expect(cacheMock.set).toHaveBeenCalledTimes(1);
   });
 
   it('should return the full report payload for the selected filter', async () => {

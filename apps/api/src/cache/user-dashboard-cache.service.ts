@@ -24,6 +24,10 @@ export class UserDashboardCacheService {
     return `frequent-clients:${userId}`;
   }
 
+  private getFinanceDashboardCachePrefix(userId: string) {
+    return `finance-dashboard:${userId}:`;
+  }
+
   async getStats<T>(userId: string, period: string): Promise<T | null> {
     return this.cache.get<T>(this.getStatsCacheKey(userId, period));
   }
@@ -55,6 +59,7 @@ export class UserDashboardCacheService {
   async invalidate(userId: string) {
     await Promise.all([
       this.cache.invalidatePrefix(this.getStatsCachePrefix(userId)),
+      this.cache.invalidatePrefix(this.getFinanceDashboardCachePrefix(userId)),
       this.cache.del(this.getFrequentClientsCacheKey(userId)),
     ]);
 

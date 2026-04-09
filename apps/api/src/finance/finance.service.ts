@@ -1,4 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
+import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
 import { getDatesFromPeriod } from '../common/utils/date.util';
 import type {
   FinanceByClientItem,
@@ -14,6 +16,8 @@ import { FinanceSummaryService } from './services/finance-summary.service';
 import { FinanceTrendsService } from './services/finance-trends.service';
 import { FinanceBreakdownService } from './services/finance-breakdown.service';
 
+const FINANCE_DASHBOARD_CACHE_TTL_SECONDS = 60;
+
 @Injectable()
 export class FinanceService {
   private readonly logger = new Logger(FinanceService.name);
@@ -22,6 +26,7 @@ export class FinanceService {
     private readonly financeSummaryService: FinanceSummaryService,
     private readonly financeTrendsService: FinanceTrendsService,
     private readonly financeBreakdownService: FinanceBreakdownService,
+    @Inject(CACHE_PROVIDER) private readonly cache: ICacheProvider,
   ) {}
 
   private resolveFilters(query: GetFinanceStatsDto): {
@@ -43,11 +48,37 @@ export class FinanceService {
     };
   }
 
+  private getDashboardCacheKey(
+    userId: string,
+    query: GetFinanceStatsDto,
+    startDate: Date,
+    endDate: Date,
+    clientId?: string,
+  ) {
+    const searchClientId = clientId ?? 'all';
+
+    return [
+      'finance-dashboard',
+      userId,
+      query.period,
+      searchClientId,
+      startDate.toISOString(),
+      endDate.toISOString(),
+    ].join(':');
+  }
+
   async getDashboard(
     userId: string,
     query: GetFinanceStatsDto,
   ): Promise<FinanceDashboardResponse> {
     const { startDate, endDate, clientId } = this.resolveFilters(query);
+    const cacheKey = this.getDashboardCacheKey(
+      userId,
+      query,
+      startDate,
+      endDate,
+      clientId,
+    );
 
     this.logger.debug({
       context: 'getDashboard:start',
@@ -57,6 +88,20 @@ export class FinanceService {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
     });
+
+    const cachedDashboard =
+      await this.cache.get<FinanceDashboardResponse>(cacheKey);
+
+    if (cachedDashboard) {
+      this.logger.debug({
+        context: 'getDashboard:cache-hit',
+        userId,
+        period: query.period,
+        clientId: clientId ?? 'all',
+      });
+
+      return cachedDashboard;
+    }
 
     const [summary, trends, byClient, byStatus, recentRides] =
       (await Promise.all([
@@ -94,6 +139,20 @@ export class FinanceService {
         RecentRideItem[],
       ];
 
+    const dashboard = {
+      summary,
+      trends,
+      byClient,
+      byStatus,
+      recentRides,
+    };
+
+    await this.cache.set(
+      cacheKey,
+      dashboard,
+      FINANCE_DASHBOARD_CACHE_TTL_SECONDS,
+    );
+
     this.logger.debug({
       context: 'getDashboard:success',
       userId,
@@ -103,13 +162,7 @@ export class FinanceService {
       recentRideCount: recentRides.length,
     });
 
-    return {
-      summary,
-      trends,
-      byClient,
-      byStatus,
-      recentRides,
-    };
+    return dashboard;
   }
 
   async getReport(

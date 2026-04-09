@@ -97,18 +97,35 @@ describe('UserDashboardCacheService', () => {
 
     await cache.set('stats:user-1:today', { count: 1 });
     await cache.set('stats:user-1:rolling-30d', { count: 2 });
+    await cache.set('finance-dashboard:user-1:month:all:2026-04-01:2026-04-30', {
+      count: 9,
+    });
     await cache.set('frequent-clients:user-1', [{ id: 'client-1' }]);
     await cache.set('stats:user-2:today', { count: 3 });
+    await cache.set('finance-dashboard:user-2:month:all:2026-04-01:2026-04-30', {
+      count: 4,
+    });
 
     await service.invalidate('user-1');
 
     expect(cache.invalidatePrefix).toHaveBeenCalledWith('stats:user-1:');
+    expect(cache.invalidatePrefix).toHaveBeenCalledWith(
+      'finance-dashboard:user-1:',
+    );
     expect(cache.del).toHaveBeenCalledWith('frequent-clients:user-1');
     await expect(cache.get('stats:user-1:today')).resolves.toBeNull();
     await expect(cache.get('stats:user-1:rolling-30d')).resolves.toBeNull();
+    await expect(
+      cache.get('finance-dashboard:user-1:month:all:2026-04-01:2026-04-30'),
+    ).resolves.toBeNull();
     await expect(cache.get('frequent-clients:user-1')).resolves.toBeNull();
     await expect(cache.get('stats:user-2:today')).resolves.toEqual({
       count: 3,
+    });
+    await expect(
+      cache.get('finance-dashboard:user-2:month:all:2026-04-01:2026-04-30'),
+    ).resolves.toEqual({
+      count: 4,
     });
   });
 });

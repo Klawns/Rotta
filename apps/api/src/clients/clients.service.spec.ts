@@ -6,6 +6,8 @@ import { IRidesRepository } from '../rides/interfaces/rides-repository.interface
 import { IClientPaymentsRepository } from './interfaces/client-payments-repository.interface';
 import { IBalanceTransactionsRepository } from './interfaces/balance-transactions-repository.interface';
 import { DRIZZLE } from '../database/database.provider';
+import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
+import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
 import { UserDashboardCacheService } from '../cache/user-dashboard-cache.service';
 
 describe('ClientsService', () => {
@@ -16,6 +18,7 @@ describe('ClientsService', () => {
   let balanceTransactionsRepoMock: any;
   let drizzleMock: any;
   let dashboardCacheMock: any;
+  let cacheMock: jest.Mocked<ICacheProvider>;
 
   beforeEach(async () => {
     clientsRepoMock = {
@@ -73,6 +76,13 @@ describe('ClientsService', () => {
     dashboardCacheMock = {
       invalidate: jest.fn().mockResolvedValue(undefined),
     };
+    cacheMock = {
+      get: jest.fn().mockResolvedValue(null),
+      set: jest.fn().mockResolvedValue(undefined),
+      del: jest.fn().mockResolvedValue(undefined),
+      getDel: jest.fn().mockResolvedValue(null),
+      invalidatePrefix: jest.fn().mockResolvedValue(undefined),
+    };
 
     drizzleMock = {
       db: {
@@ -96,6 +106,10 @@ describe('ClientsService', () => {
         {
           provide: UserDashboardCacheService,
           useValue: dashboardCacheMock,
+        },
+        {
+          provide: CACHE_PROVIDER,
+          useValue: cacheMock,
         },
       ],
     }).compile();
@@ -141,6 +155,51 @@ describe('ClientsService', () => {
       hasMore: false,
       search: 'Ali',
     });
+    expect(cacheMock.set).toHaveBeenCalledTimes(1);
+  });
+
+  it('should return cached client directory entries without reading the repository', async () => {
+    const cachedDirectory = {
+      clients: [{ id: 'client-9', name: 'Cached Alice', isPinned: false }],
+      returned: 1,
+      limit: 10,
+      hasMore: false,
+      search: 'ali',
+    };
+    cacheMock.get.mockResolvedValueOnce(cachedDirectory);
+
+    const result = await service.findDirectory('user-1', ' ali ', 10);
+
+    expect(result).toEqual(cachedDirectory);
+    expect(clientsRepoMock.findDirectory).not.toHaveBeenCalled();
+  });
+
+  it('should invalidate cached client directory entries after creating a client', async () => {
+    await service.create('user-1', {
+      name: 'Client Test',
+      phone: '11999999999',
+      address: 'Rua A',
+    });
+
+    expect(cacheMock.invalidatePrefix).toHaveBeenCalledWith(
+      'client-directory:user-1:',
+    );
+  });
+
+  it('should invalidate cached client directory entries after updating a client', async () => {
+    await service.update('user-1', 'uuid-123', { name: 'Updated Client' });
+
+    expect(cacheMock.invalidatePrefix).toHaveBeenCalledWith(
+      'client-directory:user-1:',
+    );
+  });
+
+  it('should invalidate cached client directory entries after deleting all clients', async () => {
+    await service.deleteAll('user-1');
+
+    expect(cacheMock.invalidatePrefix).toHaveBeenCalledWith(
+      'client-directory:user-1:',
+    );
   });
 
   it('should get client balance using aggregated sql methods', async () => {

@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Inject,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   IClientsRepository,
@@ -14,11 +9,16 @@ import { IRidesRepository } from '../rides/interfaces/rides-repository.interface
 import { IBalanceTransactionsRepository } from './interfaces/balance-transactions-repository.interface';
 import { DRIZZLE } from '../database/database.provider';
 import type { DrizzleClient } from '../database/database.provider';
+import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
+import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
 import { UserDashboardCacheService } from '../cache/user-dashboard-cache.service';
 
 type TransactionRunner = {
   transaction<T>(callback: (tx: unknown) => Promise<T>): Promise<T>;
 };
+
+const CLIENT_DIRECTORY_CACHE_TTL_SECONDS = 300;
+const DEFAULT_CLIENT_DIRECTORY_LIMIT = 20;
 
 @Injectable()
 export class ClientsService {
@@ -32,8 +32,30 @@ export class ClientsService {
     @Inject(IBalanceTransactionsRepository)
     private readonly balanceTransactionsRepository: IBalanceTransactionsRepository,
     @Inject(DRIZZLE) private readonly drizzle: DrizzleClient,
+    @Inject(CACHE_PROVIDER) private readonly cache: ICacheProvider,
     private readonly userDashboardCacheService: UserDashboardCacheService,
   ) {}
+
+  private normalizeDirectorySearch(search?: string) {
+    const normalizedSearch = search?.trim().toLowerCase();
+    return normalizedSearch ? encodeURIComponent(normalizedSearch) : 'all';
+  }
+
+  private getDirectoryCachePrefix(userId: string) {
+    return `client-directory:${userId}:`;
+  }
+
+  private resolveDirectoryLimit(limit?: number) {
+    return limit ?? DEFAULT_CLIENT_DIRECTORY_LIMIT;
+  }
+
+  private getDirectoryCacheKey(userId: string, search?: string, limit?: number) {
+    return `${this.getDirectoryCachePrefix(userId)}${this.normalizeDirectorySearch(search)}:${this.resolveDirectoryLimit(limit)}`;
+  }
+
+  private async invalidateDirectoryCache(userId: string) {
+    await this.cache.invalidatePrefix(this.getDirectoryCachePrefix(userId));
+  }
 
   private async getClientOrThrow(
     userId: string,
@@ -62,7 +84,25 @@ export class ClientsService {
   }
 
   async findDirectory(userId: string, search?: string, limit?: number) {
-    return this.clientsRepository.findDirectory(userId, search, limit);
+    const resolvedLimit = this.resolveDirectoryLimit(limit);
+    const cacheKey = this.getDirectoryCacheKey(userId, search, limit);
+    const cachedDirectory = await this.cache.get<
+      Awaited<ReturnType<IClientsRepository['findDirectory']>>
+    >(cacheKey);
+
+    if (cachedDirectory) {
+      return cachedDirectory;
+    }
+
+    const directory = await this.clientsRepository.findDirectory(
+      userId,
+      search,
+      resolvedLimit,
+    );
+
+    await this.cache.set(cacheKey, directory, CLIENT_DIRECTORY_CACHE_TTL_SECONDS);
+
+    return directory;
   }
 
   async create(
@@ -76,7 +116,10 @@ export class ClientsService {
       address: data.address ?? null,
     } as CreateClientDto);
 
-    await this.userDashboardCacheService.invalidate(userId);
+    await Promise.all([
+      this.userDashboardCacheService.invalidate(userId),
+      this.invalidateDirectoryCache(userId),
+    ]);
     return client;
   }
 
@@ -92,20 +135,29 @@ export class ClientsService {
       throw new NotFoundException('Cliente não encontrado.');
     }
 
-    await this.userDashboardCacheService.invalidate(userId);
+    await Promise.all([
+      this.userDashboardCacheService.invalidate(userId),
+      this.invalidateDirectoryCache(userId),
+    ]);
     return updatedClient;
   }
 
   async delete(userId: string, id: string) {
     await this.getClientOrThrow(userId, id);
     await this.clientsRepository.delete(userId, id);
-    await this.userDashboardCacheService.invalidate(userId);
+    await Promise.all([
+      this.userDashboardCacheService.invalidate(userId),
+      this.invalidateDirectoryCache(userId),
+    ]);
     return { success: true };
   }
 
   async deleteAll(userId: string) {
     await this.clientsRepository.deleteAll(userId);
-    await this.userDashboardCacheService.invalidate(userId);
+    await Promise.all([
+      this.userDashboardCacheService.invalidate(userId),
+      this.invalidateDirectoryCache(userId),
+    ]);
     return { success: true };
   }
 
