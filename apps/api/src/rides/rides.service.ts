@@ -8,11 +8,10 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
+import { ProfileCacheService } from '../cache/profile-cache.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { IRidesRepository } from './interfaces/rides-repository.interface';
 import { getDatesFromPeriod } from '../common/utils/date.util';
-import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
-import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
 import { RideMapper } from './mappers/ride.mapper';
 import { DRIZZLE } from '../database/database.provider';
 import type { DrizzleClient } from '../database/database.provider';
@@ -64,8 +63,8 @@ export class RidesService {
     @Inject(IRidesRepository)
     private readonly ridesRepository: IRidesRepository,
     private readonly subscriptionsService: SubscriptionsService,
-    @Inject(CACHE_PROVIDER) private readonly cache: ICacheProvider,
     @Inject(DRIZZLE) private readonly drizzle: DrizzleClient,
+    private readonly profileCacheService: ProfileCacheService,
     private readonly userDashboardCacheService: UserDashboardCacheService,
     private readonly rideAccountingService: RideAccountingService,
     private readonly rideStatusService: RideStatusService,
@@ -108,8 +107,10 @@ export class RidesService {
   }
 
   private async invalidateRideMutations(userId: string) {
-    await this.userDashboardCacheService.invalidate(userId);
-    await this.cache.del(`profile:${userId}`);
+    await Promise.all([
+      this.userDashboardCacheService.invalidate(userId),
+      this.profileCacheService.invalidate(userId),
+    ]);
   }
 
   async findAll(
@@ -364,12 +365,12 @@ export class RidesService {
   }
 
   async getFrequentClients(userId: string) {
-    const cacheKey = `frequent-clients:${userId}`;
-    const cached = await this.cache.get<any>(cacheKey);
+    const cached =
+      await this.userDashboardCacheService.getFrequentClients<any>(userId);
 
     if (cached) {
       this.logger.debug(
-        `[RidesService] CACHE HIT: ${cacheKey}`,
+        `[RidesService] CACHE HIT: frequent-clients:${userId}`,
         'RidesService',
       );
       return cached;
@@ -381,7 +382,7 @@ export class RidesService {
     );
     const result = await this.ridesRepository.getFrequentClients(userId);
 
-    await this.cache.set(cacheKey, result, 1800);
+    await this.userDashboardCacheService.setFrequentClients(userId, result);
     return result;
   }
 
@@ -422,13 +423,15 @@ export class RidesService {
       process.env.NODE_ENV === 'production' &&
       query.period !== 'custom' &&
       !query.clientId;
-    const cacheKey = `stats:${userId}:${query.period}`;
 
     if (isCacheable) {
-      const cached = await this.cache.get<any>(cacheKey);
+      const cached = await this.userDashboardCacheService.getStats<any>(
+        userId,
+        query.period,
+      );
       if (cached) {
         this.logger.debug(
-          `[RidesService] CACHE HIT: ${cacheKey}`,
+          `[RidesService] CACHE HIT: stats:${userId}:${query.period}`,
           'RidesService',
         );
         return cached;
@@ -459,7 +462,11 @@ export class RidesService {
     };
 
     if (isCacheable) {
-      await this.cache.set(cacheKey, mappedResult, 300);
+      await this.userDashboardCacheService.setStats(
+        userId,
+        query.period,
+        mappedResult,
+      );
     }
 
     return mappedResult;

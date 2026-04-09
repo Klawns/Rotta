@@ -2,9 +2,9 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { RidesService } from './rides.service';
+import { ProfileCacheService } from '../cache/profile-cache.service';
 import { IRidesRepository } from './interfaces/rides-repository.interface';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
-import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
 import { DRIZZLE } from '../database/database.provider';
 import { UserDashboardCacheService } from '../cache/user-dashboard-cache.service';
 import { RideAccountingService } from './services/ride-accounting.service';
@@ -14,9 +14,9 @@ describe('RidesService', () => {
   let service: RidesService;
   let repoMock: any;
   let subsMock: any;
-  let cacheMock: any;
   let drizzleMock: any;
   let dashboardCacheMock: any;
+  let profileCacheMock: any;
   let rideAccountingMock: any;
   let rideStatusMock: any;
 
@@ -67,13 +67,15 @@ describe('RidesService', () => {
       }),
     };
 
-    cacheMock = {
-      get: jest.fn().mockResolvedValue(null),
-      set: jest.fn().mockResolvedValue(undefined),
-      del: jest.fn().mockResolvedValue(undefined),
+    dashboardCacheMock = {
+      getStats: jest.fn().mockResolvedValue(null),
+      setStats: jest.fn().mockResolvedValue(undefined),
+      getFrequentClients: jest.fn().mockResolvedValue(null),
+      setFrequentClients: jest.fn().mockResolvedValue(undefined),
+      invalidate: jest.fn().mockResolvedValue(undefined),
     };
 
-    dashboardCacheMock = {
+    profileCacheMock = {
       invalidate: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -152,12 +154,12 @@ describe('RidesService', () => {
           useValue: subsMock,
         },
         {
-          provide: CACHE_PROVIDER,
-          useValue: cacheMock,
-        },
-        {
           provide: DRIZZLE,
           useValue: drizzleMock,
+        },
+        {
+          provide: ProfileCacheService,
+          useValue: profileCacheMock,
         },
         {
           provide: UserDashboardCacheService,
@@ -217,7 +219,7 @@ describe('RidesService', () => {
     );
     expect(subsMock.findByUserId).toHaveBeenCalledWith('user-1');
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
-    expect(cacheMock.del).toHaveBeenCalledWith('profile:user-1');
+    expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
   });
 
   it('should allow creation if starter plan is active', async () => {
@@ -274,7 +276,7 @@ describe('RidesService', () => {
       }),
     );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
-    expect(cacheMock.del).toHaveBeenCalledWith('profile:user-1');
+    expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
   });
 
   it('should zero debt when cancelling a ride', async () => {
@@ -393,7 +395,7 @@ describe('RidesService', () => {
       expect.anything(),
     );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
-    expect(cacheMock.del).toHaveBeenCalledWith('profile:user-1');
+    expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(result).toEqual({ success: true });
   });
 });

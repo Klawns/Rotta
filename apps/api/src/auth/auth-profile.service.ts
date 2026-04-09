@@ -1,27 +1,19 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 
-import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
-import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
+import { ProfileCacheService } from '../cache/profile-cache.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import type { SubscriptionAccessSnapshot } from '../subscriptions/subscriptions.service';
 import { UsersService } from '../users/users.service';
 import type { User } from '../users/interfaces/users-repository.interface';
 import type { UserResponseDto } from './dto/auth.dto';
 
-const PROFILE_CACHE_TTL_SECONDS = 600;
-
 @Injectable()
 export class AuthProfileService {
   constructor(
     private readonly usersService: UsersService,
     private readonly subscriptionsService: SubscriptionsService,
-    @Inject(CACHE_PROVIDER)
-    private readonly cache: ICacheProvider,
+    private readonly profileCacheService: ProfileCacheService,
   ) {}
-
-  private getProfileCacheKey(userId: string) {
-    return `profile:${userId}`;
-  }
 
   private buildUserProfile(
     user: User,
@@ -60,8 +52,8 @@ export class AuthProfileService {
   }
 
   async getLatestProfile(userId: string): Promise<UserResponseDto | null> {
-    const cacheKey = this.getProfileCacheKey(userId);
-    const cachedProfile = await this.cache.get<UserResponseDto>(cacheKey);
+    const cachedProfile =
+      await this.profileCacheService.get<UserResponseDto>(userId);
 
     if (cachedProfile) {
       return cachedProfile;
@@ -76,7 +68,7 @@ export class AuthProfileService {
     const access = await this.subscriptionsService.getAccessSnapshot(userId);
     const profile = this.buildUserProfile(user, access);
 
-    await this.cache.set(cacheKey, profile, PROFILE_CACHE_TTL_SECONDS);
+    await this.profileCacheService.set(userId, profile);
 
     return profile;
   }
@@ -92,6 +84,6 @@ export class AuthProfileService {
   }
 
   async invalidateProfile(userId: string) {
-    await this.cache.del(this.getProfileCacheKey(userId));
+    await this.profileCacheService.invalidate(userId);
   }
 }

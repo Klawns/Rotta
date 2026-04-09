@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
+import { ProfileCacheService } from '../cache/profile-cache.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { UsersService } from '../users/users.service';
 import { AuthProfileService } from './auth-profile.service';
@@ -13,10 +13,10 @@ describe('AuthProfileService', () => {
   let subscriptionsServiceMock: {
     getAccessSnapshot: jest.Mock;
   };
-  let cacheProviderMock: {
+  let profileCacheServiceMock: {
     get: jest.Mock;
     set: jest.Mock;
-    del: jest.Mock;
+    invalidate: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -26,10 +26,10 @@ describe('AuthProfileService', () => {
     subscriptionsServiceMock = {
       getAccessSnapshot: jest.fn(),
     };
-    cacheProviderMock = {
+    profileCacheServiceMock = {
       get: jest.fn().mockResolvedValue(null),
       set: jest.fn().mockResolvedValue(undefined),
-      del: jest.fn().mockResolvedValue(undefined),
+      invalidate: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -37,7 +37,7 @@ describe('AuthProfileService', () => {
         AuthProfileService,
         { provide: UsersService, useValue: usersServiceMock },
         { provide: SubscriptionsService, useValue: subscriptionsServiceMock },
-        { provide: CACHE_PROVIDER, useValue: cacheProviderMock },
+        { provide: ProfileCacheService, useValue: profileCacheServiceMock },
       ],
     }).compile();
 
@@ -98,15 +98,11 @@ describe('AuthProfileService', () => {
       },
       createdAt,
     });
-    expect(cacheProviderMock.set).toHaveBeenCalledWith(
-      'profile:user-1',
-      profile,
-      600,
-    );
+    expect(profileCacheServiceMock.set).toHaveBeenCalledWith('user-1', profile);
   });
 
   it('should return cached profile without hitting dependencies', async () => {
-    cacheProviderMock.get.mockResolvedValueOnce({
+    profileCacheServiceMock.get.mockResolvedValueOnce({
       id: 'user-1',
       name: 'Cached User',
       email: 'cached@example.com',
@@ -128,6 +124,6 @@ describe('AuthProfileService', () => {
   it('should invalidate a cached profile', async () => {
     await service.invalidateProfile('user-1');
 
-    expect(cacheProviderMock.del).toHaveBeenCalledWith('profile:user-1');
+    expect(profileCacheServiceMock.invalidate).toHaveBeenCalledWith('user-1');
   });
 });

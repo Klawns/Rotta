@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 
 import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
 import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
+import { ProfileCacheService } from '../cache/profile-cache.service';
 import { UsersService } from '../users/users.service';
 import { IAdminSettingsRepository } from './interfaces/admin-settings-repository.interface';
 import type { IAdminSettingsRepository as IAdminSettingsRepositoryType } from './interfaces/admin-settings-repository.interface';
@@ -23,6 +24,7 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
     private readonly usersService: UsersService,
     @Inject(IAdminSettingsRepository)
     private readonly adminSettingsRepository: IAdminSettingsRepositoryType,
+    private readonly profileCacheService: ProfileCacheService,
     @Inject(CACHE_PROVIDER)
     private readonly cache: ICacheProvider,
   ) {}
@@ -90,7 +92,7 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
     }
 
     await this.usersService.update(existingUser.id, updates);
-    await this.cache.del(`profile:${existingUser.id}`);
+    await this.profileCacheService.invalidate(existingUser.id);
 
     this.logger.log(
       `[${source}] Bootstrap admin updated for ${email} (${Object.keys(updates).join(', ')}).`,

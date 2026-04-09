@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 
 import { type ICacheProvider } from '../cache/interfaces/cache-provider.interface';
+import { ProfileCacheService } from '../cache/profile-cache.service';
 import { AdminBootstrapService } from './admin-bootstrap.service';
 import { type IAdminSettingsRepository } from './interfaces/admin-settings-repository.interface';
 
@@ -32,15 +33,25 @@ describe('AdminBootstrapService', () => {
       getDel: jest.fn(),
       invalidatePrefix: jest.fn(),
     };
+    const profileCacheService = {
+      invalidate: jest.fn().mockResolvedValue(undefined),
+    } as unknown as ProfileCacheService;
 
     const service = new AdminBootstrapService(
       createConfigService(values),
       usersService as any,
       adminSettingsRepository,
+      profileCacheService,
       cache,
     );
 
-    return { service, usersService, adminSettingsRepository, cache };
+    return {
+      service,
+      usersService,
+      adminSettingsRepository,
+      profileCacheService,
+      cache,
+    };
   };
 
   it('creates the bootstrap admin when missing', async () => {
@@ -67,7 +78,13 @@ describe('AdminBootstrapService', () => {
   });
 
   it('promotes an existing user to admin without overwriting password', async () => {
-    const { service, usersService, adminSettingsRepository, cache } =
+    const {
+      service,
+      usersService,
+      adminSettingsRepository,
+      profileCacheService,
+      cache,
+    } =
       createService({
         ADMIN_BOOTSTRAP_EMAIL: 'admin_rotta@gmail.com',
         ADMIN_BOOTSTRAP_PASSWORD: 'senha-forte-123',
@@ -92,8 +109,8 @@ describe('AdminBootstrapService', () => {
     expect(usersService.update).toHaveBeenCalledWith('user-1', {
       role: 'admin',
     });
-    expect(cache.del).toHaveBeenNthCalledWith(1, 'pricing:all_plans');
-    expect(cache.del).toHaveBeenNthCalledWith(2, 'profile:user-1');
+    expect(cache.del).toHaveBeenCalledWith('pricing:all_plans');
+    expect(profileCacheService.invalidate).toHaveBeenCalledWith('user-1');
   });
 
   it('skips when bootstrap credentials are absent', async () => {

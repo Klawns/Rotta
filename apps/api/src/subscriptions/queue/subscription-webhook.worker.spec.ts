@@ -1,28 +1,28 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument -- Jest jobs and service mocks are intentionally partial. */
 import { Test, TestingModule } from '@nestjs/testing';
+import { ProfileCacheService } from '../../cache/profile-cache.service';
 import { SubscriptionWebhookWorker } from './subscription-webhook.worker';
 import { SubscriptionsService } from '../subscriptions.service';
-import { CACHE_PROVIDER } from '../../cache/interfaces/cache-provider.interface';
 
 describe('SubscriptionWebhookWorker', () => {
   let worker: SubscriptionWebhookWorker;
   let subscriptionsServiceMock: any;
-  let cacheProviderMock: any;
+  let profileCacheServiceMock: any;
 
   beforeEach(async () => {
     subscriptionsServiceMock = {
       updateOrCreate: jest.fn().mockResolvedValue(undefined),
     };
 
-    cacheProviderMock = {
-      del: jest.fn().mockResolvedValue(undefined),
+    profileCacheServiceMock = {
+      invalidate: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SubscriptionWebhookWorker,
         { provide: SubscriptionsService, useValue: subscriptionsServiceMock },
-        { provide: CACHE_PROVIDER, useValue: cacheProviderMock },
+        { provide: ProfileCacheService, useValue: profileCacheServiceMock },
       ],
     }).compile();
 
@@ -49,7 +49,7 @@ describe('SubscriptionWebhookWorker', () => {
       'user-123',
       'premium',
     );
-    expect(cacheProviderMock.del).toHaveBeenCalledWith('profile:user-123');
+    expect(profileCacheServiceMock.invalidate).toHaveBeenCalledWith('user-123');
   });
 
   it('should skip processing for invalid userId', async () => {
@@ -64,6 +64,6 @@ describe('SubscriptionWebhookWorker', () => {
     await worker.process(jobMock);
 
     expect(subscriptionsServiceMock.updateOrCreate).not.toHaveBeenCalled();
-    expect(cacheProviderMock.del).not.toHaveBeenCalled();
+    expect(profileCacheServiceMock.invalidate).not.toHaveBeenCalled();
   });
 });

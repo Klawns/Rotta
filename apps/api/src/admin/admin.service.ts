@@ -11,6 +11,7 @@ import type { PricingPlanUpdate } from './interfaces/admin-settings-repository.i
 import type { RecentAdminUser } from './interfaces/admin-repository.interface';
 import type { PaymentPlanId } from '../payments/pricing-plan-catalog';
 
+import { ProfileCacheService } from '../cache/profile-cache.service';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import type { CreateUserDto } from '../users/interfaces/users-repository.interface';
@@ -25,6 +26,7 @@ export class AdminService {
     @Inject(IPaymentsRepository)
     private readonly paymentsRepository: IPaymentsRepository,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly profileCacheService: ProfileCacheService,
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     @Inject(CACHE_PROVIDER)
@@ -106,7 +108,7 @@ export class AdminService {
   ) {
     const result = await this.subscriptionsService.overridePlan(userId, plan);
     // Invalidating user cache so frontend updates gracefully
-    await this.cache.del(`profile:${userId}`);
+    await this.profileCacheService.invalidate(userId);
     return result;
   }
 

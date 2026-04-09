@@ -1,9 +1,8 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger, Inject } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
+import { ProfileCacheService } from '../../cache/profile-cache.service';
 import { SubscriptionsService } from '../subscriptions.service';
-import { CACHE_PROVIDER } from '../../cache/interfaces/cache-provider.interface';
-import type { ICacheProvider } from '../../cache/interfaces/cache-provider.interface';
 
 export interface WebhookJobData {
   userId: string;
@@ -16,8 +15,8 @@ export class SubscriptionWebhookWorker extends WorkerHost {
   private readonly logger = new Logger(SubscriptionWebhookWorker.name);
 
   constructor(
-    private subscriptionsService: SubscriptionsService,
-    @Inject(CACHE_PROVIDER) private cache: ICacheProvider,
+    private readonly subscriptionsService: SubscriptionsService,
+    private readonly profileCacheService: ProfileCacheService,
   ) {
     super();
   }
@@ -40,7 +39,7 @@ export class SubscriptionWebhookWorker extends WorkerHost {
     try {
       await this.subscriptionsService.updateOrCreate(userId, plan);
       // Invalidate the cache so the frontend /auth/me polling gets the new plan immediately
-      await this.cache.del(`profile:${userId}`);
+      await this.profileCacheService.invalidate(userId);
       this.logger.log(`Assinatura Processada com Sucesso - Job ID: ${job.id}`);
     } catch (error: unknown) {
       this.logger.error(
