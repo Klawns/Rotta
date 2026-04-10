@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { adminKeys } from '@/lib/query-keys';
-import { parseApiError } from '@/lib/api-error';
-import { adminService } from '@/services/admin-service';
-import { AdminRecentUser } from '@/types/admin';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { parseApiError } from "@/lib/api-error";
+import { adminKeys } from "@/lib/query-keys";
+import { adminService } from "@/services/admin-service";
+import { AdminRecentUser } from "@/types/admin";
+import { invalidateAdminDashboardQueries } from "../_lib/admin-dashboard-query-cache";
 
 export function useAdminDashboard(currentPage: number, enabled: boolean) {
   const queryClient = useQueryClient();
@@ -31,8 +32,7 @@ export function useAdminDashboard(currentPage: number, enabled: boolean) {
   const deleteUserMutation = useMutation({
     mutationFn: (userId: string) => adminService.deleteUser(userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.usersAll() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.stats() });
+      void invalidateAdminDashboardQueries(queryClient);
     },
   });
 
@@ -58,7 +58,7 @@ export function useAdminDashboard(currentPage: number, enabled: boolean) {
       deleteUserMutation.mutateAsync(userId),
     handleUpdateUserPlan: (
       user: AdminRecentUser,
-      plan: 'starter' | 'premium' | 'lifetime',
+      plan: "starter" | "premium" | "lifetime",
     ) =>
       updatePlanMutation.mutateAsync({
         userId: user.id,
