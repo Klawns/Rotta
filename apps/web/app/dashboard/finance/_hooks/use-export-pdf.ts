@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { parseApiError } from '@/lib/api-error';
 import {
   financeService,
   type FinanceDashboardParams,
 } from '@/services/finance-service';
-import { PDFService } from '@/services/pdf-service';
+import { exportRidesPdf } from '@/services/pdf-export.service';
 
 interface UseExportPdfParams {
   dashboardParams: FinanceDashboardParams | null;
@@ -22,38 +22,56 @@ export function useExportPdf({
   isFinanceDataPending,
   userName,
 }: UseExportPdfParams) {
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const mutation = useMutation({
+    mutationFn: async ({
+      currentDashboardParams,
+      currentExpectedRideCount,
+    }: {
+      currentDashboardParams: FinanceDashboardParams;
+      currentExpectedRideCount: number;
+    }) => {
+      const report = await financeService.getReport(currentDashboardParams);
+
+      return exportRidesPdf({
+        rides: report.rides,
+        expectedRideCount: currentExpectedRideCount,
+        period: currentDashboardParams.period,
+        userName,
+        dateRange: report.period,
+      });
+    },
+    onError: (error) => {
+      toast.error(parseApiError(error, 'Erro ao exportar PDF.'));
+    },
+  });
 
   const handleExportPDF = async () => {
-    if (isFinanceDataPending || isExportingPdf || !dashboardParams) {
+    if (isFinanceDataPending || mutation.isPending || !dashboardParams) {
       return;
     }
 
-    setIsExportingPdf(true);
-
     try {
-      const report = await financeService.getReport(dashboardParams);
+      const result = await mutation.mutateAsync({
+        currentDashboardParams: dashboardParams,
+        currentExpectedRideCount: expectedRideCount,
+      });
 
-      if (expectedRideCount > 0 && report.rides.length === 0) {
-        throw new Error(
+      if (!result.ok && result.reason === 'missing-filtered-rides') {
+        toast.error(
           'Nao foi possivel montar o PDF com as corridas do filtro atual.',
         );
       }
 
-      await PDFService.generateReport(report.rides, {
-        period: dashboardParams.period,
-        userName,
-        dateRange: report.period,
-      });
-    } catch (error) {
-      toast.error(parseApiError(error, 'Erro ao exportar PDF.'));
-    } finally {
-      setIsExportingPdf(false);
+      if (!result.ok && result.reason === 'empty') {
+        toast.error('Sem dados para exportar no periodo selecionado.');
+      }
+    } catch {
+      return;
     }
   };
 
   return {
-    isExportingPdf,
+    isExportingPdf: mutation.isPending,
     handleExportPDF,
   };
 }

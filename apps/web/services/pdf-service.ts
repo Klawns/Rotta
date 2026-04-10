@@ -26,7 +26,7 @@ import {
   type PDFReportRide,
 } from './pdf-service/types';
 
-export type { PDFReportRide } from './pdf-service/types';
+export type { ExportOptions, PDFReportRide } from './pdf-service/types';
 
 export class PDFService {
   static async generateReport(
