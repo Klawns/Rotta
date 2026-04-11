@@ -1,7 +1,14 @@
 'use client';
 
-import { CalendarDays, Clock3, DatabaseBackup, Plus, ShieldCheck } from 'lucide-react';
+import {
+  CalendarDays,
+  Clock3,
+  DatabaseBackup,
+  Plus,
+  ShieldCheck,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getBackupAutomationFrequencyPresentation } from '../../_mappers/backup-automation.presenter';
 
 interface BackupSummaryCardProps {
   retentionCount: number;
@@ -12,21 +19,6 @@ interface BackupSummaryCardProps {
   onCreate: () => void;
 }
 
-function getDaysFromCron(cron: string | undefined | null): number {
-  if (!cron) return 3;
-  const parts = cron.split(' ');
-  if (parts.length >= 5) {
-    const dom = parts[2];
-    if (dom.startsWith('*/')) {
-      return parseInt(dom.replace('*/', ''), 10) || 3;
-    }
-    if (dom === '*') {
-      return 1;
-    }
-  }
-  return 3;
-}
-
 export function BackupSummaryCard({
   retentionCount,
   latestBackupAt,
@@ -35,20 +27,21 @@ export function BackupSummaryCard({
   functionalCron,
   onCreate,
 }: BackupSummaryCardProps) {
-  const days = getDaysFromCron(functionalCron);
-  const frequencyLabel = days === 1 ? 'Diária' : `De ${days} em ${days} dias`;
+  const automationFrequency =
+    getBackupAutomationFrequencyPresentation(functionalCron);
+
   return (
     <div className="space-y-6">
-      {/* Cabeçalho */}
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1.5">
-          <h3 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
+          <h3 className="flex items-center gap-2 text-2xl font-black tracking-tight text-foreground">
             <DatabaseBackup size={24} className="text-primary" />
             Backups
           </h3>
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-            Mantenha seus dados seguros. Seus backups são gerados automaticamente,
-            mas você pode criar cópias manuais a qualquer momento.
+            Mantenha seus dados seguros. Seus backups sao gerados
+            automaticamente, mas voce pode criar copias manuais a qualquer
+            momento.
           </p>
         </div>
 
@@ -62,7 +55,6 @@ export function BackupSummaryCard({
         </Button>
       </div>
 
-      {/* Estado Atual (Cards horizontais simples) */}
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="flex items-center gap-4 rounded-2xl border border-border-subtle bg-card/70 px-4 py-3 shadow-sm backdrop-blur-xl">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
@@ -70,11 +62,14 @@ export function BackupSummaryCard({
           </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
-              Último Backup
+              Ultimo Backup
             </div>
             <div className="mt-0.5 text-sm font-semibold text-foreground">
               {latestBackupAt
-                ? new Date(latestBackupAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                ? new Date(latestBackupAt).toLocaleString('pt-BR', {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                  })
                 : 'Nenhum'}
             </div>
           </div>
@@ -86,10 +81,12 @@ export function BackupSummaryCard({
           </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
-              Automação
+              Automacao
             </div>
             <div className="mt-0.5 text-sm font-semibold text-foreground">
-              {isAutomationActive ? `Ativa (${frequencyLabel})` : 'Desativada'}
+              {isAutomationActive
+                ? `Ativa (${automationFrequency.summaryLabel})`
+                : 'Desativada'}
             </div>
           </div>
         </div>
@@ -100,7 +97,7 @@ export function BackupSummaryCard({
           </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
-              Retenção
+              Retencao
             </div>
             <div className="mt-0.5 text-sm font-semibold text-foreground">
               {retentionCount} dias
