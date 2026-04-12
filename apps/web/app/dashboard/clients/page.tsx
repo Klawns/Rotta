@@ -87,7 +87,7 @@ export default function ClientsPage() {
                 data-scroll-lock-root="true"
             >
                 <div className="mx-auto flex w-full max-w-[1400px] flex-col pb-8">
-                    <div className="flex shrink-0 flex-col gap-8 pb-8">
+                    <div className="flex shrink-0 flex-col gap-6 pb-6 md:gap-8 md:pb-8">
                         <ClientHeader
                             onNewClient={state.openNewClientModal}
                             totalCount={totalCount}

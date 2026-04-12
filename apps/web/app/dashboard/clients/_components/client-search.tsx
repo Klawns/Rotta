@@ -10,7 +10,7 @@ interface ClientSearchProps {
 
 export function ClientSearch({ value, onChange }: ClientSearchProps) {
   return (
-    <section className="rounded-[1.9rem] border border-border-subtle bg-background/90 p-4 shadow-sm backdrop-blur-sm">
+    <section className="rounded-[1.5rem] border border-border-subtle bg-background/90 p-3 shadow-sm backdrop-blur-sm md:rounded-[1.9rem] md:p-4">
       <div className="relative">
         <Search
           size={18}
@@ -22,7 +22,7 @@ export function ClientSearch({ value, onChange }: ClientSearchProps) {
           placeholder="Buscar por nome do cliente"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-12 rounded-2xl border-border-subtle bg-card-background pl-11 pr-12 text-sm font-medium text-text-primary shadow-none"
+          className="h-11 rounded-2xl border-border-subtle bg-card-background pl-11 pr-12 text-sm font-medium text-text-primary shadow-none md:h-12"
         />
 
         {value ? (
