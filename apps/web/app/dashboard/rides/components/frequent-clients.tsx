@@ -14,12 +14,14 @@ interface FrequentClientsProps {
   clients: FrequentClient[];
   isLoading: boolean;
   onSelectClient: (id: string, name: string) => void;
+  className?: string;
 }
 
 export function FrequentClients({
   clients,
   isLoading,
   onSelectClient,
+  className,
 }: FrequentClientsProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -31,7 +33,10 @@ export function FrequentClients({
     <Collapsible
       open={isOpen}
       onOpenChange={setIsOpen}
-      className="rounded-[1.75rem] border border-border-subtle bg-background/80 p-4 shadow-sm"
+      className={cn(
+        "rounded-[1.75rem] border border-border-subtle bg-background/80 p-4 shadow-sm",
+        className,
+      )}
     >
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4">
