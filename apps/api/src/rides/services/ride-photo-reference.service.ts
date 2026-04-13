@@ -1,29 +1,20 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import type { IStorageProvider } from '../../storage/interfaces/storage-provider.interface';
+import { STORAGE_PROVIDER } from '../../storage/interfaces/storage-provider.interface';
 
 const RIDE_PHOTO_FILENAME_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i;
-
-function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+const MANAGED_RIDE_PHOTO_KEY_PATTERN =
+  /^users\/[^/]+\/rides\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i;
 
 @Injectable()
 export class RidePhotoReferenceService {
-  private readonly publicOrigin: string;
-  private readonly publicBasePath: string;
+  private static readonly signedUrlExpiresInSeconds = 300;
 
-  constructor(private readonly configService: ConfigService) {
-    const publicUrl = new URL(
-      this.configService.getOrThrow<string>('R2_PUBLIC_URL'),
-    );
-
-    this.publicOrigin = publicUrl.origin;
-    this.publicBasePath =
-      publicUrl.pathname === '/'
-        ? ''
-        : publicUrl.pathname.replace(/\/+$/, '');
-  }
+  constructor(
+    @Inject(STORAGE_PROVIDER)
+    private readonly storageProvider: IStorageProvider,
+  ) {}
 
   validateForCreate(userId: string, photo?: string | null) {
     if (photo === undefined) {
@@ -60,40 +51,63 @@ export class RidePhotoReferenceService {
       return null;
     }
 
-    let parsedPhoto: URL;
+    const expectedPrefix = `users/${userId}/rides/`;
 
-    try {
-      parsedPhoto = new URL(normalizedPhoto);
-    } catch {
+    if (!normalizedPhoto.startsWith(expectedPrefix)) {
       throw new BadRequestException(
         'Foto invalida. Envie apenas uma referencia gerada pelo upload de corridas.',
       );
     }
 
-    if (parsedPhoto.origin !== this.publicOrigin) {
-      throw new BadRequestException(
-        'Foto invalida. Envie apenas uma referencia gerada pelo upload de corridas.',
-      );
-    }
+    const fileName = normalizedPhoto.slice(expectedPrefix.length);
 
-    if (parsedPhoto.search || parsedPhoto.hash) {
-      throw new BadRequestException(
-        'Foto invalida. Envie apenas uma referencia gerada pelo upload de corridas.',
-      );
-    }
-
-    const expectedPathPattern = new RegExp(
-      `^${escapeRegex(`${this.publicBasePath}/users/${userId}/rides/`)}(.+)$`,
-      'i',
-    );
-    const match = parsedPhoto.pathname.match(expectedPathPattern);
-
-    if (!match || !RIDE_PHOTO_FILENAME_PATTERN.test(match[1])) {
+    if (!RIDE_PHOTO_FILENAME_PATTERN.test(fileName)) {
       throw new BadRequestException(
         'Foto invalida. Envie apenas uma referencia gerada pelo upload de corridas.',
       );
     }
 
     return normalizedPhoto;
+  }
+
+  isManagedPhotoKey(photo?: string | null): photo is string {
+    if (typeof photo !== 'string') {
+      return false;
+    }
+
+    const normalizedPhoto = photo.trim();
+
+    return MANAGED_RIDE_PHOTO_KEY_PATTERN.test(normalizedPhoto);
+  }
+
+  async resolveForResponse(photo?: string | null) {
+    if (photo === undefined) {
+      return undefined;
+    }
+
+    if (photo === null) {
+      return null;
+    }
+
+    const normalizedPhoto = photo.trim();
+
+    if (!normalizedPhoto) {
+      return null;
+    }
+
+    if (!this.isManagedPhotoKey(normalizedPhoto)) {
+      return normalizedPhoto;
+    }
+
+    return this.storageProvider.getSignedUrl(normalizedPhoto, {
+      expiresInSeconds: RidePhotoReferenceService.signedUrlExpiresInSeconds,
+      visibility: 'private',
+    });
+  }
+
+  async deleteManagedPhoto(photo: string) {
+    await this.storageProvider.delete(photo, {
+      visibility: 'private',
+    });
   }
 }

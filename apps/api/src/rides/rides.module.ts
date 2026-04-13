@@ -8,6 +8,7 @@ import { IRidesRepository } from './interfaces/rides-repository.interface';
 import { ClientsModule } from '../clients/clients.module';
 import { RideAccountingService } from './services/ride-accounting.service';
 import { RidePhotoReferenceService } from './services/ride-photo-reference.service';
+import { RideResponsePresenterService } from './services/ride-response-presenter.service';
 import { RideStatusService } from './services/ride-status.service';
 import { RideCursorService } from './repositories/ride-cursor.service';
 import { RideReadRepository } from './repositories/ride-read.repository';
@@ -19,6 +20,7 @@ import { RideStatsRepository } from './repositories/ride-stats.repository';
     RidesService,
     RideAccountingService,
     RidePhotoReferenceService,
+    RideResponsePresenterService,
     RideStatusService,
     RideCursorService,
     RideReadRepository,

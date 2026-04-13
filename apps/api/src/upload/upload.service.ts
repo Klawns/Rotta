@@ -114,18 +114,25 @@ export class UploadService {
     const path = this.buildUploadPath(userId, normalizedFolder, fileName);
 
     // 4. Upload via Storage Provider
-    const { url, key } = await this.storageProvider.upload(
-      {
-        buffer: processedBuffer,
-        mimetype: 'image/webp',
-        originalname: file.originalname,
-      },
-      path,
-      { cacheControl: 'public, max-age=31536000, immutable' },
-    );
+    const uploadFile = {
+      buffer: processedBuffer,
+      mimetype: 'image/webp',
+      originalname: file.originalname,
+    };
+    const uploadResult =
+      normalizedFolder === 'rides'
+        ? await this.storageProvider.uploadPrivate(uploadFile, path, {
+            cacheControl: 'private, no-store',
+            contentDisposition: 'inline',
+          })
+        : await this.storageProvider.upload(uploadFile, path, {
+            cacheControl: 'public, max-age=31536000, immutable',
+          });
+    const url = 'url' in uploadResult ? uploadResult.url : undefined;
+    const { key } = uploadResult;
 
     // 5. Emitir evento
-    this.logger.log(`Disparando evento image.uploaded para ${url}`);
+    this.logger.log(`Disparando evento image.uploaded para ${key}`);
     this.eventEmitter.emit('image.uploaded', {
       url,
       key,
@@ -133,6 +140,6 @@ export class UploadService {
       mimetype: 'image/webp',
     });
 
-    return { url, key };
+    return url ? { url, key } : { key };
   }
 }

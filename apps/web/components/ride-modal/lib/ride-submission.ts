@@ -41,7 +41,7 @@ async function resolveRidePhoto(photo: string | null): Promise<ResolvedRidePhoto
     const uploadResult = await uploadImage(file, 'rides');
 
     return {
-      photo: uploadResult.url,
+      photo: uploadResult.key,
       continuedWithoutPhoto: false,
     };
   } catch {

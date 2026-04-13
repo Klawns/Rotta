@@ -39,6 +39,7 @@ type RideBalanceRow = {
   id: string;
   clientId: string;
   paidWithBalance: number | null;
+  photo: string | null;
 };
 
 interface BulkDeleteTransaction {
@@ -46,6 +47,7 @@ interface BulkDeleteTransaction {
     id: unknown;
     clientId: unknown;
     paidWithBalance: unknown;
+    photo: unknown;
   }): {
     from(table: unknown): {
       where(condition: unknown): Promise<RideBalanceRow[]>;
@@ -144,6 +146,24 @@ export class RidesService {
         error instanceof Error ? error.stack : undefined,
       );
     });
+  }
+
+  private async cleanupManagedRidePhoto(
+    photo: string | null | undefined,
+    context: { action: 'update' | 'delete' | 'delete-all'; userId: string },
+  ) {
+    if (!this.ridePhotoReferenceService.isManagedPhotoKey(photo)) {
+      return;
+    }
+
+    try {
+      await this.ridePhotoReferenceService.deleteManagedPhoto(photo);
+    } catch (error) {
+      this.logger.error(
+        `[RidesService] Falha ao remover asset de foto apos ${context.action} para o usuario ${context.userId}: ${getErrorMessage(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
   }
 
   async findAll(
@@ -254,16 +274,21 @@ export class RidesService {
     this.logger.log(`[RidesService] Atualizando corrida ${id}`, 'RidesService');
 
     const existingRide = await this.getRideWithClientOrThrow(userId, id);
+    const nextPhoto = this.ridePhotoReferenceService.validateForUpdate(
+      userId,
+      data.photo,
+      existingRide.photo ?? null,
+    );
     const normalizedData = {
       ...data,
-      photo: this.ridePhotoReferenceService.validateForUpdate(
-        userId,
-        data.photo,
-        existingRide.photo ?? null,
-      ),
+      photo: nextPhoto,
     };
     const { nextClientId, refundAmount, updateData } =
       this.rideStatusService.prepareRideUpdate(existingRide, normalizedData);
+    const previousPhotoToCleanup =
+      nextPhoto !== undefined && nextPhoto !== existingRide.photo
+        ? existingRide.photo
+        : null;
 
     const result = await (this.drizzle.db as TransactionRunner).transaction(
       async (tx) => {
@@ -292,6 +317,10 @@ export class RidesService {
     }
 
     const updatedRide = await this.getRideWithClientOrThrow(userId, id);
+    await this.cleanupManagedRidePhoto(previousPhotoToCleanup, {
+      action: 'update',
+      userId,
+    });
     await this.invalidateRideMutations(userId);
     this.logger.log(
       `[RidesService] Corrida ${id} atualizada com sucesso`,
@@ -321,6 +350,10 @@ export class RidesService {
       throw new NotFoundException('Corrida não encontrada.');
     }
 
+    await this.cleanupManagedRidePhoto(existingRide.photo ?? null, {
+      action: 'delete',
+      userId,
+    });
     await this.invalidateRideMutations(userId);
     this.logger.log(
       `[RidesService] Corrida ${id} removida com sucesso`,
@@ -334,6 +367,7 @@ export class RidesService {
       `[RidesService] Removendo TODAS as corridas do usuário ${userId}`,
       'RidesService',
     );
+    const photosToCleanup = new Set<string>();
 
     await (
       this.drizzle.db as {
@@ -347,6 +381,7 @@ export class RidesService {
           id: this.drizzle.schema.rides.id,
           clientId: this.drizzle.schema.rides.clientId,
           paidWithBalance: this.drizzle.schema.rides.paidWithBalance,
+          photo: this.drizzle.schema.rides.photo,
         })
         .from(this.drizzle.schema.rides)
         .where(eq(this.drizzle.schema.rides.userId, userId));
@@ -356,14 +391,16 @@ export class RidesService {
       for (const ride of ridesWithBalance) {
         const paidWithBalance = Number(ride.paidWithBalance ?? 0);
 
-        if (paidWithBalance <= 0) {
-          continue;
+        if (this.ridePhotoReferenceService.isManagedPhotoKey(ride.photo)) {
+          photosToCleanup.add(ride.photo);
         }
 
-        refundByClient.set(
-          ride.clientId,
-          (refundByClient.get(ride.clientId) ?? 0) + paidWithBalance,
-        );
+        if (paidWithBalance > 0) {
+          refundByClient.set(
+            ride.clientId,
+            (refundByClient.get(ride.clientId) ?? 0) + paidWithBalance,
+          );
+        }
       }
 
       for (const [clientId, amount] of refundByClient.entries()) {
@@ -379,6 +416,14 @@ export class RidesService {
       await this.ridesRepository.deleteAll(userId, tx);
     });
 
+    await Promise.all(
+      Array.from(photosToCleanup).map((photo) =>
+        this.cleanupManagedRidePhoto(photo, {
+          action: 'delete-all',
+          userId,
+        }),
+      ),
+    );
     await this.invalidateRideMutations(userId);
     this.logger.log(
       `[RidesService] Todas as corridas do usuário ${userId} removidas com sucesso`,

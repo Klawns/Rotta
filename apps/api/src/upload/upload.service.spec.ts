@@ -18,6 +18,7 @@ describe('UploadService', () => {
   let service: UploadService;
   let storageProviderMock: {
     upload: jest.Mock;
+    uploadPrivate: jest.Mock;
   };
   let eventEmitterMock: {
     emit: jest.Mock;
@@ -27,6 +28,9 @@ describe('UploadService', () => {
     storageProviderMock = {
       upload: jest.fn().mockResolvedValue({
         url: 'https://cdn.example.com/users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+        key: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+      }),
+      uploadPrivate: jest.fn().mockResolvedValue({
         key: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
       }),
     };
@@ -50,13 +54,13 @@ describe('UploadService', () => {
 
     const result = await service.uploadImage(file, 'user-1', 'rides');
 
-    expect(storageProviderMock.upload).toHaveBeenCalledWith(
+    expect(storageProviderMock.uploadPrivate).toHaveBeenCalledWith(
       expect.objectContaining({
         mimetype: 'image/webp',
         originalname: 'ride.png',
       }),
       'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
-      { cacheControl: 'public, max-age=31536000, immutable' },
+      { cacheControl: 'private, no-store', contentDisposition: 'inline' },
     );
     expect(eventEmitterMock.emit).toHaveBeenCalledWith(
       'image.uploaded',
@@ -65,7 +69,6 @@ describe('UploadService', () => {
       }),
     );
     expect(result).toEqual({
-      url: 'https://cdn.example.com/users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
       key: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
     });
   });

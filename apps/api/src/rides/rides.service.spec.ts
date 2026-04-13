@@ -135,10 +135,17 @@ describe('RidesService', () => {
     };
 
     ridePhotoReferenceMock = {
-      validateForCreate: jest.fn((_: string, photo: string | null | undefined) => photo),
+      validateForCreate: jest.fn(
+        (_: string, photo: string | null | undefined) => photo,
+      ),
       validateForUpdate: jest.fn(
         (_: string, photo: string | null | undefined) => photo,
       ),
+      isManagedPhotoKey: jest.fn(
+        (photo: string | null | undefined) =>
+          typeof photo === 'string' && photo.startsWith('users/'),
+      ),
+      deleteManagedPhoto: jest.fn().mockResolvedValue(undefined),
     };
 
     drizzleMock = {
@@ -147,6 +154,7 @@ describe('RidesService', () => {
           id: 'rides.id',
           clientId: 'rides.clientId',
           paidWithBalance: 'rides.paidWithBalance',
+          photo: 'rides.photo',
           userId: 'rides.userId',
         },
       },
@@ -420,9 +428,25 @@ describe('RidesService', () => {
           select: jest.fn().mockReturnValue({
             from: jest.fn().mockReturnValue({
               where: jest.fn().mockResolvedValue([
-                { id: 'ride-1', clientId: 'client-1', paidWithBalance: 5 },
-                { id: 'ride-2', clientId: 'client-1', paidWithBalance: 2 },
-                { id: 'ride-3', clientId: 'client-2', paidWithBalance: 0 },
+                {
+                  id: 'ride-1',
+                  clientId: 'client-1',
+                  paidWithBalance: 5,
+                  photo:
+                    'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+                },
+                {
+                  id: 'ride-2',
+                  clientId: 'client-1',
+                  paidWithBalance: 2,
+                  photo: 'https://legacy.example.com/photo.jpg',
+                },
+                {
+                  id: 'ride-3',
+                  clientId: 'client-2',
+                  paidWithBalance: 0,
+                  photo: null,
+                },
               ]),
             }),
           }),
@@ -441,6 +465,9 @@ describe('RidesService', () => {
     expect(repoMock.deleteAll).toHaveBeenCalledWith(
       'user-1',
       expect.anything(),
+    );
+    expect(ridePhotoReferenceMock.deleteManagedPhoto).toHaveBeenCalledWith(
+      'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
     );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
@@ -606,22 +633,43 @@ describe('RidesService', () => {
   });
 
   it('should invalidate dashboard and profile caches after updating a ride', async () => {
+    repoMock.findOneWithClient.mockResolvedValueOnce({
+      ...sampleRide,
+      photo: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+    });
+    repoMock.findOneWithClient.mockResolvedValueOnce({
+      ...sampleRide,
+      photo: null,
+    });
+
     await service.update('user-1', 'ride-123', {
       value: 32,
+      photo: null,
     });
 
     expect(ridePhotoReferenceMock.validateForUpdate).toHaveBeenCalledWith(
       'user-1',
-      undefined,
       null,
+      'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+    );
+    expect(ridePhotoReferenceMock.deleteManagedPhoto).toHaveBeenCalledWith(
+      'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
     );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
   });
 
   it('should invalidate dashboard and profile caches after deleting a ride', async () => {
+    repoMock.findOneWithClient.mockResolvedValueOnce({
+      ...sampleRide,
+      photo: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+    });
+
     await service.delete('user-1', 'ride-123');
 
+    expect(ridePhotoReferenceMock.deleteManagedPhoto).toHaveBeenCalledWith(
+      'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+    );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
   });

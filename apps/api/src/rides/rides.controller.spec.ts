@@ -3,20 +3,29 @@ import { RidesController } from './rides.controller';
 import { RidesService } from './rides.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import type { RequestWithUser } from '../auth/auth.types';
+import { RideResponsePresenterService } from './services/ride-response-presenter.service';
 
 describe('RidesController', () => {
   let controller: RidesController;
   let ridesService: { getStats: jest.Mock };
+  let rideResponsePresenter: { presentMappedList: jest.Mock };
 
   beforeEach(async () => {
     ridesService = {
       getStats: jest.fn(),
+    };
+    rideResponsePresenter = {
+      presentMappedList: jest.fn(async (rides) => rides),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [RidesController],
       providers: [
         { provide: RidesService, useValue: ridesService },
+        {
+          provide: RideResponsePresenterService,
+          useValue: rideResponsePresenter,
+        },
         {
           provide: SubscriptionsService,
           useValue: {
@@ -79,5 +88,10 @@ describe('RidesController', () => {
         totalValue: 45,
       },
     });
+    expect(rideResponsePresenter.presentMappedList).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 'ride-1',
+      }),
+    ]);
   });
 });

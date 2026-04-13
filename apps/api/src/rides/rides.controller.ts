@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RidesService } from './rides.service';
-import { RideMapper } from './mappers/ride.mapper';
 import { ActiveSubscriptionGuard } from '../auth/guards/active-subscription.guard';
 import { ZodBody, ZodQuery } from '../common/decorators/zod.decorator';
 import {
@@ -29,11 +28,15 @@ import type {
   GetStatsDto,
 } from './dto/rides.dto';
 import type { RequestWithUser } from '../auth/auth.types';
+import { RideResponsePresenterService } from './services/ride-response-presenter.service';
 
 @Controller('rides')
 @UseGuards(AuthGuard('jwt'), ActiveSubscriptionGuard)
 export class RidesController {
-  constructor(private readonly ridesService: RidesService) {}
+  constructor(
+    private readonly ridesService: RidesService,
+    private readonly rideResponsePresenter: RideResponsePresenterService,
+  ) {}
 
   @Get()
   async findAll(
@@ -49,7 +52,7 @@ export class RidesController {
     );
 
     return {
-      data: RideMapper.toHttpList(rides),
+      data: await this.rideResponsePresenter.presentList(rides),
       meta,
     };
   }
@@ -65,7 +68,7 @@ export class RidesController {
     @ZodBody(createRideSchema) body: CreateRideDto,
   ) {
     const result = await this.ridesService.create(req.user.id, body);
-    return RideMapper.toHttp(result);
+    return this.rideResponsePresenter.present(result);
   }
 
   @Patch(':id/status')
@@ -75,7 +78,7 @@ export class RidesController {
     @ZodBody(updateRideStatusSchema) body: UpdateRideStatusDto,
   ) {
     const result = await this.ridesService.updateStatus(req.user.id, id, body);
-    return RideMapper.toHttp(result);
+    return this.rideResponsePresenter.present(result);
   }
 
   @Get('stats')
@@ -88,7 +91,7 @@ export class RidesController {
     const result = await this.ridesService.getStats(req.user.id, query);
 
     return {
-      data: result.rides,
+      data: await this.rideResponsePresenter.presentMappedList(result.rides),
       meta: {
         count: result.count,
         totalValue: result.totalValue,
@@ -123,7 +126,7 @@ export class RidesController {
     );
 
     return {
-      data: RideMapper.toHttpList(rides),
+      data: await this.rideResponsePresenter.presentList(rides),
       meta,
     };
   }
@@ -135,7 +138,7 @@ export class RidesController {
     @ZodBody(updateRideSchema) body: UpdateRideDto,
   ) {
     const result = await this.ridesService.update(req.user.id, id, body);
-    return RideMapper.toHttp(result);
+    return this.rideResponsePresenter.present(result);
   }
 
   @Delete(':id')
@@ -145,6 +148,6 @@ export class RidesController {
     }
 
     const result = await this.ridesService.delete(req.user.id, id);
-    return result ? RideMapper.toHttp(result) : null;
+    return result ? this.rideResponsePresenter.present(result) : null;
   }
 }

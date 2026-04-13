@@ -3,13 +3,13 @@ import { apiClient } from '@/services/api';
 
 export async function uploadImage(
   file: File,
-  folder: string = "images",
-): Promise<{ url: string; key: string }> {
+  folder: string = 'images',
+): Promise<{ key: string; url?: string }> {
   const formData = new FormData();
-  formData.append("image", file);
+  formData.append('image', file);
 
   try {
-    return await apiClient.post<{ url: string; key: string }>(
+    return await apiClient.post<{ key: string; url?: string }>(
       '/upload/image',
       formData,
       {
