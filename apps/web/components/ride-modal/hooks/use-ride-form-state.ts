@@ -1,6 +1,11 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  createRidePhotoState,
+  type RidePhotoState,
+  revokeRidePhotoPreview,
+} from '@/lib/ride-photo';
 import { type PaymentStatus, type RidePreset } from '@/types/rides';
 
 interface UseRideFormStateProps {
@@ -12,7 +17,9 @@ export function useRideFormState({ clientId }: UseRideFormStateProps) {
   const [value, setValue] = useState('');
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<RidePhotoState>(() =>
+    createRidePhotoState(),
+  );
   const [rideDate, setRideDate] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('PAID');
   const [isCustomValue, setIsCustomValue] = useState(false);
@@ -22,6 +29,12 @@ export function useRideFormState({ clientId }: UseRideFormStateProps) {
   const [isCreatingClient, setIsCreatingClient] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
 
+  useEffect(() => {
+    return () => {
+      revokeRidePhotoPreview(photo);
+    };
+  }, [photo]);
+
   const resetForm = useCallback(() => {
     setSelectedClientId(clientId || '');
     setValue('');
@@ -29,12 +42,16 @@ export function useRideFormState({ clientId }: UseRideFormStateProps) {
     setNotes('');
     setRideDate('');
     setIsCustomValue(false);
-    setPhoto(null);
+    setPhoto(createRidePhotoState());
     setPaymentStatus('PAID');
     setUseBalance(false);
     setCurrentStep(clientId ? 2 : 1);
     setClientSearch('');
   }, [clientId]);
+
+  const removePhoto = useCallback(() => {
+    setPhoto(createRidePhotoState());
+  }, []);
 
   const handlePresetClick = useCallback((preset: RidePreset) => {
     setValue(preset.value.toString());
@@ -53,6 +70,7 @@ export function useRideFormState({ clientId }: UseRideFormStateProps) {
     setNotes,
     photo,
     setPhoto,
+    removePhoto,
     rideDate,
     setRideDate,
     paymentStatus,

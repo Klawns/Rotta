@@ -13,7 +13,8 @@ export interface RideFormState {
     paymentStatus: PaymentStatus;
     rideDate: string;
     notes: string;
-    photo: string | null;
+    photoPreviewUrl: string | null;
+    hasPhoto: boolean;
     isSaving: boolean;
     canSubmit: boolean;
     isValueSelectionComplete: boolean;

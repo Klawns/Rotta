@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSubmitRideMutation } from "@/hooks/mutations/use-submit-ride-mutation";
 import { parseApiError } from "@/lib/api-error";
+import { type RidePhotoState } from "@/lib/ride-photo";
 import type { Client, PaymentStatus } from "@/types/rides";
 
 interface UseRideSubmitProps {
@@ -13,7 +14,7 @@ interface UseRideSubmitProps {
     paymentStatus: PaymentStatus;
     rideDate: string;
     notes: string;
-    photo: string | null;
+    photo: RidePhotoState;
     resetForm: () => void;
     onSuccess: () => void | Promise<void>;
 }

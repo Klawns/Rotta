@@ -5,9 +5,12 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 import { toLocalInputValue } from '@/lib/date-utils';
 import {
-  getUploadImageValidationError,
-  readFileAsDataUrl,
-} from '@/lib/upload-image';
+  createNewRidePhotoState,
+  createRidePhotoState,
+  getRidePhotoPreviewUrl,
+  hasRidePhoto,
+} from '@/lib/ride-photo';
+import { getUploadImageValidationError } from '@/lib/upload-image';
 import { type RideModalProps } from '@/types/rides';
 import { useRideClientCreation } from './use-ride-client-creation';
 import { useRideFormData } from './use-ride-form-data';
@@ -37,6 +40,7 @@ export function useRideForm({
     notes,
     paymentStatus,
     photo,
+    removePhoto,
     resetForm,
     rideDate,
     selectedClientId,
@@ -77,7 +81,7 @@ export function useRideForm({
       setNotes(rideToEdit.notes || '');
       setRideDate(toLocalInputValue(rideToEdit.rideDate || ''));
       setPaymentStatus(rideToEdit.paymentStatus || 'PAID');
-      setPhoto(rideToEdit.photo || null);
+      setPhoto(createRidePhotoState(rideToEdit.photo));
       setIsCustomValue(true);
       setCurrentStep(2);
       return;
@@ -205,20 +209,8 @@ export function useRideForm({
       return;
     }
 
-    void readFileAsDataUrl(file)
-      .then((result) => {
-        setPhoto(result);
-      })
-      .catch((error: unknown) => {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : 'Nao foi possivel ler a imagem selecionada.',
-        );
-      })
-      .finally(() => {
-        input.value = '';
-      });
+    setPhoto(createNewRidePhotoState(file));
+    input.value = '';
   };
 
   const nextStep = () => {
@@ -272,6 +264,8 @@ export function useRideForm({
   const rideValue = Number(value) || 0;
   const paidWithBalance = useBalance ? Math.min(data.clientBalance, rideValue) : 0;
   const debtValue = Math.max(0, rideValue - paidWithBalance);
+  const photoPreviewUrl = getRidePhotoPreviewUrl(photo);
+  const hasPhoto = hasRidePhoto(photo);
 
   return {
     clients: data.clients,
@@ -287,6 +281,8 @@ export function useRideForm({
     isClientDirectoryReady: data.isClientDirectoryReady,
     clientDirectoryMeta: data.clientDirectoryMeta,
     ...form,
+    photoPreviewUrl,
+    hasPhoto,
     paymentStatus: effectivePaymentStatus,
     paidWithBalance,
     debtValue,
@@ -297,6 +293,7 @@ export function useRideForm({
     availableBalance: data.clientBalance,
     handleCreateClient: clientCreation.handleCreateClient,
     handlePhotoChange,
+    removePhoto,
     handleSubmit: submission.handleSubmit,
     handleKeyDown,
     willReopenDebtOnSave,

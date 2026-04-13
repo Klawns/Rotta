@@ -1,5 +1,6 @@
 'use client';
 
+import { type RidePhotoState } from '@/lib/ride-photo';
 import { toISOFromLocalInput } from '@/lib/date-utils';
 import { uploadImage } from '@/lib/upload';
 import { ridesService } from '@/services/rides-service';
@@ -15,58 +16,47 @@ export interface RideSubmissionDraft {
   value: string;
   location: string;
   notes: string;
-  photo: string | null;
+  photo: RidePhotoState;
   rideDate: string;
   paymentStatus: PaymentStatus;
   useBalance?: boolean;
 }
 
-interface ResolvedRidePhoto {
-  photo: string | null;
-  continuedWithoutPhoto: boolean;
-}
-
-async function resolveRidePhoto(photo: string | null): Promise<ResolvedRidePhoto> {
-  if (!photo || !photo.startsWith('data:image')) {
-    return {
-      photo,
-      continuedWithoutPhoto: false,
-    };
-  }
-
-  try {
-    const response = await fetch(photo);
-    const blob = await response.blob();
-    const file = new File([blob], 'ride-photo.jpg', { type: blob.type });
-    const uploadResult = await uploadImage(file, 'rides');
-
-    return {
-      photo: uploadResult.key,
-      continuedWithoutPhoto: false,
-    };
-  } catch {
-    return {
-      photo: null,
-      continuedWithoutPhoto: true,
-    };
+async function resolveRidePhoto(
+  photo: RidePhotoState,
+): Promise<string | null | undefined> {
+  switch (photo.kind) {
+    case 'existing':
+      return undefined;
+    case 'new': {
+      const uploadResult = await uploadImage(photo.file, 'rides');
+      return uploadResult.key;
+    }
+    default:
+      return null;
   }
 }
 
 function buildRidePayload(
   draft: RideSubmissionDraft,
-  photo: string | null,
+  photo: string | null | undefined,
 ): CreateRideDTO {
-  return {
+  const payload: CreateRideDTO = {
     clientId: draft.selectedClientId,
     value: Number(draft.value),
     location: draft.location || '',
     notes: draft.notes || null,
-    photo,
     status: 'COMPLETED' as RideStatus,
     paymentStatus: draft.paymentStatus,
     rideDate: draft.rideDate ? toISOFromLocalInput(draft.rideDate) : null,
     useBalance: draft.useBalance,
   };
+
+  if (photo !== undefined) {
+    payload.photo = photo;
+  }
+
+  return payload;
 }
 
 function assertValidRidePayload(payload: CreateRideDTO) {
@@ -83,11 +73,8 @@ export async function submitRideDraft(
   draft: RideSubmissionDraft,
   rideToEdit?: RideViewModel | null,
 ) {
-  const { photo, continuedWithoutPhoto } = await resolveRidePhoto(draft.photo);
-  const payload = buildRidePayload(
-    draft,
-    continuedWithoutPhoto ? null : photo || null,
-  );
+  const photo = await resolveRidePhoto(draft.photo);
+  const payload = buildRidePayload(draft, photo);
 
   assertValidRidePayload(payload);
 

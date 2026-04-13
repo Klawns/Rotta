@@ -1,22 +1,28 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import type { IStorageProvider } from '../../storage/interfaces/storage-provider.interface';
 import { STORAGE_PROVIDER } from '../../storage/interfaces/storage-provider.interface';
-
-const RIDE_PHOTO_FILENAME_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i;
-const MANAGED_RIDE_PHOTO_KEY_PATTERN =
-  /^users\/[^/]+\/rides\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i;
+import {
+  invalidRidePhotoReferenceMessage,
+  isManagedRidePhotoKeyValue,
+  ridePhotoFilenamePattern,
+} from '../dto/ride-photo-reference.schema';
 
 @Injectable()
 export class RidePhotoReferenceService {
   private static readonly signedUrlExpiresInSeconds = 300;
+  private readonly logger = new Logger(RidePhotoReferenceService.name);
 
   constructor(
     @Inject(STORAGE_PROVIDER)
     private readonly storageProvider: IStorageProvider,
   ) {}
 
-  validateForCreate(userId: string, photo?: string | null) {
+  async validateForCreate(userId: string, photo?: string | null) {
     if (photo === undefined) {
       return undefined;
     }
@@ -24,7 +30,7 @@ export class RidePhotoReferenceService {
     return this.validateControlledReference(userId, photo);
   }
 
-  validateForUpdate(
+  async validateForUpdate(
     userId: string,
     nextPhoto: string | null | undefined,
     currentPhoto: string | null,
@@ -40,7 +46,7 @@ export class RidePhotoReferenceService {
     return this.validateControlledReference(userId, nextPhoto);
   }
 
-  private validateControlledReference(userId: string, photo: string | null) {
+  private async validateControlledReference(userId: string, photo: string | null) {
     if (photo === null) {
       return null;
     }
@@ -54,16 +60,22 @@ export class RidePhotoReferenceService {
     const expectedPrefix = `users/${userId}/rides/`;
 
     if (!normalizedPhoto.startsWith(expectedPrefix)) {
-      throw new BadRequestException(
-        'Foto invalida. Envie apenas uma referencia gerada pelo upload de corridas.',
-      );
+      throw new BadRequestException(invalidRidePhotoReferenceMessage);
     }
 
     const fileName = normalizedPhoto.slice(expectedPrefix.length);
 
-    if (!RIDE_PHOTO_FILENAME_PATTERN.test(fileName)) {
+    if (!ridePhotoFilenamePattern.test(fileName)) {
+      throw new BadRequestException(invalidRidePhotoReferenceMessage);
+    }
+
+    const exists = await this.storageProvider.exists(normalizedPhoto, {
+      visibility: 'private',
+    });
+
+    if (!exists) {
       throw new BadRequestException(
-        'Foto invalida. Envie apenas uma referencia gerada pelo upload de corridas.',
+        'Foto invalida. A referencia informada nao corresponde a um upload disponivel.',
       );
     }
 
@@ -71,18 +83,21 @@ export class RidePhotoReferenceService {
   }
 
   isManagedPhotoKey(photo?: string | null): photo is string {
-    if (typeof photo !== 'string') {
-      return false;
-    }
+    return isManagedRidePhotoKeyValue(photo);
+  }
 
-    const normalizedPhoto = photo.trim();
+  private logResponsePhotoResolutionFailure(photo: string, error: unknown) {
+    const message =
+      error instanceof Error ? error.message : 'erro desconhecido';
 
-    return MANAGED_RIDE_PHOTO_KEY_PATTERN.test(normalizedPhoto);
+    this.logger.warn(
+      `Falha ao resolver foto gerenciada para resposta: ${photo}. Motivo: ${message}`,
+    );
   }
 
   async resolveForResponse(photo?: string | null) {
     if (photo === undefined) {
-      return undefined;
+      return null;
     }
 
     if (photo === null) {
@@ -99,10 +114,33 @@ export class RidePhotoReferenceService {
       return normalizedPhoto;
     }
 
-    return this.storageProvider.getSignedUrl(normalizedPhoto, {
-      expiresInSeconds: RidePhotoReferenceService.signedUrlExpiresInSeconds,
-      visibility: 'private',
-    });
+    let exists: boolean;
+
+    try {
+      exists = await this.storageProvider.exists(normalizedPhoto, {
+        visibility: 'private',
+      });
+    } catch (error) {
+      this.logResponsePhotoResolutionFailure(normalizedPhoto, error);
+      return null;
+    }
+
+    if (!exists) {
+      this.logger.warn(
+        `Referencia de foto gerenciada sem objeto correspondente no storage: ${normalizedPhoto}`,
+      );
+      return null;
+    }
+
+    try {
+      return await this.storageProvider.getSignedUrl(normalizedPhoto, {
+        expiresInSeconds: RidePhotoReferenceService.signedUrlExpiresInSeconds,
+        visibility: 'private',
+      });
+    } catch (error) {
+      this.logResponsePhotoResolutionFailure(normalizedPhoto, error);
+      return null;
+    }
   }
 
   async deleteManagedPhoto(photo: string) {

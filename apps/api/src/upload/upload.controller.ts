@@ -1,31 +1,43 @@
 import {
+  BadRequestException,
   Controller,
-  HttpStatus,
   Logger,
-  ParseFilePipeBuilder,
   Post,
   Query,
   Request,
   UseGuards,
-  UseInterceptors,
-  UploadedFile,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import type { RequestWithUser } from '../auth/auth.types';
 import {
-  UPLOAD_IMAGE_FILE_TYPE_PATTERN,
-  UPLOAD_IMAGE_MAX_SIZE_BYTES,
+  DEFAULT_UPLOAD_IMAGE_FOLDER,
+  INVALID_UPLOAD_IMAGE_FOLDER_MESSAGE,
+  UPLOAD_IMAGE_ROUTE_THROTTLE_LIMIT,
+  UPLOAD_IMAGE_ROUTE_THROTTLE_TTL_MS,
+  isAllowedUploadImageFolder,
+  type UploadImageFolder,
 } from './upload-image.constants';
+import { parseUploadImageRequest } from './upload-image-request.util';
 import { UploadService } from './upload.service';
 
-const uploadImageValidationPipe = new ParseFilePipeBuilder()
-  .addMaxSizeValidator({ maxSize: UPLOAD_IMAGE_MAX_SIZE_BYTES })
-  .addFileTypeValidator({ fileType: UPLOAD_IMAGE_FILE_TYPE_PATTERN })
-  .build({
-    fileIsRequired: true,
-    errorHttpStatusCode: HttpStatus.BAD_REQUEST,
-  });
+function getUploadImageTracker(req: RequestWithUser) {
+  const userId = typeof req.user?.id === 'string' ? req.user.id : 'anonymous';
+  const ip = typeof req.ip === 'string' ? req.ip : 'unknown';
+  return `upload-image:${userId}:${ip}`;
+}
+
+function resolveRequestedUploadFolder(folder?: string): UploadImageFolder {
+  if (typeof folder === 'undefined') {
+    return DEFAULT_UPLOAD_IMAGE_FOLDER;
+  }
+
+  if (isAllowedUploadImageFolder(folder)) {
+    return folder;
+  }
+
+  throw new BadRequestException(INVALID_UPLOAD_IMAGE_FOLDER_MESSAGE);
+}
 
 @Controller('upload')
 @UseGuards(AuthGuard('jwt'))
@@ -34,21 +46,25 @@ export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
   @Post('image')
-  @UseInterceptors(
-    FileInterceptor('image', {
-      limits: {
-        fileSize: UPLOAD_IMAGE_MAX_SIZE_BYTES,
-      },
-    }),
-  )
+  @Throttle({
+    default: {
+      limit: UPLOAD_IMAGE_ROUTE_THROTTLE_LIMIT,
+      ttl: UPLOAD_IMAGE_ROUTE_THROTTLE_TTL_MS,
+      getTracker: getUploadImageTracker,
+    },
+  })
   async uploadImage(
     @Request() req: RequestWithUser,
-    @UploadedFile(uploadImageValidationPipe) file: Express.Multer.File,
     @Query('folder') folder?: string,
   ) {
-    this.logger.log(
-      `UPLOAD ENDPOINT HIT - File: ${file?.originalname || 'undefined'}`,
+    const normalizedFolder = resolveRequestedUploadFolder(folder);
+    const upload = await parseUploadImageRequest(req);
+    this.logger.log(`UPLOAD ENDPOINT HIT - File: ${upload.originalname}`);
+
+    return this.uploadService.uploadImageStream(
+      upload,
+      req.user.id,
+      normalizedFolder,
     );
-    return this.uploadService.uploadImage(file, req.user.id, folder);
   }
 }

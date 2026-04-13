@@ -10,8 +10,9 @@ interface StepExtraInfoProps {
     setRideDate: (d: string) => void;
     notes: string;
     setNotes: (n: string) => void;
-    photo: string | null;
-    setPhoto: (p: string | null) => void;
+    photoPreviewUrl: string | null;
+    hasPhoto: boolean;
+    removePhoto: () => void;
     handlePhotoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
@@ -20,8 +21,9 @@ export function StepExtraInfo({
     setRideDate,
     notes,
     setNotes,
-    photo,
-    setPhoto,
+    photoPreviewUrl,
+    hasPhoto,
+    removePhoto,
     handlePhotoChange
 }: StepExtraInfoProps) {
     return (
@@ -75,7 +77,7 @@ export function StepExtraInfo({
                         </div>
 
                         <AnimatePresence>
-                            {(rideDate || notes || photo) && (
+                            {(rideDate || notes || hasPhoto) && (
                                 <motion.div
                                     initial={{ height: 0, opacity: 0 }}
                                     animate={{ height: "auto", opacity: 1 }}
@@ -96,7 +98,7 @@ export function StepExtraInfo({
                                         </div>
                                     </div>
 
-                                    {photo && (
+                                    {photoPreviewUrl && (
                                         <motion.div 
                                             initial={{ opacity: 0, scale: 0.9 }}
                                             animate={{ opacity: 1, scale: 1 }}
@@ -104,7 +106,7 @@ export function StepExtraInfo({
                                         >
                                             <div className="relative w-full aspect-video rounded-[1.75rem] overflow-hidden border border-icon-info/30 group shadow-lg">
                                                 <Image
-                                                    src={photo}
+                                                    src={photoPreviewUrl}
                                                     alt="Preview"
                                                     fill
                                                     unoptimized
@@ -114,7 +116,7 @@ export function StepExtraInfo({
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                     <button
                                                         type="button"
-                                                        onClick={() => setPhoto(null)}
+                                                        onClick={removePhoto}
                                                         className="w-12 h-12 bg-button-destructive hover:bg-button-destructive-hover rounded-2xl flex items-center justify-center text-button-destructive-foreground transition-all active:scale-90 shadow-xl"
                                                     >
                                                         <Trash2 size={24} />

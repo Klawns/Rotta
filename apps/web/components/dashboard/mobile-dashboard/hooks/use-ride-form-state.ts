@@ -1,11 +1,14 @@
 "use client";
 
-import { useCallback, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
-    getUploadImageValidationError,
-    readFileAsDataUrl,
-} from "@/lib/upload-image";
+    createNewRidePhotoState,
+    createRidePhotoState,
+    type RidePhotoState,
+    revokeRidePhotoPreview,
+} from "@/lib/ride-photo";
+import { getUploadImageValidationError } from "@/lib/upload-image";
 import type { PaymentStatus } from "@/types/rides";
 import type { ValueSelectionMode } from "./ride-registration.types";
 
@@ -23,7 +26,13 @@ export function useRideFormState({ onReset }: UseRideFormStateProps = {}) {
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("PAID");
     const [rideDate, setRideDate] = useState("");
     const [notes, setNotes] = useState("");
-    const [photo, setPhoto] = useState<string | null>(null);
+    const [photo, setPhoto] = useState<RidePhotoState>(() => createRidePhotoState());
+
+    useEffect(() => {
+        return () => {
+            revokeRidePhotoPreview(photo);
+        };
+    }, [photo]);
 
     const resetForm = useCallback(() => {
         setSelectedPresetId(null);
@@ -32,9 +41,13 @@ export function useRideFormState({ onReset }: UseRideFormStateProps = {}) {
         setCustomLocation("");
         setRideDate("");
         setNotes("");
-        setPhoto(null);
+        setPhoto(createRidePhotoState());
         onReset?.();
     }, [onReset]);
+
+    const removePhoto = useCallback(() => {
+        setPhoto(createRidePhotoState());
+    }, []);
 
     const handlePresetSelect = useCallback((id: string, value: number, location?: string) => {
         setSelectedPresetId(id);
@@ -87,22 +100,8 @@ export function useRideFormState({ onReset }: UseRideFormStateProps = {}) {
             return;
         }
 
-        void readFileAsDataUrl(file)
-            .then((result) => {
-                setPhoto(result);
-            })
-            .catch((error: unknown) => {
-                toast({
-                    title:
-                        error instanceof Error
-                            ? error.message
-                            : "Nao foi possivel ler a imagem selecionada.",
-                    variant: "destructive",
-                });
-            })
-            .finally(() => {
-                input.value = "";
-            });
+        setPhoto(createNewRidePhotoState(file));
+        input.value = "";
     }, [toast]);
 
     return {
@@ -123,6 +122,7 @@ export function useRideFormState({ onReset }: UseRideFormStateProps = {}) {
             setRideDate,
             setNotes,
             setPhoto,
+            removePhoto,
         },
         helpers: {
             resetForm,

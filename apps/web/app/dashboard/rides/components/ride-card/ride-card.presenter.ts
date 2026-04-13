@@ -178,5 +178,6 @@ export function getRideCardPresentation(ride: RideViewModel): RideCardPresentati
       financialCopy.financialLabel,
     ),
     notes: ride.notes?.trim() || null,
+    photoUrl: ride.photo?.trim() || null,
   };
 }

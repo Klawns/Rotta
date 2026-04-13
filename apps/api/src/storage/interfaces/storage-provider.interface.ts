@@ -21,6 +21,12 @@ export interface IStorageProvider {
     options?: { cacheControl?: string },
   ): Promise<{ url: string; key: string }>;
 
+  uploadStream(
+    file: StorageStreamUploadFile,
+    path: string,
+    options?: { cacheControl?: string },
+  ): Promise<{ url: string; key: string }>;
+
   uploadPrivate(
     file: StorageBufferUploadFile,
     path: string,
@@ -37,6 +43,11 @@ export interface IStorageProvider {
     key: string,
     options?: { visibility?: StorageVisibility },
   ): Promise<void>;
+
+  exists(
+    key: string,
+    options?: { visibility?: StorageVisibility },
+  ): Promise<boolean>;
 
   getSignedUrl(
     key: string,

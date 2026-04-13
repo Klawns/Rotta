@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { RideCardPresentation } from './ride-card.types';
+import { RideCardPhoto } from './ride-card-photo';
 
 interface RideCardDetailsProps {
   presentation: RideCardPresentation;
@@ -45,6 +46,13 @@ export function RideCardDetails({ presentation }: RideCardDetailsProps) {
             {presentation.notes}
           </p>
         </div>
+      ) : null}
+
+      {presentation.photoUrl ? (
+        <RideCardPhoto
+          photoUrl={presentation.photoUrl}
+          clientName={presentation.clientName}
+        />
       ) : null}
     </div>
   );

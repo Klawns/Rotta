@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -60,7 +61,13 @@ export class R2StorageProvider implements IStorageProvider {
   }
 
   private buildOperationErrorMessage(
-    action: 'upload' | 'upload privado' | 'download' | 'delete' | 'signed url',
+    action:
+      | 'upload'
+      | 'upload privado'
+      | 'download'
+      | 'delete'
+      | 'signed url'
+      | 'head',
     bucket: string,
     key: string,
     error: unknown,
@@ -86,6 +93,32 @@ export class R2StorageProvider implements IStorageProvider {
     }
 
     return `Falha no ${action} para o bucket "${bucket}" e chave "${key}".`;
+  }
+
+  private isMissingObjectError(error: unknown) {
+    const errorName =
+      typeof error === 'object' &&
+      error !== null &&
+      'name' in error &&
+      typeof error.name === 'string'
+        ? error.name
+        : null;
+    const httpStatusCode =
+      typeof error === 'object' &&
+      error !== null &&
+      '$metadata' in error &&
+      typeof error.$metadata === 'object' &&
+      error.$metadata !== null &&
+      'httpStatusCode' in error.$metadata &&
+      typeof error.$metadata.httpStatusCode === 'number'
+        ? error.$metadata.httpStatusCode
+        : null;
+
+    return (
+      errorName === 'NotFound' ||
+      errorName === 'NoSuchKey' ||
+      httpStatusCode === 404
+    );
   }
 
   private async bodyToBuffer(body: unknown): Promise<Buffer> {
@@ -162,6 +195,54 @@ export class R2StorageProvider implements IStorageProvider {
         }),
       );
       this.logger.log(`Upload concluido com sucesso: ${key}`);
+    } catch (error) {
+      const message = this.buildOperationErrorMessage(
+        'upload',
+        bucket,
+        key,
+        error,
+      );
+
+      this.logger.error(
+        message,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new Error(message);
+    }
+
+    return {
+      url: `${this.publicUrl}/${key}`,
+      key,
+    };
+  }
+
+  async uploadStream(
+    file: StorageStreamUploadFile,
+    path: string,
+    options?: { cacheControl?: string },
+  ): Promise<{ url: string; key: string }> {
+    const key = path;
+    const bucket = this.resolveBucket('public');
+
+    this.logger.log(`Iniciando upload por stream para R2: ${key} (${file.mimetype})`);
+
+    const upload = new Upload({
+      client: this.client,
+      params: {
+        Bucket: bucket,
+        Key: key,
+        Body: file.stream,
+        ContentType: file.mimetype,
+        CacheControl:
+          options?.cacheControl ?? 'public, max-age=31536000, immutable',
+        ContentDisposition: 'inline',
+      },
+      leavePartsOnError: false,
+    });
+
+    try {
+      await upload.done();
+      this.logger.log(`Upload por stream concluido com sucesso: ${key}`);
     } catch (error) {
       const message = this.buildOperationErrorMessage(
         'upload',
@@ -290,6 +371,41 @@ export class R2StorageProvider implements IStorageProvider {
     } catch (error) {
       const message = this.buildOperationErrorMessage(
         'delete',
+        bucket,
+        key,
+        error,
+      );
+
+      this.logger.error(
+        message,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new Error(message);
+    }
+  }
+
+  async exists(
+    key: string,
+    options?: { visibility?: StorageVisibility },
+  ): Promise<boolean> {
+    const bucket = this.resolveBucket(options?.visibility ?? 'public');
+
+    try {
+      await this.client.send(
+        new HeadObjectCommand({
+          Bucket: bucket,
+          Key: key,
+        }),
+      );
+
+      return true;
+    } catch (error) {
+      if (this.isMissingObjectError(error)) {
+        return false;
+      }
+
+      const message = this.buildOperationErrorMessage(
+        'head',
         bucket,
         key,
         error,

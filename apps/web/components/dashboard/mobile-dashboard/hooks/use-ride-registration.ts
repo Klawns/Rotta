@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { getRidePhotoPreviewUrl, hasRidePhoto } from "@/lib/ride-photo";
 import type { Client } from "@/types/rides";
 import type {
     RideFormActions,
@@ -49,7 +50,8 @@ export function useRideRegistration({
             paymentStatus: formState.fields.paymentStatus,
             rideDate: formState.fields.rideDate,
             notes: formState.fields.notes,
-            photo: formState.fields.photo,
+            photoPreviewUrl: getRidePhotoPreviewUrl(formState.fields.photo),
+            hasPhoto: hasRidePhoto(formState.fields.photo),
             isSaving: submitRide.isSubmitting,
             canSubmit:
                 !!selectedClient &&
@@ -84,7 +86,7 @@ export function useRideRegistration({
         confirmCustomValue: formState.helpers.confirmCustomValue,
         resetValueSelection: formState.helpers.resetValueSelection,
         handlePhotoChange: formState.helpers.handlePhotoChange,
-        removePhoto: () => formState.setters.setPhoto(null),
+        removePhoto: formState.setters.removePhoto,
         submitRide: submitRide.submitRide,
         resetForm: formState.helpers.resetForm,
     };

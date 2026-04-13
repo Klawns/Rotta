@@ -297,6 +297,24 @@ describe('RidesService', () => {
     expect(repoMock.create).toHaveBeenCalled();
   });
 
+  it('should stop ride creation when the managed photo reference is rejected', async () => {
+    ridePhotoReferenceMock.validateForCreate.mockRejectedValueOnce(
+      new NotFoundException('asset not found'),
+    );
+
+    await expect(
+      service.create('user-1', {
+        clientId: 'client-1',
+        value: 25.5,
+        photo:
+          'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+        useBalance: false,
+      }),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(repoMock.create).not.toHaveBeenCalled();
+  });
+
   it('should zero debt when marking a ride as paid via status update', async () => {
     repoMock.findOneWithClient.mockResolvedValueOnce({
       id: 'ride-123',
@@ -657,6 +675,25 @@ describe('RidesService', () => {
     );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
+  });
+
+  it('should stop ride update when a new managed photo reference is rejected', async () => {
+    repoMock.findOneWithClient.mockResolvedValueOnce({
+      ...sampleRide,
+      photo: null,
+    });
+    ridePhotoReferenceMock.validateForUpdate.mockRejectedValueOnce(
+      new NotFoundException('asset not found'),
+    );
+
+    await expect(
+      service.update('user-1', 'ride-123', {
+        photo:
+          'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+      }),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(repoMock.update).not.toHaveBeenCalled();
   });
 
   it('should invalidate dashboard and profile caches after deleting a ride', async () => {

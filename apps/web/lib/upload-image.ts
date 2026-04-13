@@ -49,24 +49,3 @@ export function getUploadImageValidationError(file: File): string | undefined {
 
   return undefined;
 }
-
-export function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-        return;
-      }
-
-      reject(new Error('Nao foi possivel ler a imagem selecionada.'));
-    };
-
-    reader.onerror = () => {
-      reject(new Error('Nao foi possivel ler a imagem selecionada.'));
-    };
-
-    reader.readAsDataURL(file);
-  });
-}

@@ -7,14 +7,28 @@ import { RideResponsePresenterService } from './services/ride-response-presenter
 
 describe('RidesController', () => {
   let controller: RidesController;
-  let ridesService: { getStats: jest.Mock };
-  let rideResponsePresenter: { presentMappedList: jest.Mock };
+  let ridesService: {
+    create: jest.Mock;
+    delete: jest.Mock;
+    getStats: jest.Mock;
+    update: jest.Mock;
+    updateStatus: jest.Mock;
+  };
+  let rideResponsePresenter: {
+    present: jest.Mock;
+    presentMappedList: jest.Mock;
+  };
 
   beforeEach(async () => {
     ridesService = {
+      create: jest.fn(),
+      delete: jest.fn(),
       getStats: jest.fn(),
+      update: jest.fn(),
+      updateStatus: jest.fn(),
     };
     rideResponsePresenter = {
+      present: jest.fn(async (ride) => ride),
       presentMappedList: jest.fn(async (rides) => rides),
     };
 
@@ -93,5 +107,108 @@ describe('RidesController', () => {
         id: 'ride-1',
       }),
     ]);
+  });
+
+  it('should present created rides through the presenter before returning the response', async () => {
+    const createdRide = {
+      id: 'ride-1',
+      photo: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+    };
+    const presentedRide = {
+      ...createdRide,
+      photo: 'https://signed.example.com/ride-photo',
+    };
+
+    ridesService.create.mockResolvedValue(createdRide);
+    rideResponsePresenter.present.mockResolvedValue(presentedRide);
+
+    const request = {
+      user: { id: 'user-1', role: 'user' },
+    } as unknown as RequestWithUser;
+
+    await expect(
+      controller.create(request, {} as never),
+    ).resolves.toEqual(presentedRide);
+
+    expect(ridesService.create).toHaveBeenCalledWith('user-1', {});
+    expect(rideResponsePresenter.present).toHaveBeenCalledWith(createdRide);
+  });
+
+  it('should present updated rides through the presenter before returning the response', async () => {
+    const updatedRide = {
+      id: 'ride-1',
+      photo: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+    };
+    const presentedRide = {
+      ...updatedRide,
+      photo: null,
+    };
+
+    ridesService.update.mockResolvedValue(updatedRide);
+    rideResponsePresenter.present.mockResolvedValue(presentedRide);
+
+    const request = {
+      user: { id: 'user-1', role: 'user' },
+    } as unknown as RequestWithUser;
+
+    await expect(
+      controller.update(request, 'ride-1', {} as never),
+    ).resolves.toEqual(presentedRide);
+
+    expect(ridesService.update).toHaveBeenCalledWith('user-1', 'ride-1', {});
+    expect(rideResponsePresenter.present).toHaveBeenCalledWith(updatedRide);
+  });
+
+  it('should present status updates through the presenter before returning the response', async () => {
+    const updatedRide = {
+      id: 'ride-1',
+      status: 'COMPLETED',
+    };
+
+    ridesService.updateStatus.mockResolvedValue(updatedRide);
+
+    const request = {
+      user: { id: 'user-1', role: 'user' },
+    } as unknown as RequestWithUser;
+
+    await expect(
+      controller.updateStatus(request, 'ride-1', {
+        status: 'COMPLETED',
+      } as never),
+    ).resolves.toEqual(updatedRide);
+
+    expect(ridesService.updateStatus).toHaveBeenCalledWith(
+      'user-1',
+      'ride-1',
+      {
+        status: 'COMPLETED',
+      },
+    );
+    expect(rideResponsePresenter.present).toHaveBeenCalledWith(updatedRide);
+  });
+
+  it('should present deleted rides when a specific ride is removed', async () => {
+    const deletedRide = {
+      id: 'ride-1',
+      photo: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+    };
+    const presentedRide = {
+      ...deletedRide,
+      photo: null,
+    };
+
+    ridesService.delete.mockResolvedValue(deletedRide);
+    rideResponsePresenter.present.mockResolvedValue(presentedRide);
+
+    const request = {
+      user: { id: 'user-1', role: 'user' },
+    } as unknown as RequestWithUser;
+
+    await expect(controller.delete(request, 'ride-1')).resolves.toEqual(
+      presentedRide,
+    );
+
+    expect(ridesService.delete).toHaveBeenCalledWith('user-1', 'ride-1');
+    expect(rideResponsePresenter.present).toHaveBeenCalledWith(deletedRide);
   });
 });

@@ -2,9 +2,19 @@ import { isAxiosError } from 'axios';
 import { apiClient } from '@/services/api';
 import { getUploadImageValidationError } from '@/lib/upload-image';
 
+export const UPLOAD_IMAGE_FOLDERS = [
+  'images',
+  'avatars',
+  'posts',
+  'thumbnails',
+  'rides',
+] as const;
+
+export type UploadImageFolder = (typeof UPLOAD_IMAGE_FOLDERS)[number];
+
 export async function uploadImage(
   file: File,
-  folder: string = 'images',
+  folder: UploadImageFolder = 'images',
 ): Promise<{ key: string; url?: string }> {
   const validationError = getUploadImageValidationError(file);
 

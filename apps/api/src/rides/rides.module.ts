@@ -13,9 +13,15 @@ import { RideStatusService } from './services/ride-status.service';
 import { RideCursorService } from './repositories/ride-cursor.service';
 import { RideReadRepository } from './repositories/ride-read.repository';
 import { RideStatsRepository } from './repositories/ride-stats.repository';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
-  imports: [SubscriptionsModule, CacheModule, forwardRef(() => ClientsModule)],
+  imports: [
+    SubscriptionsModule,
+    CacheModule,
+    StorageModule.register(),
+    forwardRef(() => ClientsModule),
+  ],
   providers: [
     RidesService,
     RideAccountingService,

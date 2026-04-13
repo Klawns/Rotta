@@ -46,7 +46,7 @@ export function RideOptionalFields({
                             </div>
 
                             <AnimatePresence>
-                                {form.rideDate ? (
+                                {form.rideDate || form.notes || form.hasPhoto ? (
                                     <motion.div
                                         initial={{ height: 0, opacity: 0 }}
                                         animate={{ height: "auto", opacity: 1 }}
@@ -69,17 +69,18 @@ export function RideOptionalFields({
                                             />
                                         </div>
 
-                                        {form.photo ? (
+                                        {form.photoPreviewUrl ? (
                                             <div className="group/photo relative inline-block">
                                                 <div className="relative h-24 w-24 overflow-hidden rounded-2xl border border-primary/30 shadow-lg">
                                                     <Image
-                                                        src={form.photo}
+                                                        src={form.photoPreviewUrl}
                                                         alt="Preview"
                                                         fill
                                                         unoptimized
                                                         className="object-cover"
                                                     />
                                                     <button
+                                                        type="button"
                                                         onClick={actions.removePhoto}
                                                         className="absolute inset-0 flex items-center justify-center bg-destructive/40 text-white opacity-0 transition-opacity group-hover/photo:opacity-100"
                                                     >

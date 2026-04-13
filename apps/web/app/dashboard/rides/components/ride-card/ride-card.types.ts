@@ -20,4 +20,5 @@ export interface RideCardPresentation {
   metaItems: string[];
   details: RideCardDetailItem[];
   notes: string | null;
+  photoUrl: string | null;
 }

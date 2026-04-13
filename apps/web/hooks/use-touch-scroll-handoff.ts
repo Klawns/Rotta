@@ -64,7 +64,9 @@ export function useTouchScrollHandoff({
       return;
     }
 
-    event.preventDefault();
+    if (event.cancelable) {
+      event.preventDefault();
+    }
     parent.scrollBy({ top: deltaY, left: 0, behavior: "auto" });
   });
 

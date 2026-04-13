@@ -189,7 +189,7 @@ export class RidesService {
   }
 
   async create(userId: string, data: CreateRideDto): Promise<RideWithClient> {
-    const photo = this.ridePhotoReferenceService.validateForCreate(
+    const photo = await this.ridePhotoReferenceService.validateForCreate(
       userId,
       data.photo,
     );
@@ -274,7 +274,7 @@ export class RidesService {
     this.logger.log(`[RidesService] Atualizando corrida ${id}`, 'RidesService');
 
     const existingRide = await this.getRideWithClientOrThrow(userId, id);
-    const nextPhoto = this.ridePhotoReferenceService.validateForUpdate(
+    const nextPhoto = await this.ridePhotoReferenceService.validateForUpdate(
       userId,
       data.photo,
       existingRide.photo ?? null,

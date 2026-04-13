@@ -1,11 +1,12 @@
 import { z } from 'zod';
+import { controlledRidePhotoReferenceSchema } from './ride-photo-reference.schema';
 
 export const createRideSchema = z.object({
   clientId: z.string().min(1, { message: 'ID do cliente é obrigatório' }),
   value: z.coerce.number().min(0, { message: 'O valor deve ser positivo' }),
   location: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
-  photo: z.string().optional().nullable(),
+  photo: controlledRidePhotoReferenceSchema.optional(),
   status: z
     .enum(['PENDING', 'COMPLETED', 'CANCELLED'])
     .optional()
@@ -22,7 +23,7 @@ export const updateRideSchema = z.object({
   value: z.coerce.number().min(0).optional(),
   location: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
-  photo: z.string().optional().nullable(),
+  photo: controlledRidePhotoReferenceSchema.optional(),
   status: z.enum(['PENDING', 'COMPLETED', 'CANCELLED']).optional(),
   paymentStatus: z.enum(['PENDING', 'PAID']).optional(),
   rideDate: z.string().optional().nullable(),

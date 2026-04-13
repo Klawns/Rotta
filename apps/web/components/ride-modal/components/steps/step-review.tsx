@@ -16,7 +16,7 @@ interface StepReviewProps {
     location: string;
     rideDate?: string;
     notes?: string;
-    photo?: string | null;
+    hasPhoto?: boolean;
     paidWithBalance?: number;
     debtValue?: number;
     useBalance?: boolean;
@@ -31,7 +31,7 @@ export function StepReview({
     location,
     rideDate,
     notes,
-    photo,
+    hasPhoto,
     paidWithBalance = 0,
     debtValue,
     useBalance = false
@@ -89,7 +89,7 @@ export function StepReview({
                     <p className="text-sm text-text-primary font-bold tracking-tight">{location || "Nenhuma localização informada"}</p>
                 </div>
 
-                {(rideDate || notes || photo) && (
+                {(rideDate || notes || hasPhoto) && (
                     <div className="pt-6 border-t border-border-subtle space-y-6 relative z-10">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             {rideDate && (
@@ -98,7 +98,7 @@ export function StepReview({
                                     <p className="text-sm text-text-secondary font-bold tracking-tight">{formatDisplayDateValue(rideDate)}</p>
                                 </div>
                             )}
-                            {photo && (
+                            {hasPhoto && (
                                 <div className="flex items-center gap-2 text-icon-info pt-1">
                                     <div className="p-2 rounded-xl bg-icon-info/10">
                                         <Camera size={14} />
