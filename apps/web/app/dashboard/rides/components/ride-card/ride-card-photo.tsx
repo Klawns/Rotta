@@ -40,7 +40,7 @@ export function RideCardPhoto({ photoUrl, clientName }: RideCardPhotoProps) {
           className="group mt-3 block w-full overflow-hidden rounded-[1.5rem] border border-border-subtle bg-secondary/5 text-left transition-colors hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           aria-label={`Abrir foto da corrida de ${clientName}`}
         >
-          <div className="aspect-video w-full overflow-hidden">
+          <div className="relative aspect-video w-full overflow-hidden">
             <Image
               src={photoUrl}
               alt={`Foto da corrida de ${clientName}`}
