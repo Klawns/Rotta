@@ -107,14 +107,16 @@ export default function FinancePage() {
           ) : null}
 
           <header className="flex flex-col gap-5">
-            <FinanceHeader
-              title="Financeiro"
-              subtitle={
-                isClientView && selectedClientName
-                  ? `Leitura focada em ${selectedClientName}.`
-                  : 'Resumo claro dos seus ganhos.'
-              }
-            />
+            <div className="hidden md:block">
+              <FinanceHeader
+                title="Financeiro"
+                subtitle={
+                  isClientView && selectedClientName
+                    ? `Leitura focada em ${selectedClientName}.`
+                    : 'Resumo claro dos seus ganhos.'
+                }
+              />
+            </div>
 
             <FinanceFilters
               clientAutocomplete={clientAutocomplete}

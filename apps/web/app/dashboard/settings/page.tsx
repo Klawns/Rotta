@@ -29,8 +29,8 @@ export default function SettingsPage() {
             className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-10 overflow-y-auto overscroll-contain px-4 pb-32 scrollbar-hide sm:px-6"
             data-scroll-lock-root="true"
         >
-            <div className="shrink-0 flex flex-col gap-8 border-b border-border pb-10 md:flex-row md:items-end md:justify-between">
-                <div className="space-y-4">
+            <div className="shrink-0 flex flex-col gap-5 border-b border-border pb-8 md:gap-8 md:pb-10 md:flex-row md:items-end md:justify-between">
+                <div className="hidden space-y-4 md:block">
                     <h2 className="flex items-center gap-4 text-4xl font-display font-black tracking-tight text-text-primary">
                         <div className="transform rounded-2xl bg-primary p-3 shadow-xl shadow-primary/20 transition-transform hover:rotate-0 -rotate-3">
                             <Settings2 size={28} className="text-primary-foreground" />

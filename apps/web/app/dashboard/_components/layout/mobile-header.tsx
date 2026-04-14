@@ -3,16 +3,66 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { DashboardHomeMobileHeader } from "./dashboard-home-mobile-header";
 
 interface MobileHeaderProps {
     onOpenSidebar: () => void;
+    userName?: string | null;
 }
 
-export function MobileHeader({ onOpenSidebar }: MobileHeaderProps) {
+function getDashboardMobileHeaderTitle(pathname: string) {
+    if (pathname === "/dashboard") {
+        return "Controle de Corrida";
+    }
+
+    if (pathname.startsWith("/dashboard/clients")) {
+        return "Meus Clientes";
+    }
+
+    if (pathname.startsWith("/dashboard/rides")) {
+        return "Historico de Corridas";
+    }
+
+    if (pathname.startsWith("/dashboard/finance")) {
+        return "Financeiro";
+    }
+
+    if (pathname.startsWith("/dashboard/settings")) {
+        return "Configuracoes";
+    }
+
+    return null;
+}
+
+function getDashboardMobileHeaderGreeting(pathname: string) {
+    if (pathname === "/dashboard") {
+        return "default";
+    }
+
+    return null;
+}
+
+export function MobileHeader({ onOpenSidebar, userName }: MobileHeaderProps) {
+    const pathname = usePathname();
+    const title = getDashboardMobileHeaderTitle(pathname);
+    const greeting = getDashboardMobileHeaderGreeting(pathname);
+
+    if (title) {
+        return (
+            <DashboardHomeMobileHeader
+                onOpenSidebar={onOpenSidebar}
+                userName={userName}
+                title={title}
+                greeting={greeting}
+            />
+        );
+    }
+
     return (
-        <header className="lg:hidden flex items-center justify-between p-6 bg-card/40 backdrop-blur-md border-b border-border sticky top-0 z-40 shrink-0">
-            <Link 
-                href="/dashboard" 
+        <header className="sticky top-0 z-40 flex shrink-0 items-center justify-between border-b border-border bg-card/40 p-6 backdrop-blur-md lg:hidden">
+            <Link
+                href="/dashboard"
                 aria-label="Ir para o Dashboard"
                 className="flex items-center gap-3 active:scale-95 transition-transform"
             >
@@ -27,8 +77,8 @@ export function MobileHeader({ onOpenSidebar }: MobileHeaderProps) {
                 <span className="font-bold tracking-tight uppercase italic text-foreground">ROTTA</span>
             </Link>
             <div className="flex items-center gap-2">
-                <button 
-                    onClick={onOpenSidebar} 
+                <button
+                    onClick={onOpenSidebar}
                     className="p-2 bg-accent/50 rounded-lg text-muted-foreground active:scale-95 transition-transform"
                 >
                     <Menu size={20} />

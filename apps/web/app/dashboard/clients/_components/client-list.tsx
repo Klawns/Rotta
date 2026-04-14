@@ -162,9 +162,6 @@ export function ClientsListContainer({
           <h2 className="text-lg font-display font-bold tracking-tight text-text-primary">
             Lista de clientes
           </h2>
-          <p className="text-sm text-text-secondary">
-            Nome em destaque, contatos como apoio e acoes mais leves no rodape.
-          </p>
         </div>
 
         <div className="text-sm text-text-secondary">

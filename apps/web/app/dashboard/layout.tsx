@@ -89,7 +89,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     />
 
                     {/* 5. Header Visível apenas em Mobile */}
-                    <MobileHeader onOpenSidebar={sidebar.toggleSidebar} />
+                    <MobileHeader
+                        onOpenSidebar={sidebar.toggleSidebar}
+                        userName={user?.name}
+                    />
 
                     {/* 6. Conteúdo da Página */}
                     <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col overflow-hidden p-6 lg:p-10">

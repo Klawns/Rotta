@@ -217,15 +217,9 @@ export function RidesListView({
   return (
     <section className="rounded-[2rem] border border-border-subtle bg-background/80 p-4 shadow-sm sm:p-5">
       <div className="mb-5 flex flex-col gap-2 border-b border-border-subtle/70 pb-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h2 className="text-lg font-display font-bold tracking-tight text-text-primary">
-            Lista de corridas
-          </h2>
-          <p className="text-sm text-text-secondary">
-            Valor em destaque, status financeiro discreto e detalhes sob
-            demanda.
-          </p>
-        </div>
+        <h2 className="text-lg font-display font-bold tracking-tight text-text-primary">
+          Lista de corridas
+        </h2>
 
         <div className="text-sm text-text-secondary">
           <span className="font-semibold text-text-primary">

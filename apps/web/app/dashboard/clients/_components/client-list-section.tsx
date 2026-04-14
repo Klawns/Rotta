@@ -8,6 +8,7 @@ interface ClientListSectionProps {
   isFetching?: boolean;
   search: string;
   onSearchChange: (value: string) => void;
+  onNewClient: () => void;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onLoadMore: () => void;
@@ -27,6 +28,7 @@ export function ClientListSection({
   isFetching,
   search,
   onSearchChange,
+  onNewClient,
   hasNextPage,
   isFetchingNextPage,
   onLoadMore,
@@ -42,7 +44,11 @@ export function ClientListSection({
   return (
     <section className="flex min-h-0 flex-col gap-6 overflow-hidden">
       <div className="shrink-0">
-        <ClientSearch value={search} onChange={onSearchChange} />
+        <ClientSearch
+          value={search}
+          onChange={onSearchChange}
+          onNewClient={onNewClient}
+        />
       </div>
 
       <div className="min-h-0 overflow-hidden">

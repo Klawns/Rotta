@@ -87,12 +87,8 @@ export default function ClientsPage() {
                 data-scroll-lock-root="true"
             >
                 <div className="mx-auto flex w-full max-w-[1400px] flex-col pb-8">
-                    <div className="flex shrink-0 flex-col gap-6 pb-6 md:gap-8 md:pb-8">
-                        <ClientHeader
-                            onNewClient={state.openNewClientModal}
-                            totalCount={totalCount}
-                            hasActiveSearch={search.trim().length > 0}
-                        />
+                    <div className="hidden shrink-0 flex-col gap-8 pb-8 md:flex">
+                        <ClientHeader onNewClient={state.openNewClientModal} />
                     </div>
 
                     <ClientListSection 
@@ -101,6 +97,7 @@ export default function ClientsPage() {
                         isFetching={isFetching}
                         search={search}
                         onSearchChange={setSearch}
+                        onNewClient={state.openNewClientModal}
                         hasNextPage={hasNextPage}
                         isFetchingNextPage={isFetchingNextPage}
                         onLoadMore={fetchNextPage}

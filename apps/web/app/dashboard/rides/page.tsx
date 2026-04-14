@@ -18,22 +18,22 @@ export default function RidesPage() {
         data-scroll-lock-root="true"
       >
         <div className="mx-auto flex w-full max-w-[1400px] flex-col pb-8">
-          <div className="flex shrink-0 flex-col gap-6 pb-6 md:gap-8 md:pb-8">
+          <div className="hidden shrink-0 flex-col gap-8 pb-8 md:flex">
             <RidesHeader
               onNewRide={page.header.onNewRide}
               totalCount={page.header.totalCount}
               hasActiveFilters={page.header.hasActiveFilters}
             />
-
-            <RidesFilters {...page.filters} />
-
-            <FrequentClients
-              clients={page.frequentClients.clients}
-              isLoading={page.frequentClients.isLoading}
-              onSelectClient={page.frequentClients.onSelectClient}
-              className="hidden md:block"
-            />
           </div>
+
+          <RidesFilters {...page.filters} onNewRide={page.header.onNewRide} />
+
+          <FrequentClients
+            clients={page.frequentClients.clients}
+            isLoading={page.frequentClients.isLoading}
+            onSelectClient={page.frequentClients.onSelectClient}
+            className="hidden md:block"
+          />
 
           <RidesListContainer {...page.ridesList} />
 

@@ -25,7 +25,7 @@ export function RidesHeader({
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-3 md:block">
           <div className="min-w-0">
-            <h1 className="text-[1.75rem] font-display font-extrabold tracking-tight text-text-primary md:text-3xl">
+            <h1 className="hidden text-[1.75rem] font-display font-extrabold tracking-tight text-text-primary md:block md:text-3xl">
               Historico de Corridas
             </h1>
             <p className="mt-1 hidden text-base text-text-secondary md:block">

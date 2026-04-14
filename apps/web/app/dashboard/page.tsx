@@ -35,7 +35,6 @@ export default function DashboardPage() {
 
                         {dashboard.isMobile ? (
                             <DashboardMobileView
-                                user={dashboard.user}
                                 stats={dashboard.mobileStats}
                                 onRideCreated={dashboard.refreshDashboard}
                                 trial={dashboard.trial}
