@@ -9,6 +9,7 @@ import {
   CHECKOUT_CTA_HREF,
   getFreeTrialState,
 } from '@/services/free-trial-service';
+import { isDashboardNavItemActive } from '../../_lib/dashboard-navigation';
 import { type MenuItem } from '../../_hooks/use-sidebar-state';
 
 interface SidebarNavigationProps {
@@ -30,8 +31,10 @@ export function SidebarNavigation({
 
   return (
     <nav className="flex-1 space-y-2 overflow-y-auto no-scrollbar">
-      {menuItems.map((item) => (
-        item.disabled ? (
+      {menuItems.map((item) => {
+        const isActive = isDashboardNavItemActive(item, pathname);
+
+        return item.disabled ? (
           <div
             key={item.label}
             className={cn(
@@ -61,7 +64,7 @@ export function SidebarNavigation({
             onClick={onItemClick}
             className={cn(
               'flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-sidebar-accent/50 transition-all group active:scale-95 border border-transparent',
-              pathname === item.href &&
+              isActive &&
                 'bg-sidebar-accent-active text-sidebar-foreground-primary shadow-sm border-sidebar-border-active',
               !isOpen &&
                 'lg:mx-auto lg:h-12 lg:w-12 lg:justify-center lg:rounded-2xl lg:px-0 lg:py-0',
@@ -73,7 +76,7 @@ export function SidebarNavigation({
               className={cn(
                 'shrink-0 transition-all duration-300',
                 item.color,
-                pathname === item.href
+                isActive
                   ? 'brightness-110 saturate-125 scale-110'
                   : 'opacity-60 group-hover:opacity-100 group-hover:scale-105 saturate-[0.8]',
               )}
@@ -82,7 +85,7 @@ export function SidebarNavigation({
               <span
                 className={cn(
                   'font-medium transition-colors',
-                  pathname === item.href
+                  isActive
                     ? 'text-sidebar-foreground-primary'
                     : 'text-sidebar-foreground-muted group-hover:text-sidebar-foreground',
                 )}
@@ -92,7 +95,7 @@ export function SidebarNavigation({
             )}
           </Link>
         )
-      ))}
+      })}
 
       {showUpgradeCta && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

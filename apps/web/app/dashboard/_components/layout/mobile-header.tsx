@@ -7,7 +7,8 @@ import { usePathname } from "next/navigation";
 import { DashboardHomeMobileHeader } from "./dashboard-home-mobile-header";
 
 interface MobileHeaderProps {
-    onOpenSidebar: () => void;
+    onOpenNavigationMenu: () => void;
+    isNavigationMenuOpen: boolean;
     userName?: string | null;
 }
 
@@ -43,7 +44,11 @@ function getDashboardMobileHeaderGreeting(pathname: string) {
     return null;
 }
 
-export function MobileHeader({ onOpenSidebar, userName }: MobileHeaderProps) {
+export function MobileHeader({
+    onOpenNavigationMenu,
+    isNavigationMenuOpen,
+    userName,
+}: MobileHeaderProps) {
     const pathname = usePathname();
     const title = getDashboardMobileHeaderTitle(pathname);
     const greeting = getDashboardMobileHeaderGreeting(pathname);
@@ -51,7 +56,8 @@ export function MobileHeader({ onOpenSidebar, userName }: MobileHeaderProps) {
     if (title) {
         return (
             <DashboardHomeMobileHeader
-                onOpenSidebar={onOpenSidebar}
+                onOpenNavigationMenu={onOpenNavigationMenu}
+                isNavigationMenuOpen={isNavigationMenuOpen}
                 userName={userName}
                 title={title}
                 greeting={greeting}
@@ -78,7 +84,9 @@ export function MobileHeader({ onOpenSidebar, userName }: MobileHeaderProps) {
             </Link>
             <div className="flex items-center gap-2">
                 <button
-                    onClick={onOpenSidebar}
+                    onClick={onOpenNavigationMenu}
+                    aria-expanded={isNavigationMenuOpen}
+                    aria-label={isNavigationMenuOpen ? "Fechar menu" : "Abrir menu"}
                     className="p-2 bg-accent/50 rounded-lg text-muted-foreground active:scale-95 transition-transform"
                 >
                     <Menu size={20} />

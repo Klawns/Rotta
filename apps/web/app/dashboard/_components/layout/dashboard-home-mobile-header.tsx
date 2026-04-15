@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Menu } from "lucide-react";
 
 interface DashboardHomeMobileHeaderProps {
-    onOpenSidebar: () => void;
+    onOpenNavigationMenu: () => void;
+    isNavigationMenuOpen: boolean;
     userName?: string | null;
     title: string;
     greeting?: string | null;
@@ -17,7 +18,8 @@ function getFirstName(userName?: string | null) {
 }
 
 export function DashboardHomeMobileHeader({
-    onOpenSidebar,
+    onOpenNavigationMenu,
+    isNavigationMenuOpen,
     userName,
     title,
     greeting,
@@ -56,8 +58,9 @@ export function DashboardHomeMobileHeader({
                 </Link>
 
                 <button
-                    onClick={onOpenSidebar}
-                    aria-label="Abrir menu"
+                    onClick={onOpenNavigationMenu}
+                    aria-expanded={isNavigationMenuOpen}
+                    aria-label={isNavigationMenuOpen ? "Fechar menu" : "Abrir menu"}
                     className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-accent/60 text-foreground shadow-sm transition-transform active:scale-95"
                 >
                     <Menu size={20} />
