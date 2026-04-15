@@ -12,19 +12,23 @@ RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 FROM base AS pruner
 ARG TURBO_VERSION
+ENV TURBO_TELEMETRY_DISABLED=1
+RUN npm install --global turbo@${TURBO_VERSION}
 WORKDIR /repo
 COPY . .
-RUN pnpm dlx turbo@${TURBO_VERSION} prune api --docker
+RUN turbo prune api --docker
 
 FROM base AS prod-deps
 WORKDIR /app
 COPY --from=pruner /repo/out/json/ .
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm fetch --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile --prod --offline
 
 FROM base AS builder
 WORKDIR /app
 COPY --from=pruner /repo/out/json/ .
-RUN pnpm install --frozen-lockfile
+RUN pnpm fetch --frozen-lockfile
+RUN pnpm install --frozen-lockfile --offline
 COPY --from=pruner /repo/out/full/ .
 RUN pnpm --filter @mdc/database build
 RUN pnpm --filter api build

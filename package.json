@@ -19,7 +19,7 @@
     },
     "devDependencies": {
         "prettier": "latest",
-        "turbo": "latest"
+        "turbo": "2.8.14"
     },
     "dependencies": {
         "ts-node": "^10.9.2",

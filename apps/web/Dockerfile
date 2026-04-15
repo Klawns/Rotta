@@ -12,20 +12,25 @@ RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 FROM base AS pruner
 ARG TURBO_VERSION
+ENV TURBO_TELEMETRY_DISABLED=1
+RUN npm install --global turbo@${TURBO_VERSION}
 WORKDIR /repo
 COPY . .
-RUN pnpm dlx turbo@${TURBO_VERSION} prune my-project --docker
+RUN turbo prune my-project --docker
 
 FROM base AS builder
+ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 COPY --from=pruner /repo/out/json/ .
-RUN pnpm install --frozen-lockfile
+RUN pnpm fetch --frozen-lockfile
+RUN pnpm install --frozen-lockfile --offline
 COPY --from=pruner /repo/out/full/ .
 RUN pnpm --filter my-project build
 
 FROM node:${NODE_VERSION} AS runner
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=8080
 WORKDIR /app
 
