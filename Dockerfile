@@ -1,48 +1,62 @@
-# ─── Stage 1: Builder ────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+# syntax=docker/dockerfile:1.7
+
+ARG NODE_VERSION=20-bookworm-slim
+ARG PG_MAJOR=18
+
+FROM node:${NODE_VERSION} AS builder
 
 WORKDIR /app
 
-# Enable corepack so pnpm version is driven by packageManager in package.json
 RUN corepack enable
 
-# Copy manifests and lockfile first for better layer caching
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY packages/database/package.json ./packages/database/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
 
-# Install all workspace dependencies (respects workspace:* protocol)
 RUN pnpm install --frozen-lockfile
 
-# Copy full source
 COPY . .
 
-# Build the @mdc/database package first (api depends on it)
 RUN pnpm --filter @mdc/database build
-
-# Build the api app
 RUN pnpm --filter api build
 
-# ─── Stage 2: Runtime ────────────────────────────────────────────────────────
-FROM node:20-alpine AS runtime
+FROM node:${NODE_VERSION} AS runtime
+
+ARG PG_MAJOR
 
 WORKDIR /app
 
-RUN corepack enable
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Copy manifests and lockfile
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+  && install -m 0755 -d /etc/apt/keyrings \
+  && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+  | gpg --dearmor --yes -o /etc/apt/keyrings/postgresql.gpg \
+  && chmod a+r /etc/apt/keyrings/postgresql.gpg \
+  && . /etc/os-release \
+  && echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" \
+  > /etc/apt/sources.list.d/pgdg.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends "postgresql-client-${PG_MAJOR}" \
+  && apt-get purge -y --auto-remove curl gnupg \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN corepack enable
+RUN pg_dump --version
+
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY packages/database/package.json ./packages/database/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
 
-# Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod
 
-# Copy compiled output from builder
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/packages/database/dist ./packages/database/dist
+
+ENV NODE_ENV=production
 
 EXPOSE 3000
 
