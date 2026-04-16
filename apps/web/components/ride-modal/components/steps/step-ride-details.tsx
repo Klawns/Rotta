@@ -1,10 +1,12 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { DollarSign, Star, MapPin } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Banknote, DollarSign, MapPin, Star } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { SelectionSummaryCard } from "@/components/ui/selection-summary-card";
 import { RidePreset } from "@/types/rides";
+import { formatCurrency } from "@/lib/utils";
 import { RideFinancialImpactNotice } from "../ride-financial-impact-notice";
 
 const QUICK_VALUES = [10, 12, 15, 20, 25, 30];
@@ -15,12 +17,15 @@ interface StepRideDetailsProps {
     setValue: (v: string) => void;
     location: string;
     setLocation: (l: string) => void;
-    isCustomValue: boolean;
-    setIsCustomValue: (v: boolean) => void;
+    valueSelectionMode: "picker" | "custom-edit" | "summary";
     clientName?: string;
     willReopenDebtOnSave?: boolean;
     projectedDebtValue?: number;
     handlePresetClick: (preset: RidePreset) => void;
+    handleQuickValueSelection: (quickValue: number) => void;
+    startCustomValueEntry: () => void;
+    confirmCustomValue: () => void;
+    resetValueSelection: () => void;
 }
 
 export function StepRideDetails({
@@ -29,13 +34,24 @@ export function StepRideDetails({
     setValue,
     location,
     setLocation,
-    isCustomValue,
-    setIsCustomValue,
+    valueSelectionMode,
     clientName,
     willReopenDebtOnSave = false,
     projectedDebtValue = 0,
-    handlePresetClick
+    handlePresetClick,
+    handleQuickValueSelection,
+    startCustomValueEntry,
+    confirmCustomValue,
+    resetValueSelection,
 }: StepRideDetailsProps) {
+    const isValueSummaryVisible =
+        valueSelectionMode === "summary" && Number(value) > 0;
+    const isCustomValueEditorVisible = valueSelectionMode === "custom-edit";
+    const formattedValue =
+        isValueSummaryVisible && Number(value) > 0
+            ? formatCurrency(Number(value))
+            : "";
+
     return (
         <motion.div
             key="step2"
@@ -44,109 +60,158 @@ export function StepRideDetails({
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
         >
-            <div className="flex items-center gap-3 bg-secondary/10 p-4 rounded-2xl border border-border-subtle shadow-inner">
-                <div className="w-10 h-10 rounded-full bg-icon-info/10 flex items-center justify-center text-icon-info font-bold uppercase text-xs border border-icon-info/10">
+            <div className="flex items-center gap-3 rounded-2xl border border-border-subtle bg-secondary/10 p-4 shadow-inner">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-icon-info/10 bg-icon-info/10 text-xs font-bold uppercase text-icon-info">
                     {clientName?.substring(0, 2) || "CL"}
                 </div>
                 <div>
-                    <p className="text-[9px] font-bold text-text-secondary uppercase tracking-widest leading-none mb-0.5 opacity-70">Cliente Selecionado</p>
-                    <p className="text-text-primary font-bold tracking-tight">{clientName || "Cliente"}</p>
+                    <p className="mb-0.5 text-[9px] font-bold uppercase leading-none tracking-widest text-text-secondary opacity-70">
+                        Cliente Selecionado
+                    </p>
+                    <p className="font-bold tracking-tight text-text-primary">
+                        {clientName || "Cliente"}
+                    </p>
                 </div>
             </div>
 
             <div className="space-y-4">
-                <label className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
-                    <DollarSign size={12} /> Valor e Localização
+                <label className="flex items-center gap-2 pl-1 text-[10px] font-black uppercase tracking-[0.2em] text-text-secondary">
+                    <DollarSign size={12} /> Valor e LocalizaÃ§Ã£o
                 </label>
 
-                <div className="grid grid-cols-3 gap-2.5">
-                    {QUICK_VALUES.map((v) => {
-                        const matchingPreset = presets.find((p) => p.value === v);
-                        
-                        return (
-                            <button
-                                key={v}
-                                type="button"
-                                onClick={() => {
-                                    if (matchingPreset) {
-                                        handlePresetClick(matchingPreset);
-                                    } else {
-                                        setValue(String(v));
-                                        setIsCustomValue(false);
-                                    }
-                                }}
-                                className={cn(
-                                    "p-3.5 rounded-2xl border flex flex-col items-center justify-center transition-all group active:scale-95 shadow-sm",
-                                    value === String(v) && !isCustomValue
-                                        ? "bg-button-primary border-button-primary text-button-primary-foreground shadow-button-shadow"
-                                        : "bg-secondary/10 border-border-subtle text-text-secondary hover:bg-secondary/20 hover:text-text-primary"
-                                )}
-                            >
-                                <span className="text-base font-bold">R$ {v}</span>
-                            </button>
-                        );
-                    })}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setIsCustomValue(true);
-                            setValue("");
-                            setLocation("");
-                        }}
-                        className={cn(
-                            "p-3.5 rounded-2xl border flex flex-col items-center justify-center transition-all group active:scale-95 shadow-sm",
-                            isCustomValue
-                                ? "bg-button-primary border-button-primary text-button-primary-foreground shadow-button-shadow"
-                                : "bg-secondary/10 border-border-subtle text-text-secondary hover:bg-secondary/20 hover:text-text-primary"
-                        )}
-                    >
-                        <span className="text-sm font-bold uppercase tracking-widest text-[10px]">OUTRO</span>
-                    </button>
-                </div>
+                {valueSelectionMode === "picker" ? (
+                    <div className="grid grid-cols-3 gap-2.5">
+                        {QUICK_VALUES.map((quickValue) => {
+                            const matchingPreset = presets.find(
+                                (preset) => preset.value === quickValue,
+                            );
+
+                            return (
+                                <button
+                                    key={quickValue}
+                                    type="button"
+                                    onClick={() => {
+                                        if (matchingPreset) {
+                                            handlePresetClick(matchingPreset);
+                                            return;
+                                        }
+
+                                        handleQuickValueSelection(quickValue);
+                                    }}
+                                    className="flex flex-col items-center justify-center rounded-2xl border border-border-subtle bg-secondary/10 p-3.5 shadow-sm transition-all group active:scale-95 hover:bg-secondary/20 hover:text-text-primary text-text-secondary"
+                                >
+                                    <span className="text-base font-bold">
+                                        R$ {quickValue}
+                                    </span>
+                                </button>
+                            );
+                        })}
+
+                        <button
+                            type="button"
+                            onClick={startCustomValueEntry}
+                            className="flex flex-col items-center justify-center rounded-2xl border border-border-subtle bg-secondary/10 p-3.5 text-text-secondary shadow-sm transition-all group active:scale-95 hover:bg-secondary/20 hover:text-text-primary"
+                        >
+                            <span className="text-[10px] text-sm font-bold uppercase tracking-widest">
+                                OUTRO
+                            </span>
+                        </button>
+                    </div>
+                ) : null}
 
                 <div className="flex items-center gap-2 px-1">
                     <Star size={10} className="text-icon-info/50 shadow-sm" />
-                    <p className="text-[10px] font-bold text-text-secondary uppercase tracking-tighter opacity-70">
-                        Valores e locais fixos podem ser alterados nas <Link href="/dashboard/settings" className="text-icon-info hover:underline hover:opacity-100 transition-all">Configurações</Link>
+                    <p className="text-[10px] font-bold uppercase tracking-tighter text-text-secondary opacity-70">
+                        Valores e locais fixos podem ser alterados nas{" "}
+                        <Link
+                            href="/dashboard/settings"
+                            className="text-icon-info transition-all hover:opacity-100 hover:underline"
+                        >
+                            ConfiguraÃ§Ãµes
+                        </Link>
                     </p>
                 </div>
 
                 <AnimatePresence>
-                    {(value !== "" || isCustomValue) && (
+                    {isCustomValueEditorVisible ? (
                         <motion.div
                             initial={{ height: 0, opacity: 0, marginTop: 0 }}
                             animate={{ height: "auto", opacity: 1, marginTop: 16 }}
                             exit={{ height: 0, opacity: 0, marginTop: 0 }}
                             className="overflow-hidden space-y-4"
                         >
-                            {isCustomValue && (
+                            <div className="space-y-2">
+                                <label className="pl-1 text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary">
+                                    Valor Personalizado
+                                </label>
                                 <div className="relative group">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary font-bold text-base opacity-50">R$</span>
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base font-bold text-text-secondary opacity-50">
+                                        R$
+                                    </span>
                                     <input
                                         type="number"
                                         step="0.01"
                                         value={value}
-                                        onChange={(e) => { setValue(e.target.value); setIsCustomValue(true); }}
+                                        onChange={(event) => setValue(event.target.value)}
                                         placeholder="Valor Personalizado"
-                                        className="w-full bg-secondary/10 border border-border-subtle rounded-2xl py-4 pl-12 pr-4 text-text-primary text-xl font-bold focus:outline-none focus:border-icon-info/50 transition-all placeholder:text-text-secondary/30 shadow-inner"
+                                        className="w-full rounded-2xl border border-border-subtle bg-secondary/10 py-4 pl-12 pr-4 text-xl font-bold text-text-primary shadow-inner transition-all placeholder:text-text-secondary/30 focus:border-icon-info/50 focus:outline-none"
                                     />
                                 </div>
-                            )}
+                            </div>
+
+                            <div className="flex justify-end gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="rounded-2xl"
+                                    onClick={resetValueSelection}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    type="button"
+                                    className="rounded-2xl"
+                                    onClick={confirmCustomValue}
+                                    disabled={Number(value) <= 0}
+                                >
+                                    Aplicar
+                                </Button>
+                            </div>
+                        </motion.div>
+                    ) : null}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {isValueSummaryVisible ? (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                            animate={{ height: "auto", opacity: 1, marginTop: 16 }}
+                            exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                            className="overflow-hidden space-y-4"
+                        >
+                            <SelectionSummaryCard
+                                title={formattedValue}
+                                description="Valor selecionado"
+                                icon={Banknote}
+                                onClick={resetValueSelection}
+                                ariaLabel={`Trocar valor ${formattedValue}`}
+                            />
 
                             <div className="space-y-3">
-                                <label className="text-[10px] font-bold text-text-secondary uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
-                                    <MapPin size={12} className="text-icon-info" /> Localização da Corrida
+                                <label className="flex items-center gap-2 pl-1 text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary">
+                                    <MapPin size={12} className="text-icon-info" />{" "}
+                                    LocalizaÃ§Ã£o da Corrida
                                 </label>
                                 <input
                                     type="text"
                                     value={location}
-                                    onChange={(e) => setLocation(e.target.value)}
-                                    placeholder="Digite a localização"
-                                    className="w-full bg-secondary/10 border border-border-subtle rounded-2xl py-4 px-5 text-text-primary text-sm font-bold focus:outline-none focus:border-icon-info/50 transition-all placeholder:text-text-secondary/30 shadow-inner"
+                                    onChange={(event) => setLocation(event.target.value)}
+                                    placeholder="Digite a localizaÃ§Ã£o"
+                                    className="w-full rounded-2xl border border-border-subtle bg-secondary/10 px-5 py-4 text-sm font-bold text-text-primary shadow-inner transition-all placeholder:text-text-secondary/30 focus:border-icon-info/50 focus:outline-none"
                                 />
                             </div>
                         </motion.div>
-                    )}
+                    ) : null}
                 </AnimatePresence>
 
                 {willReopenDebtOnSave ? (

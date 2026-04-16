@@ -12,6 +12,8 @@ interface UseRideFormStateProps {
   clientId?: string;
 }
 
+export type RideValueSelectionMode = 'picker' | 'custom-edit' | 'summary';
+
 export function useRideFormState({ clientId }: UseRideFormStateProps) {
   const [selectedClientId, setSelectedClientId] = useState(clientId || '');
   const [value, setValue] = useState('');
@@ -22,7 +24,8 @@ export function useRideFormState({ clientId }: UseRideFormStateProps) {
   );
   const [rideDate, setRideDate] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('PAID');
-  const [isCustomValue, setIsCustomValue] = useState(false);
+  const [valueSelectionMode, setValueSelectionMode] =
+    useState<RideValueSelectionMode>('picker');
   const [useBalance, setUseBalance] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [newClientName, setNewClientName] = useState('');
@@ -41,7 +44,7 @@ export function useRideFormState({ clientId }: UseRideFormStateProps) {
     setLocation('');
     setNotes('');
     setRideDate('');
-    setIsCustomValue(false);
+    setValueSelectionMode('picker');
     setPhoto(createRidePhotoState());
     setPaymentStatus('PAID');
     setUseBalance(false);
@@ -56,7 +59,33 @@ export function useRideFormState({ clientId }: UseRideFormStateProps) {
   const handlePresetClick = useCallback((preset: RidePreset) => {
     setValue(preset.value.toString());
     setLocation(preset.location || '');
-    setIsCustomValue(false);
+    setValueSelectionMode('summary');
+  }, []);
+
+  const handleQuickValueSelection = useCallback((quickValue: number) => {
+    setValue(quickValue.toString());
+    setValueSelectionMode('summary');
+  }, []);
+
+  const startCustomValueEntry = useCallback(() => {
+    setValue('');
+    setLocation('');
+    setValueSelectionMode('custom-edit');
+  }, []);
+
+  const confirmCustomValue = useCallback(() => {
+    const parsedValue = Number(value);
+
+    if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+      return;
+    }
+
+    setValueSelectionMode('summary');
+  }, [value]);
+
+  const resetValueSelection = useCallback(() => {
+    setValue('');
+    setValueSelectionMode('picker');
   }, []);
 
   return {
@@ -75,8 +104,8 @@ export function useRideFormState({ clientId }: UseRideFormStateProps) {
     setRideDate,
     paymentStatus,
     setPaymentStatus,
-    isCustomValue,
-    setIsCustomValue,
+    valueSelectionMode,
+    setValueSelectionMode,
     useBalance,
     setUseBalance,
     currentStep,
@@ -89,5 +118,9 @@ export function useRideFormState({ clientId }: UseRideFormStateProps) {
     setClientSearch,
     resetForm,
     handlePresetClick,
+    handleQuickValueSelection,
+    startCustomValueEntry,
+    confirmCustomValue,
+    resetValueSelection,
   };
 }

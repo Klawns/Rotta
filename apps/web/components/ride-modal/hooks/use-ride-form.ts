@@ -31,10 +31,11 @@ export function useRideForm({
   const shouldLoadClientDirectory = !clientId || Boolean(rideToEdit);
   const {
     clientSearch,
+    confirmCustomValue,
     currentStep,
+    handleQuickValueSelection,
     handlePresetClick,
     isCreatingClient,
-    isCustomValue,
     location,
     newClientName,
     notes,
@@ -42,11 +43,11 @@ export function useRideForm({
     photo,
     removePhoto,
     resetForm,
+    resetValueSelection,
     rideDate,
     selectedClientId,
     setCurrentStep,
     setIsCreatingClient,
-    setIsCustomValue,
     setClientSearch,
     setLocation,
     setNewClientName,
@@ -57,8 +58,11 @@ export function useRideForm({
     setSelectedClientId,
     setUseBalance,
     setValue,
+    setValueSelectionMode,
+    startCustomValueEntry,
     useBalance,
     value,
+    valueSelectionMode,
   } = form;
 
   const data = useRideFormData({
@@ -82,7 +86,7 @@ export function useRideForm({
       setRideDate(toLocalInputValue(rideToEdit.rideDate || ''));
       setPaymentStatus(rideToEdit.paymentStatus || 'PAID');
       setPhoto(createRidePhotoState(rideToEdit.photo));
-      setIsCustomValue(true);
+      setValueSelectionMode(rideToEdit.value ? 'summary' : 'picker');
       setCurrentStep(2);
       return;
     }
@@ -94,13 +98,13 @@ export function useRideForm({
     rideToEdit,
     originalRideClientId,
     setCurrentStep,
-    setIsCustomValue,
     setLocation,
     setNotes,
     setPaymentStatus,
     setPhoto,
     setRideDate,
     setSelectedClientId,
+    setValueSelectionMode,
     setValue,
     user,
   ]);
@@ -218,7 +222,7 @@ export function useRideForm({
       return;
     }
 
-    if (currentStep === 2 && !value) {
+    if (currentStep === 2 && (!value || valueSelectionMode !== 'summary')) {
       return;
     }
 
@@ -244,9 +248,14 @@ export function useRideForm({
       return;
     }
 
+    if (currentStep === 2 && valueSelectionMode === 'custom-edit') {
+      confirmCustomValue();
+      return;
+    }
+
     const canAdvance =
       (currentStep === 1 && !!selectedClientId) ||
-      (currentStep === 2 && !!value) ||
+      (currentStep === 2 && !!value && valueSelectionMode === 'summary') ||
       currentStep > 2;
 
     if (!canAdvance) {
@@ -286,14 +295,19 @@ export function useRideForm({
     paymentStatus: effectivePaymentStatus,
     paidWithBalance,
     debtValue,
+    valueSelectionMode,
     isSubmitting: submission.isSubmitting,
     isSubmittingClient: clientCreation.isSubmittingClient,
     nextStep,
     prevStep,
     availableBalance: data.clientBalance,
     handleCreateClient: clientCreation.handleCreateClient,
+    handleQuickValueSelection,
     handlePhotoChange,
     removePhoto,
+    resetValueSelection,
+    startCustomValueEntry,
+    confirmCustomValue,
     handleSubmit: submission.handleSubmit,
     handleKeyDown,
     willReopenDebtOnSave,

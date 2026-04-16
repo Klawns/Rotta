@@ -122,7 +122,9 @@ export function RideModal(props: RideModalProps) {
                             isSubmitting={form.isSubmitting}
                             canNext={
                                 (form.currentStep === 1 && !!form.selectedClientId) ||
-                                (form.currentStep === 2 && !!form.value) ||
+                                (form.currentStep === 2 &&
+                                    !!form.value &&
+                                    form.valueSelectionMode === "summary") ||
                                 (form.currentStep > 2)
                             }
                             rideToEdit={!!rideToEdit}
