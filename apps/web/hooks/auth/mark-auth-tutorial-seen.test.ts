@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { QueryClient } from '@tanstack/react-query';
 
 import { authKeys } from '@/lib/query-keys';
 import type { User } from './auth.types';
@@ -17,40 +18,27 @@ test('marks the cached authenticated user tutorial flag as seen', () => {
     role: 'user',
     hasSeenTutorial: false,
   };
+  const queryClient = new QueryClient();
 
-  markAuthTutorialSeen({
-    setQueryData(queryKey, updater) {
-      const nextUser =
-        typeof updater === 'function'
-          ? updater(user)
-          : (updater as User | null);
+  queryClient.setQueryData(authKeys.user(), user);
 
-      calls.push({ queryKey, data: nextUser });
-      return nextUser;
-    },
+  markAuthTutorialSeen(queryClient);
+
+  calls.push({
+    queryKey: authKeys.user(),
+    data: queryClient.getQueryData<User | null>(authKeys.user()) ?? null,
   });
 
-  assert.deepEqual(calls, [
-    {
-      queryKey: authKeys.user(),
-      data: { ...user, hasSeenTutorial: true },
-    },
-  ]);
+  assert.deepEqual(calls, [{
+    queryKey: authKeys.user(),
+    data: { ...user, hasSeenTutorial: true },
+  }]);
 });
 
 test('keeps a missing authenticated user cache entry as null', () => {
-  let nextValue: User | null | undefined;
+  const queryClient = new QueryClient();
 
-  markAuthTutorialSeen({
-    setQueryData(_queryKey, updater) {
-      nextValue =
-        typeof updater === 'function'
-          ? updater(null)
-          : (updater as User | null);
+  markAuthTutorialSeen(queryClient);
 
-      return nextValue;
-    },
-  });
-
-  assert.equal(nextValue, null);
+  assert.equal(queryClient.getQueryData(authKeys.user()), undefined);
 });

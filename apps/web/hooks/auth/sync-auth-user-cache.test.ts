@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { QueryClient } from '@tanstack/react-query';
 
 import { authKeys } from '@/lib/query-keys';
 import type { User } from './auth.types';
 import { syncAuthUserCache } from './sync-auth-user-cache';
 
 test('writes the authenticated user to the auth query cache', () => {
-  const calls: Array<{ queryKey: readonly unknown[]; data: User }> = [];
   const user: User = {
     id: 'user-1',
     email: 'admin@mdc.com',
@@ -14,16 +14,9 @@ test('writes the authenticated user to the auth query cache', () => {
     role: 'admin',
     hasSeenTutorial: true,
   };
+  const queryClient = new QueryClient();
 
-  syncAuthUserCache(
-    {
-      setQueryData(queryKey, data) {
-        calls.push({ queryKey, data: data as User });
-        return data;
-      },
-    },
-    user,
-  );
+  syncAuthUserCache(queryClient, user);
 
-  assert.deepEqual(calls, [{ queryKey: authKeys.user(), data: user }]);
+  assert.deepEqual(queryClient.getQueryData(authKeys.user()), user);
 });

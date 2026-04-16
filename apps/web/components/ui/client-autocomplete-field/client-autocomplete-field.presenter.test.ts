@@ -80,7 +80,7 @@ test('keeps pagination guidance in the presenter when the backend reports more m
       hasSearchValue: true,
       hasMinimumSearchLength: true,
       isOpen: true,
-      suggestions: [{ id: 'client-1', name: 'Alice' }],
+      suggestions: [{ id: 'client-1', name: 'Alice', isPinned: false }],
       meta: {
         returned: 1,
         limit: 8,

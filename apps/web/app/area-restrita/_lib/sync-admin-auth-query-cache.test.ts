@@ -1,15 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { QueryClient } from '@tanstack/react-query';
 
 import type { User } from '@/hooks/auth/auth.types';
 import { adminKeys, authKeys } from '@/lib/query-keys';
 import { syncAdminAuthQueryCache } from './sync-admin-auth-query-cache';
 
 test('syncs the authenticated admin user and invalidates admin queries', async () => {
-  const calls: Array<
-    | { type: 'set'; queryKey: readonly unknown[]; data: User }
-    | { type: 'invalidate'; queryKey: readonly unknown[] }
-  > = [];
+  const invalidatedQueryKeys: Array<readonly unknown[]> = [];
   const user: User = {
     id: 'admin-1',
     email: 'admin@mdc.com',
@@ -17,23 +15,19 @@ test('syncs the authenticated admin user and invalidates admin queries', async (
     role: 'admin',
     hasSeenTutorial: true,
   };
+  const queryClient = new QueryClient();
+  const invalidateQueries = queryClient.invalidateQueries.bind(queryClient);
 
-  await syncAdminAuthQueryCache(
-    {
-      setQueryData(queryKey, data) {
-        calls.push({ type: 'set', queryKey, data: data as User });
-        return data;
-      },
-      invalidateQueries({ queryKey }) {
-        calls.push({ type: 'invalidate', queryKey });
-        return Promise.resolve();
-      },
-    },
-    user,
-  );
+  queryClient.invalidateQueries = ((filters, options) => {
+    if (filters?.queryKey) {
+      invalidatedQueryKeys.push(filters.queryKey as readonly unknown[]);
+    }
 
-  assert.deepEqual(calls, [
-    { type: 'set', queryKey: authKeys.user(), data: user },
-    { type: 'invalidate', queryKey: adminKeys.all },
-  ]);
+    return invalidateQueries(filters, options);
+  }) as typeof queryClient.invalidateQueries;
+
+  await syncAdminAuthQueryCache(queryClient, user);
+
+  assert.deepEqual(queryClient.getQueryData(authKeys.user()), user);
+  assert.deepEqual(invalidatedQueryKeys, [adminKeys.all]);
 });
