@@ -4,10 +4,8 @@ import { useCallback, useMemo } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { clientKeys, rideKeys } from '@/lib/query-keys';
 import { clientsService } from '@/services/clients-service';
-import { type ClientPayment } from '@/types/client-payments';
 import { Client } from '@/types/rides';
 import { ridesService } from '@/services/rides-service';
-import { useClientDetailsExport } from './use-client-details-export';
 
 function getEmptyClientKey(suffix: string) {
   return ['clients', 'detail', 'null', suffix];
@@ -56,18 +54,6 @@ export function useClientDetailsData(client: Client | null) {
     staleTime: 60000,
   });
 
-  const {
-    data: payments = [] as ClientPayment[],
-    isLoading: isPaymentsLoading,
-    isFetching: isPaymentsFetching,
-    refetch: refetchPayments,
-  } = useQuery({
-    queryKey: client ? clientKeys.payments(client.id) : getEmptyClientKey('payments'),
-    queryFn: () => clientsService.getClientPayments(client!.id),
-    enabled: !!client,
-    staleTime: 60000,
-  });
-
   const rides = useMemo(() => {
     const allRides = ridesData?.pages.flatMap((page) => page.data) || [];
     return Array.from(new Map(allRides.map((ride) => [ride.id, ride])).values());
@@ -76,41 +62,24 @@ export function useClientDetailsData(client: Client | null) {
   const refreshDetails = useCallback(() => {
     refetchRides();
     refetchBalance();
-    refetchPayments();
-  }, [refetchRides, refetchBalance, refetchPayments]);
+  }, [refetchRides, refetchBalance]);
   const isDetailsPending =
     isRidesLoading ||
     isBalanceLoading ||
-    isPaymentsLoading ||
     isRidesFetching ||
     isBalanceFetching ||
-    isPaymentsFetching ||
     isFetchingNextPage;
-
-  const { generatePDF, generateExcel, isExportingPdf, isExportingExcel } =
-    useClientDetailsExport({
-      client,
-      rides,
-      balance: balance || null,
-      payments,
-      isDetailsPending,
-    });
 
   return {
     rides,
     balance: balance || null,
-    payments,
     rideTotal: rides.length,
     rideLimit,
-    isLoading: isRidesLoading || isBalanceLoading || isPaymentsLoading,
+    isLoading: isRidesLoading || isBalanceLoading,
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
     refreshDetails,
     isDetailsPending,
-    isExportingPdf,
-    isExportingExcel,
-    generatePDF,
-    generateExcel,
   };
 }

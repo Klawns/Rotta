@@ -2,32 +2,16 @@ import autoTable, { type CellInput } from 'jspdf-autotable';
 import { type ClientPayment } from '@/types/client-payments';
 import { formatResolvedDateValue } from '@/lib/date-utils';
 import { formatCurrency } from '@/lib/utils';
+import { type ClientExportType } from '@/services/client-export.types';
 import { formatDebtValue, formatRideValue, resolveRideDate } from './formatters';
 import { type AutoTableDoc, type PDFReportRide } from './types';
 
-function buildEmptyRideTableBody(): CellInput[][] {
+function buildEmptyRideTableBody(colSpan: number): CellInput[][] {
   return [
     [
       {
         content: 'Nenhuma corrida encontrada para este filtro.',
-        colSpan: 5,
-        styles: {
-          halign: 'center',
-          fontStyle: 'italic',
-          textColor: [100, 116, 139],
-          fillColor: [248, 250, 252],
-        },
-      },
-    ],
-  ];
-}
-
-function buildEmptyPendingRideTableBody(): CellInput[][] {
-  return [
-    [
-      {
-        content: 'Nenhuma corrida pendente encontrada para este cliente.',
-        colSpan: 3,
+        colSpan,
         styles: {
           halign: 'center',
           fontStyle: 'italic',
@@ -51,7 +35,7 @@ export function drawRidesTable(doc: AutoTableDoc, currentY: number, rides: PDFRe
           formatRideValue(ride),
           ride.paymentStatus === 'PAID' ? 'Pago' : 'Pendente',
         ])
-      : buildEmptyRideTableBody(),
+      : buildEmptyRideTableBody(5),
     theme: 'striped',
     headStyles: { fillColor: [59, 130, 246], textColor: 255 },
     alternateRowStyles: { fillColor: [248, 250, 252] },
@@ -79,23 +63,26 @@ export function drawPaymentsTable(
   return ((doc as AutoTableDoc).lastAutoTable?.finalY ?? currentY) + 15;
 }
 
-export function drawPendingRidesTable(
+export function drawClientExportTable(
   doc: AutoTableDoc,
   currentY: number,
   rides: PDFReportRide[],
+  type: ClientExportType,
 ) {
   autoTable(doc, {
     startY: currentY,
-    head: [['Data', 'Local', 'Valor']],
+    head: [['Data', 'Local', 'Valor', 'Status']],
     body: rides.length
       ? rides.map((ride) => [
           formatResolvedDateValue(resolveRideDate(ride), null, 'dd/MM/yy HH:mm'),
           ride.location || '---',
-          formatDebtValue(ride),
+          type === 'pending' ? formatDebtValue(ride) : formatRideValue(ride),
+          ride.paymentStatus === 'PAID' ? 'Pago' : 'Pendente',
         ])
-      : buildEmptyPendingRideTableBody(),
+      : buildEmptyRideTableBody(4),
     theme: 'striped',
     headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
     styles: { fontSize: 9 },
   });
 }

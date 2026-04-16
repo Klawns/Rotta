@@ -3,6 +3,11 @@ import type {
   FinancePaymentStatus,
   FinancePeriod,
 } from '@/services/finance-service';
+import type {
+  ClientExportDateRange,
+  ClientExportSummary,
+  ClientExportType,
+} from '@/services/client-export.types';
 import { type PaymentStatus, type RideStatus } from '@/types/rides';
 
 export interface ExportOptions {
@@ -32,6 +37,14 @@ export interface PDFReportRide {
   paidWithBalance?: number;
   debtValue?: number;
 }
+
+export interface ClientReportOptions {
+  userName: string;
+  type: ClientExportType;
+  dateRange?: ClientExportDateRange;
+}
+
+export type { ClientExportSummary };
 
 export type AutoTableDoc = jsPDF & {
   lastAutoTable?: {

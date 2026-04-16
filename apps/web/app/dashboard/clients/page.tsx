@@ -8,6 +8,7 @@ import { Client } from "@/types/rides";
 // Hooks
 import { useClients } from "./_hooks/use-clients";
 import { useClientActions } from "./_hooks/use-client-actions";
+import { useClientExport } from "./_hooks/use-client-export";
 import { useClientDetailsData } from "./_hooks/use-client-details-data";
 import { useClientsPageState } from "./_hooks/use-clients-page-state";
 
@@ -31,9 +32,13 @@ export default function ClientsPage() {
         hasNextPage: hasNextRidesPage,
         isFetchingNextPage: isFetchingNextRidesPage,
         fetchNextPage: fetchNextRidesPage,
-        refreshDetails, generatePDF, generateExcel,
-        isDetailsPending, isExportingPdf, isExportingExcel
+        refreshDetails, isDetailsPending
     } = useClientDetailsData(state.selectedClient);
+
+    const clientExport = useClientExport({
+        client: state.selectedClient,
+        isDetailsPending,
+    });
 
     const {
         isSettling, isDeleting, isDeletingRide,
@@ -76,7 +81,6 @@ export default function ClientsPage() {
         const success = await deleteRide(state.rideToDelete);
         if (success) {
             state.setRideToDelete(null);
-            refreshDetails();
         }
     };
 
@@ -122,15 +126,11 @@ export default function ClientsPage() {
                 isFetchingNextPage={isFetchingNextRidesPage}
                 fetchNextPage={fetchNextRidesPage}
                 isSettling={isSettling}
-                isExportingPdf={isExportingPdf}
-                isExportingExcel={isExportingExcel}
-                isExportDisabled={isDetailsPending}
+                clientExport={clientExport}
                 onClose={state.closeClientHistory}
                 onNewRide={() => state.setIsRideModalOpen(true)}
                 onCloseDebt={() => state.setIsCloseDebtConfirmOpen(true)}
                 onAddPayment={() => state.setIsPaymentModalOpen(true)}
-                onGeneratePDF={generatePDF}
-                onGenerateExcel={generateExcel}
                 onEditRide={state.openEditRideModal}
                 onDeleteRide={state.setRideToDelete}
                 onChangePaymentStatus={paymentStatus.setPaymentStatus}

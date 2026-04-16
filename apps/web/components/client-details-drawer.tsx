@@ -2,6 +2,7 @@
 
 import React, { useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import type { ClientExportController } from "@/app/dashboard/clients/_hooks/use-client-export";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import { type ClientBalance, type Client, type RideViewModel } from "@/types/rides";
 import { ClientFinancePanel } from "@/components/client-details-drawer/client-finance-panel";
@@ -16,15 +17,11 @@ interface ClientDetailsDrawerProps {
   isFetchingNextPage: boolean;
   hasNextPage: boolean;
   isSettling: boolean;
-  isExportingPdf: boolean;
-  isExportingExcel: boolean;
-  isExportDisabled: boolean;
+  clientExport: ClientExportController;
   onClose: () => void;
   onNewRide: () => void;
   onCloseDebt: () => void;
   onAddPayment: () => void;
-  onGeneratePDF: () => void;
-  onGenerateExcel: () => void;
   onEditRide: (ride: RideViewModel) => void;
   onDeleteRide: (ride: RideViewModel) => void;
   onChangePaymentStatus: (
@@ -43,15 +40,11 @@ export function ClientDetailsDrawer({
   isFetchingNextPage,
   hasNextPage,
   isSettling,
-  isExportingPdf,
-  isExportingExcel,
-  isExportDisabled,
+  clientExport,
   onClose,
   onNewRide,
   onCloseDebt,
   onAddPayment,
-  onGeneratePDF,
-  onGenerateExcel,
   onEditRide,
   onDeleteRide,
   onChangePaymentStatus,
@@ -59,6 +52,7 @@ export function ClientDetailsDrawer({
   fetchNextPage,
 }: ClientDetailsDrawerProps) {
   const drawerScrollContainerRef = useRef<HTMLDivElement>(null);
+  const drawerPanelRef = useRef<HTMLDivElement>(null);
 
   useBodyScrollLock(!!client);
 
@@ -75,6 +69,7 @@ export function ClientDetailsDrawer({
           />
 
           <motion.div
+            ref={drawerPanelRef}
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -93,14 +88,11 @@ export function ClientDetailsDrawer({
                   <ClientFinancePanel
                     balance={balance}
                     isSettling={isSettling}
-                    isExportingPdf={isExportingPdf}
-                    isExportingExcel={isExportingExcel}
-                    isExportDisabled={isExportDisabled}
                     onNewRide={onNewRide}
                     onAddPayment={onAddPayment}
-                    onGeneratePDF={onGeneratePDF}
-                    onGenerateExcel={onGenerateExcel}
                     onCloseDebt={onCloseDebt}
+                    clientExport={clientExport}
+                    drawerPortalContainer={drawerPanelRef.current}
                   />
                 </div>
 

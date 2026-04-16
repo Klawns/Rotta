@@ -1,29 +1,20 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
-import {
-  Bike,
-  ChevronRight,
-  DollarSign,
-  FileSpreadsheet,
-  FileText,
-  Loader2,
-  Wallet,
-} from 'lucide-react';
+import { Bike, ChevronRight, DollarSign, Loader2 } from 'lucide-react';
+import type { ClientExportController } from '@/app/dashboard/clients/_hooks/use-client-export';
+import { ClientExportActions } from '@/components/client-details-drawer/client-export-actions';
 import { cn, formatCurrency } from '@/lib/utils';
 import { type ClientBalance } from '@/types/rides';
 
 interface ClientFinancePanelProps {
   balance: ClientBalance | null;
   isSettling: boolean;
-  isExportingPdf: boolean;
-  isExportingExcel: boolean;
-  isExportDisabled: boolean;
   onNewRide: () => void;
   onAddPayment: () => void;
-  onGeneratePDF: () => void;
-  onGenerateExcel: () => void;
   onCloseDebt: () => void;
+  clientExport: ClientExportController;
+  drawerPortalContainer: HTMLElement | null;
 }
 
 interface SummaryMetricProps {
@@ -101,14 +92,11 @@ function ActionButton({
 export function ClientFinancePanel({
   balance,
   isSettling,
-  isExportingPdf,
-  isExportingExcel,
-  isExportDisabled,
   onNewRide,
   onAddPayment,
-  onGeneratePDF,
-  onGenerateExcel,
   onCloseDebt,
+  clientExport,
+  drawerPortalContainer,
 }: ClientFinancePanelProps) {
   const remainingBalance = balance ? formatCurrency(balance.remainingBalance) : '---';
   const totalDebt = balance ? formatCurrency(balance.totalDebt) : '---';
@@ -116,29 +104,11 @@ export function ClientFinancePanel({
   const clientBalance = balance ? formatCurrency(balance.clientBalance) : '---';
   const pendingRides = balance ? String(balance.pendingRides) : '---';
   const hasOpenDebt = !!balance && balance.remainingBalance > 0;
-  const hasCredit = !!balance && balance.clientBalance > 0;
 
   return (
     <section className="rounded-[2rem] border border-border-subtle bg-background/55 p-5 shadow-sm lg:p-6">
       <div className="space-y-5">
         <div className="flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-text-secondary">
-                Resumo financeiro
-              </p>
-              <h3 className="text-sm font-medium text-text-secondary">
-                Situacao atual do cliente.
-              </h3>
-            </div>
-            {hasCredit && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-icon-success/15 bg-icon-success/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-icon-success">
-                <Wallet size={12} />
-                Com credito
-              </span>
-            )}
-          </div>
-
           <div className="rounded-3xl border border-border-subtle bg-card-background/75 p-5">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary">
               Saldo devedor atual
@@ -161,24 +131,34 @@ export function ClientFinancePanel({
           <SummaryMetric label="Corridas pendentes" value={pendingRides} />
         </div>
 
-        <div className="space-y-3 border-t border-border-subtle pt-5">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <ActionButton
-              icon={Bike}
-              label="Nova corrida"
-              onClick={onNewRide}
-              variant="primary"
-            />
-            <ActionButton
-              icon={DollarSign}
-              label="Registrar pagamento"
-              onClick={onAddPayment}
-              variant="secondary"
-            />
-          </div>
+        <div className="grid grid-cols-2 gap-3">
+          <ActionButton
+            icon={Bike}
+            label="Nova corrida"
+            onClick={onNewRide}
+            variant="primary"
+          />
+          <ActionButton
+            icon={DollarSign}
+            label="Registrar pagamento"
+            onClick={onAddPayment}
+            variant="secondary"
+          />
+        </div>
 
-          <div className="flex flex-wrap gap-2">
-            {hasOpenDebt && (
+        <div className="space-y-3 border-t border-border-subtle pt-5">
+
+          {hasOpenDebt && (
+            <div className="space-y-2 rounded-[1.75rem] border border-border-subtle bg-card-background/55 p-4">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary">
+                  Financeiro
+                </p>
+                <p className="text-sm text-text-secondary">
+                  Existe saldo devedor em aberto. Voce pode encerrar essa pendencia por aqui.
+                </p>
+              </div>
+
               <ActionButton
                 icon={ChevronRight}
                 label={isSettling ? 'Quitando...' : 'Quitar divida'}
@@ -187,22 +167,22 @@ export function ClientFinancePanel({
                 variant="ghost"
                 isLoading={isSettling}
               />
-            )}
-            <ActionButton
-              icon={FileText}
-              label={isExportingPdf ? 'Gerando PDF...' : 'Exportar PDF'}
-              onClick={onGeneratePDF}
-              disabled={isExportDisabled || isExportingPdf || isExportingExcel}
-              variant="ghost"
-              isLoading={isExportingPdf}
-            />
-            <ActionButton
-              icon={FileSpreadsheet}
-              label={isExportingExcel ? 'Gerando planilha...' : 'Exportar planilha'}
-              onClick={onGenerateExcel}
-              disabled={isExportDisabled || isExportingPdf || isExportingExcel}
-              variant="ghost"
-              isLoading={isExportingExcel}
+            </div>
+          )}
+
+          <div className="space-y-2 rounded-[1.75rem] border border-border-subtle bg-card-background/55 p-4">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary">
+                Documentos
+              </p>
+              <p className="text-sm text-text-secondary">
+                Exporte corridas por status com periodo personalizado.
+              </p>
+            </div>
+
+            <ClientExportActions
+              controller={clientExport}
+              drawerPortalContainer={drawerPortalContainer}
             />
           </div>
         </div>

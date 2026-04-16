@@ -7,6 +7,11 @@ import {
   type FinancePaymentStatus,
   type FinancePeriod,
 } from '@/services/finance-service';
+import {
+  getClientExportTypeLabel,
+  type ClientExportDateRange,
+  type ClientExportType,
+} from '@/services/client-export.types';
 import { type PDFReportRide } from './types';
 
 export function resolveRideDate(ride: PDFReportRide) {
@@ -112,7 +117,56 @@ export function getFinancialReportFileName(
   return `Relatorio_Financeiro_${getPeriodLabel(period, dateRange)}${statusSuffix}_${format(now, 'dd_MM_yyyy')}.pdf`;
 }
 
-export function getClientDebtReportFileName(clientName: string | null | undefined) {
+function formatClientDateRangeValue(value: string) {
+  const date = normalizeDateValue(value);
+  return date ? format(date, 'dd/MM/yyyy') : '';
+}
+
+export function getClientReportTitle(type: ClientExportType) {
+  switch (type) {
+    case 'paid':
+      return 'Corridas Pagas';
+    case 'pending':
+      return 'Corridas Pendentes';
+    case 'all':
+    default:
+      return 'Historico de Corridas';
+  }
+}
+
+export function getClientReportPeriodLabel(dateRange?: ClientExportDateRange) {
+  if (!dateRange?.start || !dateRange?.end) {
+    return 'Todo o historico';
+  }
+
+  return `${formatClientDateRangeValue(dateRange.start)} a ${formatClientDateRangeValue(dateRange.end)}`;
+}
+
+export function getClientReportSectionTitle(type: ClientExportType) {
+  switch (type) {
+    case 'paid':
+      return 'Corridas pagas:';
+    case 'pending':
+      return 'Corridas pendentes:';
+    case 'all':
+    default:
+      return 'Corridas exportadas:';
+  }
+}
+
+export function getClientReportFileName(
+  clientName: string | null | undefined,
+  type: ClientExportType,
+  dateRange?: ClientExportDateRange,
+) {
   const safeName = (clientName || 'Sem_nome').replace(/\s+/g, '_');
-  return `Debito_${safeName}_${format(new Date(), 'ddMMyyyy')}.pdf`;
+  const typeLabel = getClientExportTypeLabel(type).replace(/\s+/g, '_');
+
+  if (dateRange?.start && dateRange?.end) {
+    const start = formatClientDateRangeValue(dateRange.start).replace(/\//g, '_');
+    const end = formatClientDateRangeValue(dateRange.end).replace(/\//g, '_');
+    return `Cliente_${safeName}_${typeLabel}_${start}_a_${end}.pdf`;
+  }
+
+  return `Cliente_${safeName}_${typeLabel}_${format(new Date(), 'dd_MM_yyyy')}.pdf`;
 }

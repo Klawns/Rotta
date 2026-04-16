@@ -1,9 +1,13 @@
 import jsPDF from 'jspdf';
 import { format } from 'date-fns';
+import { getClientExportTypeLabel } from '@/services/client-export.types';
 import { getFinancePaymentStatusFilterLabel } from '@/services/finance-service';
-import { type Client, type ClientBalance } from '@/types/rides';
+import { type Client } from '@/types/rides';
 import {
-  getClientDebtReportFileName,
+  getClientReportFileName,
+  getClientReportPeriodLabel,
+  getClientReportSectionTitle,
+  getClientReportTitle,
   getFinancialReportFileName,
   getPeriodLabel,
 } from './pdf-service/formatters';
@@ -14,15 +18,16 @@ import {
   drawPixKey,
 } from './pdf-service/layout';
 import {
-  drawClientDebtSummary,
+  drawClientExportSummary,
   drawRevenueSummary,
 } from './pdf-service/summaries';
 import {
-  drawPendingRidesTable,
+  drawClientExportTable,
   drawRidesTable,
 } from './pdf-service/tables';
 import {
   type AutoTableDoc,
+  type ClientReportOptions,
   type ExportOptions,
   type PDFReportRide,
 } from './pdf-service/types';
@@ -71,18 +76,24 @@ export class PDFService {
     doc.save(getFinancialReportFileName(period, dateRange, paymentStatus));
   }
 
-  static async generateClientDebtReport(
+  static async generateClientRidesReport(
     client: Client,
     rides: PDFReportRide[],
-    balance: ClientBalance,
-    options: { userName: string },
+    summary: {
+      totalRides: number;
+      pendingRides: number;
+      totalValue: number;
+      totalPaid: number;
+      totalPending: number;
+    },
+    options: ClientReportOptions,
   ) {
     const doc = new jsPDF() as AutoTableDoc;
-    const { userName } = options;
+    const { userName, type, dateRange } = options;
 
     doc.setFontSize(22);
     doc.setTextColor(30, 41, 59);
-    doc.text('Detalhamento de Divida', 14, 20);
+    doc.text(getClientReportTitle(type), 14, 20);
 
     await drawHeaderBrand(doc);
 
@@ -93,20 +104,24 @@ export class PDFService {
     currentY += 5;
     doc.text(`Cliente: ${client.name || 'Sem nome'}`, 14, currentY);
     currentY += 5;
-    doc.text(`Corridas pendentes: ${rides.length}`, 14, currentY);
+    doc.text(`Tipo: ${getClientExportTypeLabel(type)}`, 14, currentY);
+    currentY += 5;
+    doc.text(`Periodo: ${getClientReportPeriodLabel(dateRange)}`, 14, currentY);
+    currentY += 5;
+    doc.text(`Corridas exportadas: ${rides.length}`, 14, currentY);
     currentY += 5;
     doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, currentY);
     currentY += 8;
 
     currentY = drawDivider(doc, currentY);
-    currentY = drawClientDebtSummary(doc, currentY, balance);
+    currentY = drawClientExportSummary(doc, currentY, summary);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('Corridas pendentes:', 14, currentY);
+    doc.text(getClientReportSectionTitle(type), 14, currentY);
     currentY += 7;
-    drawPendingRidesTable(doc, currentY, rides);
+    drawClientExportTable(doc, currentY, rides, type);
 
     drawFooter(doc);
-    doc.save(getClientDebtReportFileName(client.name));
+    doc.save(getClientReportFileName(client.name, type, dateRange));
   }
 }

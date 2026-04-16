@@ -1,8 +1,7 @@
 import jsPDF from 'jspdf';
-import { type ClientBalance } from '@/types/rides';
 import { formatCurrency } from '@/lib/utils';
 import { calculateRevenueTotals } from './formatters';
-import { type PDFReportRide } from './types';
+import { type ClientExportSummary, type PDFReportRide } from './types';
 
 export function drawRevenueSummary(doc: jsPDF, currentY: number, rides: PDFReportRide[]) {
   const { totalValue, totalPaid, totalPending } = calculateRevenueTotals(rides);
@@ -38,7 +37,12 @@ export function drawRevenueSummary(doc: jsPDF, currentY: number, rides: PDFRepor
 export function drawClientDebtSummary(
   doc: jsPDF,
   currentY: number,
-  balance: ClientBalance,
+  balance: {
+    totalDebt: number;
+    totalPaid: number;
+    remainingBalance: number;
+    clientBalance: number;
+  },
 ) {
   doc.setFontSize(12);
   doc.setTextColor(30, 41, 59);
@@ -62,4 +66,34 @@ export function drawClientDebtSummary(
   doc.setTextColor(30, 41, 59);
 
   return currentY + 15;
+}
+
+export function drawClientExportSummary(
+  doc: jsPDF,
+  currentY: number,
+  summary: ClientExportSummary,
+) {
+  doc.setFontSize(12);
+  doc.setTextColor(30, 41, 59);
+  doc.text('Resumo do arquivo:', 14, currentY);
+  currentY += 7;
+
+  doc.setFontSize(10);
+  doc.text(`Corridas exportadas: ${summary.totalRides}`, 14, currentY);
+  currentY += 5;
+  doc.text(`Valor total: ${formatCurrency(summary.totalValue)}`, 14, currentY);
+  currentY += 5;
+
+  doc.setTextColor(5, 150, 105);
+  doc.text(`Valor coberto/pago: ${formatCurrency(summary.totalPaid)}`, 14, currentY);
+  currentY += 5;
+
+  doc.setTextColor(220, 38, 38);
+  doc.text(`Valor pendente: ${formatCurrency(summary.totalPending)}`, 14, currentY);
+  currentY += 5;
+
+  doc.setTextColor(30, 41, 59);
+  doc.text(`Corridas pendentes: ${summary.pendingRides}`, 14, currentY);
+
+  return currentY + 10;
 }
