@@ -1,9 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { rideKeys } from "@/lib/query-keys";
 import { type RideViewModel } from "@/types/rides";
 import { type Period } from "./dashboard-stats.types";
 import { useDashboardRides } from "./use-dashboard-rides";
@@ -38,7 +35,6 @@ export interface DashboardRideActions {
 
 export function useDashboard() {
     const { user } = useAuth();
-    const queryClient = useQueryClient();
     const trial = useFreeTrial(user);
 
     usePaymentToast();
@@ -46,21 +42,12 @@ export function useDashboard() {
     const { isMobile } = useDashboardUI();
     const { period, setPeriod, stats, monthRides, isPending, isError, error, fetchStats } =
         useDashboardStats(user);
-    const refreshDashboard = useCallback(async () => {
-        await queryClient.refetchQueries({
-            queryKey: rideKeys.all,
-            type: "active",
-        });
-    }, [queryClient]);
-    const rides = useDashboardRides({
-        onRideDeleted: refreshDashboard,
-    });
+    const rides = useDashboardRides();
 
     return {
         user,
         trial,
         isMobile,
-        refreshDashboard,
         desktopStats: {
             period,
             setPeriod,

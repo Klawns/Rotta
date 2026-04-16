@@ -36,7 +36,7 @@ export default function DashboardPage() {
                         {dashboard.isMobile ? (
                             <DashboardMobileView
                                 stats={dashboard.mobileStats}
-                                onRideCreated={dashboard.refreshDashboard}
+                                onRideCreated={dashboard.desktopStats.refetch}
                                 trial={dashboard.trial}
                             />
                         ) : (
@@ -60,7 +60,7 @@ export default function DashboardPage() {
                         setRideToDelete={dashboard.modals.setRideToDelete}
                         isDeletingRide={dashboard.modals.isDeletingRide}
                         onDeleteConfirm={dashboard.modals.confirmRideDelete}
-                        onSuccess={dashboard.refreshDashboard}
+                        onSuccess={dashboard.desktopStats.refetch}
                     />
                 )}
             </div>

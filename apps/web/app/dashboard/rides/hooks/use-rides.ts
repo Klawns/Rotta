@@ -14,9 +14,7 @@ export function useRides() {
     pageSize: PAGE_SIZE,
   });
 
-  const modals = useRidesModals({
-    onSuccess: data.fetchRides,
-  });
+  const modals = useRidesModals();
 
   return {
     rides: data.rides,

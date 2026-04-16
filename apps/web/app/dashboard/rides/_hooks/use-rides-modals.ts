@@ -1,16 +1,12 @@
-"use client";
+'use client';
 
-import { useCallback, useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { parseApiError } from "@/lib/api-error";
-import { ridesService } from "@/services/rides-service";
-import { type RideViewModel } from "@/types/rides";
+import { useCallback, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { useDeleteRideMutation } from '@/hooks/mutations/use-delete-ride-mutation';
+import { parseApiError } from '@/lib/api-error';
+import { type RideViewModel } from '@/types/rides';
 
-interface UseRidesModalsProps {
-    onSuccess: () => Promise<unknown> | void;
-}
-
-export function useRidesModals({ onSuccess }: UseRidesModalsProps) {
+export function useRidesModals() {
     const [isRideModalOpen, setIsRideModalOpen] = useState(false);
     const [selectedQuickClient, setSelectedQuickClient] = useState<{
         id: string;
@@ -18,8 +14,26 @@ export function useRidesModals({ onSuccess }: UseRidesModalsProps) {
     } | null>(null);
     const [rideToEdit, setRideToEdit] = useState<RideViewModel | null>(null);
     const [rideToDelete, setRideToDelete] = useState<RideViewModel | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
     const { toast } = useToast();
+    const deleteRideMutation = useDeleteRideMutation({
+        onSuccess: async () => {
+            toast({
+                title: 'Corrida excluida',
+                description: 'A corrida foi removida com sucesso.',
+            });
+            setRideToDelete(null);
+        },
+        onError: async (error) => {
+            toast({
+                title: 'Erro ao excluir',
+                description: parseApiError(
+                    error,
+                    'Nao foi possivel excluir a corrida. Tente novamente.',
+                ),
+                variant: 'destructive',
+            });
+        },
+    });
 
     const handleEditRide = useCallback((ride: RideViewModel) => {
         setRideToEdit(ride);
@@ -31,29 +45,8 @@ export function useRidesModals({ onSuccess }: UseRidesModalsProps) {
             return;
         }
 
-        setIsDeleting(true);
-
-        try {
-            await ridesService.deleteRide(rideToDelete.id);
-            toast({
-                title: "Corrida excluida",
-                description: "A corrida foi removida com sucesso.",
-            });
-            await onSuccess();
-            setRideToDelete(null);
-        } catch (error) {
-            toast({
-                title: "Erro ao excluir",
-                description: parseApiError(
-                    error,
-                    "Nao foi possivel excluir a corrida. Tente novamente.",
-                ),
-                variant: "destructive",
-            });
-        } finally {
-            setIsDeleting(false);
-        }
-    }, [onSuccess, rideToDelete, toast]);
+        await deleteRideMutation.mutateAsync(rideToDelete);
+    }, [deleteRideMutation, rideToDelete]);
 
     const openCreateModal = useCallback(() => {
         setRideToEdit(null);
@@ -82,7 +75,7 @@ export function useRidesModals({ onSuccess }: UseRidesModalsProps) {
         setRideToEdit,
         rideToDelete,
         setRideToDelete,
-        isDeleting,
+        isDeleting: deleteRideMutation.isPending,
         handleEditRide,
         handleDeleteRide,
         openCreateModal,

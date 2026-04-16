@@ -121,6 +121,8 @@ export const ridesService = {
       cursor?: string;
       status?: string;
       paymentStatus?: string;
+      startDate?: string;
+      endDate?: string;
     },
     signal?: AbortSignal,
   ): Promise<ApiEnvelope<RideViewModel[], CursorMeta>> {

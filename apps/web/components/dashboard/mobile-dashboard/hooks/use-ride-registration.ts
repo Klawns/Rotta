@@ -39,7 +39,7 @@ export function useRideRegistration({
         resetForm: formState.helpers.resetForm,
         onSuccess,
     });
-    const modals = useRideDialogs({ onSuccess });
+    const modals = useRideDialogs();
 
     const form = useMemo<RideFormState>(
         () => ({

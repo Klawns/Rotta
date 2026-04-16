@@ -1,43 +1,37 @@
-"use client";
+'use client';
 
-import { useCallback, useMemo, useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { parseApiError } from "@/lib/api-error";
-import { ridesService } from "@/services/rides-service";
-import type { RideViewModel } from "@/types/rides";
-import type { RideRegistrationModals } from "./ride-registration.types";
+import { useCallback, useMemo, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { useDeleteRideMutation } from '@/hooks/mutations/use-delete-ride-mutation';
+import { parseApiError } from '@/lib/api-error';
+import type { RideViewModel } from '@/types/rides';
+import type { RideRegistrationModals } from './ride-registration.types';
 
-interface UseRideDialogsProps {
-    onSuccess: () => void;
-}
-
-export function useRideDialogs({ onSuccess }: UseRideDialogsProps) {
+export function useRideDialogs() {
     const { toast } = useToast();
 
     const [rideToEdit, setRideToEdit] = useState<RideViewModel | null>(null);
     const [rideToDelete, setRideToDelete] = useState<RideViewModel | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const deleteRideMutation = useDeleteRideMutation({
+        onSuccess: async () => {
+            toast({ title: 'Corrida excluida' });
+            setRideToDelete(null);
+        },
+        onError: async (error) => {
+            toast({
+                title: parseApiError(error, 'Erro ao excluir'),
+                variant: 'destructive',
+            });
+        },
+    });
 
     const handleDeleteRide = useCallback(async () => {
         if (!rideToDelete) {
             return;
         }
 
-        setIsDeleting(true);
-        try {
-            await ridesService.deleteRide(rideToDelete.id);
-            toast({ title: "Corrida excluida" });
-            onSuccess();
-            setRideToDelete(null);
-        } catch (error) {
-            toast({
-                title: parseApiError(error, "Erro ao excluir"),
-                variant: "destructive",
-            });
-        } finally {
-            setIsDeleting(false);
-        }
-    }, [onSuccess, rideToDelete, toast]);
+        await deleteRideMutation.mutateAsync(rideToDelete);
+    }, [deleteRideMutation, rideToDelete]);
 
     return useMemo<RideRegistrationModals>(
         () => ({
@@ -45,9 +39,9 @@ export function useRideDialogs({ onSuccess }: UseRideDialogsProps) {
             setRideToEdit,
             rideToDelete,
             setRideToDelete,
-            isDeleting,
+            isDeleting: deleteRideMutation.isPending,
             handleDeleteRide,
         }),
-        [handleDeleteRide, isDeleting, rideToDelete, rideToEdit],
+        [deleteRideMutation.isPending, handleDeleteRide, rideToDelete, rideToEdit],
     );
 }
