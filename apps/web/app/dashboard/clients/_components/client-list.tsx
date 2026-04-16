@@ -68,6 +68,7 @@ export function ClientsListContainer({
 }: ClientsListContainerProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const mobileSelectionBarBottom = `calc(${DASHBOARD_MOBILE_NAV_OFFSET} + 0.75rem)`;
   const hasActiveSearch = search.trim().length > 0;
   const showSkeletons =
     (isLoading || (isFetching && clients.length === 0)) && !isFetchingNextPage;
@@ -190,7 +191,7 @@ export function ClientsListContainer({
       style={{
         paddingBottom:
           selection.isSelectionMode && isMobile
-            ? `calc(${DASHBOARD_MOBILE_NAV_OFFSET} + 5.5rem)`
+            ? `calc(${mobileSelectionBarBottom} + 4.75rem)`
             : undefined,
       }}
     >
@@ -277,7 +278,7 @@ export function ClientsListContainer({
       {selection.isSelectionMode && isMobile ? (
         <SelectionActionBarMobile
           className="fixed inset-x-4 z-50 rounded-[1.5rem] border border-border-subtle bg-background/98 p-3 shadow-[0_-14px_34px_rgba(15,23,42,0.16)] backdrop-blur-xl"
-          style={{ bottom: DASHBOARD_MOBILE_NAV_OFFSET }}
+          style={{ bottom: mobileSelectionBarBottom }}
           isAllVisibleSelected={selection.isAllVisibleSelected}
           hasSelection={selection.selectedCount > 0}
           isDeleting={selection.isDeletingSelected}

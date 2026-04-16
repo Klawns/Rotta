@@ -42,10 +42,9 @@ interface ClientCardProps {
 }
 
 function getClientMetaItems(client: Client) {
-  const phone = client.phone?.trim() || 'Telefone nao informado';
-  const address = client.address?.trim() || 'Endereco nao informado';
-
-  return [phone, address];
+  return [client.phone?.trim(), client.address?.trim()].filter(
+    (item): item is string => Boolean(item),
+  );
 }
 
 export const ClientCard = React.memo(function ClientCard({
@@ -66,7 +65,7 @@ export const ClientCard = React.memo(function ClientCard({
     <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 10 }}>
       <SelectableCardShell
         className={cn(
-          'rounded-[1.6rem] border border-border-subtle bg-card-background p-4 shadow-sm transition-shadow hover:shadow-md',
+          'rounded-[1.6rem] border border-border-subtle bg-card-background p-3.5 shadow-sm transition-shadow hover:shadow-md',
           !isSelectionMode && 'cursor-pointer',
           isSelectionMode && isSelected && 'border-blue-500/40 bg-blue-500/5 ring-1 ring-blue-500/20',
         )}
@@ -85,7 +84,7 @@ export const ClientCard = React.memo(function ClientCard({
           }}
           className="group"
         >
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             <div className="flex items-start gap-4">
               {isSelectionMode ? (
                 <div
@@ -121,19 +120,21 @@ export const ClientCard = React.memo(function ClientCard({
                   ) : null}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 text-sm text-text-secondary">
-                  {metaItems.map((item, index) => (
-                    <React.Fragment key={`${client.id}-${index}`}>
-                      {index > 0 ? <span aria-hidden="true">&middot;</span> : null}
-                      <span className="truncate">{item}</span>
-                    </React.Fragment>
-                  ))}
-                </div>
+                {metaItems.length > 0 ? (
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-text-secondary">
+                    {metaItems.map((item, index) => (
+                      <React.Fragment key={`${client.id}-${index}`}>
+                        {index > 0 ? <span aria-hidden="true">&middot;</span> : null}
+                        <span className="truncate">{item}</span>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
 
             {!isSelectionMode ? (
-              <div className="flex items-center justify-between gap-3 border-t border-border-subtle/70 pt-3">
+              <div className="flex items-center justify-between gap-3 border-t border-border-subtle/70 pt-2.5">
                 <button
                   type="button"
                   onClick={(event) => {
