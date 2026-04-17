@@ -87,6 +87,24 @@ describe('SystemBackupSettingsService', () => {
     });
   });
 
+  it('normalizes blank persisted fixed_time values to the default cron time', async () => {
+    const { service } = createService(
+      [
+        { key: 'SYSTEM_BACKUP_SCHEDULE_MODE', value: 'fixed_time' },
+        { key: 'SYSTEM_BACKUP_FIXED_TIME', value: '' },
+      ],
+      'list',
+    );
+
+    const result = await service.getSettings();
+
+    expect(result.schedule).toEqual({
+      mode: 'fixed_time',
+      fixedTime: '04:00',
+      intervalMinutes: null,
+    });
+  });
+
   it('persists the typed system backup settings into system_configs', async () => {
     const { service, insertValuesMock } = createService([], 'where');
     jest.spyOn(service, 'getSettings').mockResolvedValue({

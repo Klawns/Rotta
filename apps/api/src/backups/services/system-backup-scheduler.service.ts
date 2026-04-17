@@ -31,7 +31,17 @@ export class SystemBackupSchedulerService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.syncSchedule();
+    try {
+      await this.syncSchedule();
+    } catch (error) {
+      this.logger.error(
+        {
+          context: 'systemBackupScheduler.onModuleInit:error',
+          message: error instanceof Error ? error.message : 'Erro desconhecido',
+        },
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
   }
 
   getStatus() {
@@ -86,14 +96,10 @@ export class SystemBackupSchedulerService implements OnModuleInit {
           this.buildTemplate(),
         );
       } else {
-        const [hour, minute] = (resolvedSettings.schedule.fixedTime ?? '04:00')
-          .split(':')
-          .map((part) => Number.parseInt(part, 10));
-
         await this.queue.upsertJobScheduler(
           TECHNICAL_BACKUP_SCHEDULER_ID,
           {
-            pattern: `${minute} ${hour} * * *`,
+            pattern: this.buildFixedTimePattern(resolvedSettings.schedule.fixedTime),
           },
           this.buildTemplate(),
         );
@@ -134,5 +140,32 @@ export class SystemBackupSchedulerService implements OnModuleInit {
         removeOnComplete: true,
       },
     };
+  }
+
+  private buildFixedTimePattern(fixedTime: string | null) {
+    if (!fixedTime || !/^\d{2}:\d{2}$/.test(fixedTime)) {
+      throw new Error(
+        'Horario fixo invalido para o scheduler do backup sistemico.',
+      );
+    }
+
+    const [hour, minute] = fixedTime
+      .split(':')
+      .map((part) => Number.parseInt(part, 10));
+
+    if (
+      !Number.isInteger(hour) ||
+      !Number.isInteger(minute) ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      throw new Error(
+        'Horario fixo invalido para o scheduler do backup sistemico.',
+      );
+    }
+
+    return `${minute} ${hour} * * *`;
   }
 }

@@ -60,11 +60,14 @@ export class SystemBackupSettingsService {
   async getSettings(): Promise<SystemBackupSettings> {
     const configs = await this.getConfigMap();
     const defaultFixedTime = this.getDefaultFixedTime();
+    const scheduleMode = this.parseScheduleMode(configs.SYSTEM_BACKUP_SCHEDULE_MODE);
+    const parsedFixedTime = this.parseFixedTime(configs.SYSTEM_BACKUP_FIXED_TIME);
 
     return {
       schedule: {
-        mode: this.parseScheduleMode(configs.SYSTEM_BACKUP_SCHEDULE_MODE),
-        fixedTime: configs.SYSTEM_BACKUP_FIXED_TIME ?? defaultFixedTime,
+        mode: scheduleMode,
+        fixedTime:
+          parsedFixedTime ?? (scheduleMode === 'fixed_time' ? defaultFixedTime : null),
         intervalMinutes: this.parseNullablePositiveInt(
           configs.SYSTEM_BACKUP_INTERVAL_MINUTES,
         ),
@@ -205,6 +208,33 @@ export class SystemBackupSettingsService {
 
     const parsed = Number.parseInt(value, 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private parseFixedTime(value?: string) {
+    if (!value) {
+      return null;
+    }
+
+    const trimmed = value.trim();
+
+    if (!/^\d{2}:\d{2}$/.test(trimmed)) {
+      return null;
+    }
+
+    const [hour, minute] = trimmed.split(':').map((part) => Number.parseInt(part, 10));
+
+    if (
+      !Number.isInteger(hour) ||
+      !Number.isInteger(minute) ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      return null;
+    }
+
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
   }
 
   private validateSettings(settings: SystemBackupSettings) {

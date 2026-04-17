@@ -16,17 +16,21 @@ describe('SystemBackupSchedulerService', () => {
   let settingsServiceMock: any;
   let configValues: Record<string, string>;
   let loggerLogSpy: jest.SpyInstance;
+  let loggerErrorSpy: jest.SpyInstance;
 
   beforeAll(() => {
     loggerLogSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    loggerErrorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
   });
 
   afterAll(() => {
     loggerLogSpy.mockRestore();
+    loggerErrorSpy.mockRestore();
   });
 
   beforeEach(async () => {
     loggerLogSpy.mockClear();
+    loggerErrorSpy.mockClear();
     queueMock = {
       upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
       removeJobScheduler: jest.fn().mockResolvedValue(undefined),
@@ -133,6 +137,36 @@ describe('SystemBackupSchedulerService', () => {
       expect.objectContaining({
         context: 'systemBackupScheduler.syncSchedule:disabledByEnv',
       }),
+    );
+  });
+
+  it('does not crash module init when persisted fixed_time is invalid', async () => {
+    settingsServiceMock.getSettings.mockResolvedValue({
+      schedule: {
+        mode: 'fixed_time',
+        fixedTime: '',
+        intervalMinutes: null,
+      },
+      retention: {
+        mode: 'count',
+        maxCount: 7,
+        maxAgeDays: null,
+      },
+    });
+
+    await expect(service.onModuleInit()).resolves.toBeUndefined();
+
+    expect(queueMock.upsertJobScheduler).not.toHaveBeenCalled();
+    expect(service.getStatus()).toEqual(
+      expect.objectContaining({
+        health: 'failed',
+      }),
+    );
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: 'systemBackupScheduler.onModuleInit:error',
+      }),
+      expect.any(String),
     );
   });
 });
