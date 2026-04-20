@@ -11,41 +11,10 @@ import {
   UpdateAdminUserPlanInput,
   UpdatePricingPlanInput,
 } from '@/types/admin';
-
-type RawAdminPricingPlan = Omit<AdminPricingPlan, 'features'> & {
-  features: unknown;
-};
-
-function normalizePlanFeatures(plan: RawAdminPricingPlan): AdminPricingPlan {
-  if (Array.isArray(plan.features)) {
-    return {
-      ...plan,
-      features: plan.features.filter(
-        (feature): feature is string => typeof feature === 'string',
-      ),
-    };
-  }
-
-  if (typeof plan.features === 'string') {
-    try {
-      const features = JSON.parse(plan.features);
-      return {
-        ...plan,
-        features: Array.isArray(features) ? features : [],
-      };
-    } catch {
-      return {
-        ...plan,
-        features: [],
-      };
-    }
-  }
-
-  return {
-    ...plan,
-    features: [],
-  };
-}
+import {
+  normalizeAdminPricingPlan,
+  type RawAdminPricingPlan,
+} from '@/services/admin-service.utils';
 
 export const adminService = {
   async getStats(signal?: AbortSignal): Promise<AdminStats> {
@@ -89,7 +58,7 @@ export const adminService = {
       { signal },
     );
 
-    return (plans || []).map(normalizePlanFeatures);
+    return (plans || []).map(normalizeAdminPricingPlan);
   },
 
   async updatePlan(
