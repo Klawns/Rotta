@@ -23,6 +23,7 @@ import { SelectableCardShell } from '@/components/ride-selection/selectable-card
 import { SelectionCheckbox } from '@/components/ride-selection/selection-checkbox';
 import { cn } from '@/lib/utils';
 import { Client } from '@/types/rides';
+import { runClientCardMenuAction } from './client-card-menu-action';
 
 const SELECTION_TRANSITION = {
   duration: 0.15,
@@ -65,6 +66,8 @@ export const ClientCard = React.memo(function ClientCard({
   const metaItems = getClientMetaItems(client);
   const isSelectionMode = selection?.isSelectionMode ?? false;
   const isSelected = selection?.isSelected ?? false;
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const closeMenu = () => setIsMenuOpen(false);
 
   return (
     <motion.div
@@ -192,7 +195,7 @@ export const ClientCard = React.memo(function ClientCard({
                         <span className="hidden sm:inline">Nova corrida</span>
                       </button>
 
-                      <DropdownMenu>
+                      <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                         <DropdownMenuTrigger asChild>
                           <button
                             type="button"
@@ -215,9 +218,11 @@ export const ClientCard = React.memo(function ClientCard({
                           }}
                         >
                           <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault();
-                              onEdit(client);
+                            onSelect={() => {
+                              runClientCardMenuAction({
+                                closeMenu,
+                                action: () => onEdit(client),
+                              });
                             }}
                             className="rounded-xl font-medium text-text-primary"
                           >
@@ -226,9 +231,13 @@ export const ClientCard = React.memo(function ClientCard({
                           </DropdownMenuItem>
 
                           <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault();
-                              onPin(client);
+                            onSelect={() => {
+                              // Defer pinning until after the menu closes because the card reorders immediately.
+                              runClientCardMenuAction({
+                                closeMenu,
+                                action: () => onPin(client),
+                                mode: 'after-close',
+                              });
                             }}
                             className="rounded-xl font-medium text-text-primary"
                           >
@@ -240,9 +249,11 @@ export const ClientCard = React.memo(function ClientCard({
 
                           <DropdownMenuItem
                             variant="destructive"
-                            onSelect={(event) => {
-                              event.preventDefault();
-                              onDelete(client);
+                            onSelect={() => {
+                              runClientCardMenuAction({
+                                closeMenu,
+                                action: () => onDelete(client),
+                              });
                             }}
                             className="rounded-xl font-medium"
                           >
