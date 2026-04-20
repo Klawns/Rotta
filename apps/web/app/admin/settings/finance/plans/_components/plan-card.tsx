@@ -2,8 +2,15 @@
 
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
@@ -32,11 +39,7 @@ function getPlanDraftKey(plan: AdminPricingPlan): string {
   ].join(':');
 }
 
-function PlanCardForm({
-  plan,
-  isGlobalSaving,
-  onSave,
-}: PlanCardProps) {
+function PlanCardForm({ plan, isGlobalSaving, onSave }: PlanCardProps) {
   const [edited, setEdited] = useState<UpdatePricingPlanInput>(() =>
     createPlanDraft(plan),
   );
@@ -49,6 +52,7 @@ function PlanCardForm({
 
   const handleSave = async () => {
     setIsSaving(true);
+
     try {
       await onSave(plan.id, edited);
     } finally {
@@ -59,7 +63,7 @@ function PlanCardForm({
   return (
     <>
       <div className="space-y-2">
-        <Label>Preço (centavos)</Label>
+        <Label>Preco (centavos)</Label>
         <Input
           type="number"
           value={edited.price ?? 0}
@@ -69,7 +73,7 @@ function PlanCardForm({
               price: Number(event.target.value),
             }))
           }
-          className="border-white/10 bg-slate-950"
+          className="border-border bg-white"
         />
         <p className="text-[10px] text-slate-500">
           Valor atual: {formatCurrency(plan.price / 100)}
@@ -85,8 +89,8 @@ function PlanCardForm({
               interval: event.target.value,
             }))
           }
-          placeholder="ex: /mês"
-          className="border-white/10 bg-slate-950"
+          placeholder="ex: /mes"
+          className="border-border bg-white"
         />
       </div>
       <div className="space-y-2">
@@ -101,9 +105,9 @@ function PlanCardForm({
                 highlight: event.target.checked,
               }))
             }
-            className="h-4 w-4 rounded border-white/10 bg-slate-950"
+            className="h-4 w-4 rounded border border-border bg-white"
           />
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-slate-600">
             Mostrar como recomendado
           </span>
         </div>
@@ -116,22 +120,18 @@ function PlanCardForm({
           className="w-full bg-blue-600 text-white hover:bg-blue-500"
         >
           {isSaving ? <Loader2 className="mr-2 animate-spin" size={16} /> : null}
-          {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+          {isSaving ? 'Salvando...' : 'Salvar alteracoes'}
         </Button>
       </div>
     </>
   );
 }
 
-export function PlanCard({
-  plan,
-  isGlobalSaving,
-  onSave,
-}: PlanCardProps) {
+export function PlanCard({ plan, isGlobalSaving, onSave }: PlanCardProps) {
   return (
-    <Card className="flex flex-col border-white/5 bg-slate-900/40">
+    <Card className="flex flex-col rounded-[2rem] border-border/80 bg-white/80 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
       <CardHeader>
-        <CardTitle className="text-white">{plan.name}</CardTitle>
+        <CardTitle>{plan.name}</CardTitle>
         <CardDescription>{plan.description}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col space-y-4">

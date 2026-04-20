@@ -1,7 +1,13 @@
 'use client';
 
 import { Ticket } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { PromoCode } from '@/types/payments';
 
@@ -11,19 +17,19 @@ interface CouponCardProps {
 
 export function CouponCard({ coupon }: CouponCardProps) {
   return (
-    <Card className="border-white/5 bg-slate-900/40">
+    <Card className="rounded-[2rem] border-border/80 bg-white/80 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="font-mono text-xl font-bold text-lime-400">
+        <CardTitle className="font-mono text-xl font-bold text-lime-700">
           {coupon.code}
         </CardTitle>
-        <Ticket size={18} className="text-slate-500" />
+        <Ticket size={18} className="text-slate-400" />
       </CardHeader>
       <CardContent className="space-y-2">
-        <div className="text-sm text-slate-400">
-          {coupon.notes || `Duração: ${coupon.duration}`}
+        <div className="text-sm text-slate-500">
+          {coupon.notes || `Duracao: ${coupon.duration}`}
         </div>
         <div className="flex items-center gap-2">
-          <div className="text-2xl font-bold text-white">
+          <div className="text-2xl font-bold text-slate-950">
             {coupon.percentOff
               ? `${coupon.percentOff}%`
               : formatCurrency((coupon.amountOff || 0) / 100)}

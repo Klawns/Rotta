@@ -5,13 +5,12 @@ import { adminKeys } from '@/lib/query-keys';
 import { adminService } from '@/services/admin-service';
 import { AdminRecentUser } from '@/types/admin';
 
-export function useAdminDashboard(currentPage: number, enabled: boolean) {
+export function useAdminDashboard(currentPage: number) {
   const queryClient = useQueryClient();
 
   const statsQuery = useQuery({
     queryKey: adminKeys.stats(),
     queryFn: ({ signal }) => adminService.getStats(signal),
-    enabled,
   });
 
   const usersQuery = useQuery({
@@ -24,7 +23,6 @@ export function useAdminDashboard(currentPage: number, enabled: boolean) {
         },
         signal,
       ),
-    enabled,
   });
 
   const updatePlanMutation = useMutation({

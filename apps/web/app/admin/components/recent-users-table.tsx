@@ -34,7 +34,7 @@ export function RecentUsersTable({
   onNextPage,
 }: RecentUsersTableProps) {
   return (
-    <div className="w-full overflow-hidden rounded-[2rem] border border-white/5 bg-slate-900/40">
+    <div className="w-full overflow-hidden rounded-[2rem] border border-border/80 bg-white/80 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
       <RecentUsersTableToolbar onCreateUser={onCreateUser} />
       <RecentUsersTableList
         users={users}

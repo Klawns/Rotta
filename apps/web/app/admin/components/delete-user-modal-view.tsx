@@ -1,4 +1,5 @@
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -19,13 +20,13 @@ interface DeleteUserModalViewProps {
 export function DeleteUserModalView({ dialog }: DeleteUserModalViewProps) {
   return (
     <Dialog open={dialog.open} onOpenChange={dialog.handleOpenChange}>
-      <DialogContent className="max-w-sm border-white/10 bg-slate-900 text-white">
+      <DialogContent className="max-w-sm rounded-[1.75rem] border-border bg-white text-slate-950">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl font-bold text-red-500">
+          <DialogTitle className="flex items-center gap-2 text-xl font-bold text-red-600">
             <AlertTriangle size={24} />
-            Excluir Usuario?
+            Excluir usuario?
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-slate-500">
             Esta acao e irreversivel. O usuario <strong>{dialog.user?.name}</strong>{' '}
             ({dialog.user?.email}) sera removido permanentemente, junto com todas
             as suas corridas e clientes.
@@ -42,7 +43,7 @@ export function DeleteUserModalView({ dialog }: DeleteUserModalViewProps) {
           <div className="space-y-2">
             <Label htmlFor="delete-user-confirmation" className="text-sm font-semibold">
               Digite{' '}
-              <span className="text-red-400">
+              <span className="text-red-600">
                 {dialog.requiredConfirmationText}
               </span>{' '}
               para confirmar:
@@ -56,12 +57,12 @@ export function DeleteUserModalView({ dialog }: DeleteUserModalViewProps) {
                 dialog.handleConfirmationChange(event.target.value)
               }
               disabled={dialog.isDeleting}
-              className="border-white/5 bg-slate-950 focus:ring-red-500/50"
+              className="border-border bg-white"
             />
           </div>
 
           {dialog.error ? (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {dialog.error}
             </div>
           ) : null}
@@ -72,7 +73,7 @@ export function DeleteUserModalView({ dialog }: DeleteUserModalViewProps) {
               variant="outline"
               onClick={dialog.handleCancel}
               disabled={dialog.isDeleting}
-              className="border-white/10 text-white hover:bg-white/5"
+              className="border-border bg-white text-slate-700 hover:bg-slate-100"
             >
               Cancelar
             </Button>
@@ -89,7 +90,7 @@ export function DeleteUserModalView({ dialog }: DeleteUserModalViewProps) {
               ) : (
                 <>
                   <Trash2 size={16} />
-                  Confirmar Exclusao
+                  Confirmar exclusao
                 </>
               )}
             </Button>

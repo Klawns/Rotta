@@ -308,6 +308,103 @@
   }
 }
 
+@layer components {
+  .admin-shell {
+    background:
+      radial-gradient(circle at top left, rgb(191 219 254 / 0.55), transparent 28%),
+      radial-gradient(circle at top right, rgb(125 211 252 / 0.28), transparent 22%),
+      linear-gradient(180deg, rgb(248 250 252) 0%, rgb(241 245 249) 100%);
+  }
+
+  .admin-shell-state {
+    @apply flex min-h-screen items-center justify-center p-6;
+  }
+
+  .admin-shell-layout {
+    @apply mx-auto flex min-h-screen w-full max-w-[1600px] gap-4 p-4 md:gap-6 md:p-6;
+  }
+
+  .admin-shell-sidebar {
+    @apply hidden w-72 shrink-0 md:block;
+  }
+
+  .admin-shell-sidebar-panel {
+    @apply sticky top-6 flex h-[calc(100vh-3rem)] flex-col justify-between rounded-[2rem] border border-border/80 bg-white/85 p-6 shadow-[0_20px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl;
+  }
+
+  .admin-shell-content {
+    @apply flex min-w-0 flex-1 flex-col gap-4 md:gap-6;
+  }
+
+  .admin-shell-topbar {
+    @apply flex items-start justify-between gap-4 rounded-[2rem] border border-border/80 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)] backdrop-blur-xl;
+  }
+
+  .admin-shell-main {
+    @apply min-w-0;
+  }
+
+  .admin-shell-section-label {
+    @apply text-xs font-semibold uppercase tracking-[0.22em] text-slate-500;
+  }
+
+  .admin-shell-link {
+    @apply flex items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:border-blue-100 hover:bg-blue-50 hover:text-blue-700;
+  }
+
+  .admin-shell-link-compact {
+    @apply rounded-xl px-3 py-2.5;
+  }
+
+  .admin-shell-link[data-active='true'] {
+    @apply border-blue-200 bg-blue-50 text-blue-700 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.08)];
+  }
+
+  .admin-shell-subnav {
+    @apply flex flex-wrap items-center gap-2 rounded-[1.5rem] border border-border/80 bg-white/70 p-2 shadow-[0_12px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl;
+  }
+
+  .admin-shell-subnav-link {
+    @apply inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900;
+  }
+
+  .admin-shell-subnav-link[data-active='true'] {
+    @apply bg-slate-900 text-white;
+  }
+
+  .admin-page {
+    @apply space-y-6;
+  }
+
+  .admin-page-header {
+    @apply flex flex-col justify-between gap-4 md:flex-row md:items-start;
+  }
+
+  .admin-page-badge {
+    @apply inline-flex w-fit items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-700;
+  }
+
+  .admin-page-title {
+    @apply text-3xl font-semibold tracking-tight text-foreground;
+  }
+
+  .admin-page-description {
+    @apply max-w-2xl text-sm leading-6 text-muted-foreground;
+  }
+
+  .admin-card {
+    @apply rounded-[2rem] border border-border/80 bg-white/80 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl;
+  }
+
+  .admin-state-block {
+    @apply flex min-h-40 flex-col items-center justify-center gap-4 rounded-[2rem] border border-dashed border-border bg-white/60 px-6 py-10;
+  }
+
+  .admin-state-spinner {
+    @apply h-10 w-10 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600;
+  }
+}
+
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;

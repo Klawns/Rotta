@@ -1,6 +1,15 @@
 'use client';
 
-import { Hash, Clock3, Loader2, Percent, Plus, Save, Ticket } from 'lucide-react';
+import {
+  Clock3,
+  Hash,
+  Loader2,
+  Percent,
+  Plus,
+  Save,
+  Ticket,
+} from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -41,34 +50,34 @@ export function CouponCreateDialog({
     <Dialog open={dialog.isOpen} onOpenChange={dialog.handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="gap-2 bg-blue-600 text-white hover:bg-blue-500">
-          <Plus size={16} /> Novo Cupom
+          <Plus size={16} /> Novo cupom
         </Button>
       </DialogTrigger>
-      <DialogContent className="border-white/10 bg-slate-900 text-white">
+      <DialogContent className="rounded-[1.75rem] border-border bg-white text-slate-950">
         <DialogHeader>
-          <DialogTitle>Criar Novo Cupom</DialogTitle>
-          <DialogDescription>
+          <DialogTitle>Criar novo cupom</DialogTitle>
+          <DialogDescription className="text-slate-500">
             Preencha os detalhes para gerar um novo cupom.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={dialog.handleSubmit} className="space-y-4 pt-4">
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
-              <Ticket size={14} /> Código do Cupom
+              <Ticket size={14} /> Codigo do cupom
             </Label>
             <Input
               value={dialog.code}
               onChange={(event) => dialog.setCode(event.target.value.toUpperCase())}
               placeholder="EX: PROMO2024"
               required
-              className="border-white/10 bg-slate-950"
+              className="border-border bg-white"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
-                <Percent size={14} /> Tipo de Desconto
+                <Percent size={14} /> Tipo de desconto
               </Label>
               <Select
                 value={dialog.discountMode}
@@ -76,17 +85,17 @@ export function CouponCreateDialog({
                   dialog.setDiscountMode(value as DiscountMode)
                 }
               >
-                <SelectTrigger className="border-white/10 bg-slate-950 text-white">
+                <SelectTrigger className="border-border bg-white text-slate-950">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="border-white/10 bg-slate-900 text-white">
+                <SelectContent className="border-border bg-white text-slate-700">
                   <SelectItem value="PERCENTAGE">Porcentagem</SelectItem>
-                  <SelectItem value="FIXED">Valor Fixo</SelectItem>
+                  <SelectItem value="FIXED">Valor fixo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Valor do Desconto</Label>
+              <Label>Valor do desconto</Label>
               <Input
                 type="number"
                 value={dialog.discountValue}
@@ -95,7 +104,7 @@ export function CouponCreateDialog({
                 }
                 required
                 min="1"
-                className="border-white/10 bg-slate-950"
+                className="border-border bg-white"
               />
               <p className="text-[10px] text-slate-500">
                 {dialog.discountMode === 'PERCENTAGE'
@@ -108,7 +117,7 @@ export function CouponCreateDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
-                <Clock3 size={14} /> Duração
+                <Clock3 size={14} /> Duracao
               </Label>
               <Select
                 value={dialog.duration}
@@ -116,10 +125,10 @@ export function CouponCreateDialog({
                   dialog.setDuration(value as PromoCodeDuration)
                 }
               >
-                <SelectTrigger className="border-white/10 bg-slate-950 text-white">
+                <SelectTrigger className="border-border bg-white text-slate-950">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="border-white/10 bg-slate-900 text-white">
+                <SelectContent className="border-border bg-white text-slate-700">
                   <SelectItem value="once">Uma vez</SelectItem>
                   <SelectItem value="repeating">Recorrente</SelectItem>
                   <SelectItem value="forever">Para sempre</SelectItem>
@@ -140,7 +149,7 @@ export function CouponCreateDialog({
                   }
                   min="1"
                   required
-                  className="border-white/10 bg-slate-950"
+                  className="border-border bg-white"
                 />
               </div>
             ) : null}
@@ -151,7 +160,7 @@ export function CouponCreateDialog({
               type="button"
               variant="ghost"
               onClick={() => dialog.handleOpenChange(false)}
-              className="text-slate-400 hover:text-white"
+              className="text-slate-500 hover:bg-slate-100 hover:text-slate-950"
             >
               Cancelar
             </Button>
@@ -165,7 +174,7 @@ export function CouponCreateDialog({
               ) : (
                 <Save className="mr-2" size={16} />
               )}
-              Criar Cupom
+              Criar cupom
             </Button>
           </DialogFooter>
         </form>
