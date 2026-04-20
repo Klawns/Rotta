@@ -53,7 +53,7 @@ test('keeps billing navigation active across nested billing routes', () => {
   );
 
   assert.equal(
-    isAdminNavigationItemActive('/admin/settings/system/global', {
+    isAdminNavigationItemActive('/admin/system/global', {
       href: '/admin/billing',
       matchMode: 'prefix',
       activePrefix: '/admin/billing',
@@ -87,10 +87,10 @@ test('returns the billing sub navigation for billing routes', () => {
 });
 
 test('returns the system sub navigation for system settings routes', () => {
-  const navigation = getAdminShellNavigation('/admin/settings/system/security');
+  const navigation = getAdminShellNavigation('/admin/system/security');
 
-  assert.equal(navigation.primaryActiveItem?.href, '/admin/settings/system/global');
+  assert.equal(navigation.primaryActiveItem?.href, '/admin/system/global');
   assert.equal(navigation.subNavigation?.items.length, 3);
-  assert.equal(navigation.subNavigation?.items[1]?.href, '/admin/settings/system/security');
+  assert.equal(navigation.subNavigation?.items[1]?.href, '/admin/system/security');
   assert.equal(navigation.subNavigation?.items[1]?.isActive, true);
 });

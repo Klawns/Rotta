@@ -39,9 +39,9 @@ const ADMIN_PRIMARY_NAVIGATION: AdminNavigationItem[] = [
   },
   {
     label: 'Sistema',
-    href: '/admin/settings/system/global',
+    href: '/admin/system/global',
     matchMode: 'prefix',
-    activePrefix: '/admin/settings/system',
+    activePrefix: '/admin/system',
   },
 ];
 
@@ -66,17 +66,17 @@ const ADMIN_SUB_NAVIGATION_GROUPS: AdminNavigationGroup[] = [
     items: [
       {
         label: 'Global',
-        href: '/admin/settings/system/global',
+        href: '/admin/system/global',
         matchMode: 'exact',
       },
       {
         label: 'Seguranca',
-        href: '/admin/settings/system/security',
+        href: '/admin/system/security',
         matchMode: 'exact',
       },
       {
         label: 'Backups',
-        href: '/admin/settings/system/backups',
+        href: '/admin/system/backups',
         matchMode: 'exact',
       },
     ],

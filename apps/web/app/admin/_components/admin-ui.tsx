@@ -10,7 +10,6 @@ interface AdminPageProps {
 interface AdminPageHeaderProps {
   title: string;
   description?: string;
-  badge?: string;
   actions?: ReactNode;
   className?: string;
 }
@@ -26,6 +25,12 @@ interface AdminStateBlockProps {
   className?: string;
 }
 
+interface AdminInlineNoticeProps {
+  children: ReactNode;
+  tone?: 'success' | 'danger' | 'warning' | 'info';
+  className?: string;
+}
+
 export function AdminPage({ children, className }: AdminPageProps) {
   return <div className={cn('admin-page', className)}>{children}</div>;
 }
@@ -33,14 +38,12 @@ export function AdminPage({ children, className }: AdminPageProps) {
 export function AdminPageHeader({
   title,
   description,
-  badge,
   actions,
   className,
 }: AdminPageHeaderProps) {
   return (
     <section className={cn('admin-page-header', className)}>
       <div className="space-y-3">
-        {badge ? <span className="admin-page-badge">{badge}</span> : null}
         <div className="space-y-2">
           <h1 className="admin-page-title">{title}</h1>
           {description ? <p className="admin-page-description">{description}</p> : null}
@@ -87,6 +90,28 @@ export function AdminEmptyState({
           <p className="text-sm text-muted-foreground">{description}</p>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+export function AdminInlineNotice({
+  children,
+  tone = 'info',
+  className,
+}: AdminInlineNoticeProps) {
+  return (
+    <div
+      className={cn(
+        'rounded-2xl border px-4 py-3 text-sm',
+        tone === 'success' && 'border-success/20 bg-success/10 text-success',
+        tone === 'danger' &&
+          'border-destructive/20 bg-destructive/10 text-destructive',
+        tone === 'warning' && 'border-warning/20 bg-warning/10 text-warning',
+        tone === 'info' && 'border-border bg-background/70 text-foreground',
+        className,
+      )}
+    >
+      {children}
     </div>
   );
 }

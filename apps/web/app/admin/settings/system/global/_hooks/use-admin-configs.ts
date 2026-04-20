@@ -1,34 +1,33 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { parseApiError } from '@/lib/api-error';
 import { adminKeys } from '@/lib/query-keys';
-import { adminService } from '@/services/admin-service';
+import { adminSystemService } from '@/services/admin-system.service';
+import type { UpdateAdminConfigInput } from '@/types/admin';
 
 export function useAdminConfigs() {
   const queryClient = useQueryClient();
 
   const configsQuery = useQuery({
     queryKey: adminKeys.configs(),
-    queryFn: ({ signal }) => adminService.getConfigs(signal),
+    queryFn: ({ signal }) => adminSystemService.getConfigs(signal),
   });
 
   const updateConfigMutation = useMutation({
-    mutationFn: adminService.updateConfig,
-    onSuccess: async (_data, variables) => {
-      toast.success(`${variables.key} atualizado!`);
+    mutationFn: (inputs: UpdateAdminConfigInput[]) =>
+      adminSystemService.updateConfigs(inputs),
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: adminKeys.configs() });
-    },
-    onError: (error) => {
-      toast.error(parseApiError(error, 'Erro ao salvar'));
     },
   });
 
   return {
     configs: configsQuery.data ?? {},
+    hasLoadedConfigs: configsQuery.data !== undefined,
     isLoading: configsQuery.isLoading,
+    error: configsQuery.error,
+    refetch: configsQuery.refetch,
     isSaving: updateConfigMutation.isPending,
-    updateConfig: updateConfigMutation.mutate,
+    saveConfigs: updateConfigMutation.mutateAsync,
   };
 }

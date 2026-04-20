@@ -2,12 +2,13 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { parseApiError } from '@/lib/api-error';
-import { adminService } from '@/services/admin-service';
+import { adminSystemService } from '@/services/admin-system.service';
 import { type ChangePasswordInput } from '@/types/admin';
 
 export function useAdminPasswordChange() {
   const mutation = useMutation({
-    mutationFn: (data: ChangePasswordInput) => adminService.changePassword(data),
+    mutationFn: (data: ChangePasswordInput) =>
+      adminSystemService.changePassword(data),
   });
 
   const changePassword = async (data: ChangePasswordInput) => {

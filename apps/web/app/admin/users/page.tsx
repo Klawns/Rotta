@@ -40,7 +40,6 @@ export default function AdminUsersPage() {
       >
         <AdminPage>
           <AdminPageHeader
-            badge="Usuarios"
             title="Gestao administrativa de usuarios"
             description="Listagem paginada com criacao, exclusao e troca de plano sem misturar a visao geral do painel."
           />

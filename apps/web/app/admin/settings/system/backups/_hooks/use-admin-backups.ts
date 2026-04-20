@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { shouldPollBackupJobs } from '@/lib/backup-query-state';
 import { parseApiError } from '@/lib/api-error';
 import { adminKeys } from '@/lib/query-keys';
-import backupsService from '@/services/backups-service';
+import { adminSystemService } from '@/services/admin-system.service';
 
 export function useAdminBackups() {
   const { toast } = useToast();
@@ -14,7 +14,7 @@ export function useAdminBackups() {
 
   const backupsQuery = useQuery({
     queryKey: adminKeys.technicalBackups(),
-    queryFn: ({ signal }) => backupsService.listTechnicalBackups(signal),
+    queryFn: ({ signal }) => adminSystemService.listTechnicalBackups(signal),
     retry: false,
     refetchInterval: (query) => {
       return shouldPollBackupJobs(query.state.data) ? 3000 : false;
@@ -24,12 +24,12 @@ export function useAdminBackups() {
 
   const settingsQuery = useQuery({
     queryKey: adminKeys.systemBackupSettings(),
-    queryFn: ({ signal }) => backupsService.getSystemBackupSettings(signal),
+    queryFn: ({ signal }) => adminSystemService.getSystemBackupSettings(signal),
     retry: false,
   });
 
   const createTechnicalBackupMutation = useMutation({
-    mutationFn: () => backupsService.createManualTechnicalBackup(),
+    mutationFn: () => adminSystemService.createManualTechnicalBackup(),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: adminKeys.technicalBackups(),
@@ -52,7 +52,7 @@ export function useAdminBackups() {
   });
 
   const updateSystemBackupSettingsMutation = useMutation({
-    mutationFn: backupsService.updateSystemBackupSettings,
+    mutationFn: adminSystemService.updateSystemBackupSettings,
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: adminKeys.systemBackupSettings(),
@@ -84,7 +84,7 @@ export function useAdminBackups() {
     startDownload,
   } = useBackupDownload({
     requestDownloadUrl: (backupId) =>
-      backupsService.getTechnicalDownloadUrl(backupId),
+      adminSystemService.getTechnicalDownloadUrl(backupId),
     successTitle: 'Download tecnico iniciado',
     successDescription: 'O navegador ja iniciou a transferencia do dump tecnico.',
     errorTitle: 'Falha ao baixar dump tecnico',
@@ -117,7 +117,7 @@ export function useAdminBackups() {
     refresh: backupsQuery.refetch,
     createTechnicalBackup: () => createTechnicalBackupMutation.mutateAsync(),
     saveSystemBackupSettings: (input: Parameters<
-      typeof backupsService.updateSystemBackupSettings
+      typeof adminSystemService.updateSystemBackupSettings
     >[0]) => updateSystemBackupSettingsMutation.mutateAsync(input),
     openDownloadUrl: startDownload,
   };

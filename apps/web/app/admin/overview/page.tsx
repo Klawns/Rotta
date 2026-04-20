@@ -19,7 +19,6 @@ export default function AdminOverviewPage() {
     >
       <AdminPage>
         <AdminPageHeader
-          badge="Visao Geral"
           title="Visao geral administrativa"
           description="Resumo operacional da base para acompanhar usuarios, assinaturas e receita recente."
         />

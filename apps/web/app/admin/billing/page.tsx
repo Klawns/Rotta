@@ -65,7 +65,6 @@ export default function AdminBillingSummaryPage() {
     >
       <AdminPage>
         <AdminPageHeader
-          badge="Faturamento"
           title="Resumo de billing"
           description="Visao geral do dominio de faturamento com fallbacks e capacidade do gateway centralizados."
         />

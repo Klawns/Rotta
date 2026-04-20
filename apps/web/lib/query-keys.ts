@@ -132,9 +132,10 @@ export const adminKeys = {
   billing: () => [...adminKeys.all, 'billing'] as const,
   billingSummary: () => [...adminKeys.billing(), 'summary'] as const,
   billingPlans: () => [...adminKeys.billing(), 'plans'] as const,
+  system: () => [...adminKeys.all, 'system'] as const,
   settings: () => [...adminKeys.all, 'settings'] as const,
-  configs: () => [...adminKeys.settings(), 'configs'] as const,
-  technicalBackups: () => [...adminKeys.settings(), 'technical-backups'] as const,
-  systemBackupSettings: () =>
-    [...adminKeys.settings(), 'system-backup-settings'] as const,
+  configs: () => [...adminKeys.system(), 'configs'] as const,
+  systemBackups: () => [...adminKeys.system(), 'backups'] as const,
+  technicalBackups: () => [...adminKeys.systemBackups(), 'technical'] as const,
+  systemBackupSettings: () => [...adminKeys.systemBackups(), 'settings'] as const,
 };

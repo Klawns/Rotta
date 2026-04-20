@@ -35,7 +35,7 @@ const ADMIN_NAVIGATION_ICONS = {
   '/admin/overview': LayoutDashboard,
   '/admin/users': Users,
   '/admin/billing': WalletCards,
-  '/admin/settings/system/global': Settings2,
+  '/admin/system/global': Settings2,
 } as const;
 
 function AdminShellNavLink({
@@ -125,18 +125,6 @@ export function AdminShell({ children }: AdminShellProps) {
         <aside className="admin-shell-sidebar">
           <div className="admin-shell-sidebar-panel">
             <div className="space-y-8">
-              <div className="space-y-3">
-                <span className="admin-page-badge">Admin</span>
-                <div className="space-y-2">
-                  <h1 className="text-xl font-semibold tracking-tight text-foreground">
-                    Painel administrativo
-                  </h1>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    Shell unificado para operacao, configuracoes e governanca.
-                  </p>
-                </div>
-              </div>
-
               <AdminShellSidebar navigation={navigation} />
             </div>
 
@@ -153,32 +141,15 @@ export function AdminShell({ children }: AdminShellProps) {
         </aside>
 
         <div className="admin-shell-content">
-          <header className="admin-shell-topbar">
-            <div className="space-y-2">
-              <span className="admin-shell-section-label">
+          <header className="admin-shell-mobile-topbar md:hidden">
+            <div className="min-w-0">
+              <span className="admin-shell-section-label">Admin</span>
+              <p className="truncate text-sm font-semibold text-foreground">
                 {navigation.primaryActiveItem.label}
-              </span>
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                  Area administrativa Rotta
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Navegacao unificada para manter o fluxo admin consistente.
-                </p>
-              </div>
+              </p>
             </div>
 
             <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="hidden rounded-2xl border-border bg-white/70 text-foreground hover:bg-white md:inline-flex"
-                onClick={logout}
-              >
-                <LogOut className="size-4" />
-                Sair
-              </Button>
-
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                 <SheetTrigger asChild>
                   <Button

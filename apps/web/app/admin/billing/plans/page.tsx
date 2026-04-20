@@ -39,7 +39,6 @@ export default function AdminBillingPlansPage() {
   return (
     <AdminPage>
       <AdminPageHeader
-        badge="Faturamento"
         title="Planos de precos"
         description="Configure os valores e intervalos das assinaturas ativas na plataforma."
       />
