@@ -1,16 +1,9 @@
-import {
-  Injectable,
-  Inject,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import { PAYMENT_PROVIDER } from '../payments/providers/payment-provider.interface';
-import type { IPaymentProvider } from '../payments/providers/payment-provider.interface';
+import { Injectable, Inject } from '@nestjs/common';
 import {
   IAdminSettingsRepository,
   type PricingPlanUpdate,
 } from './interfaces/admin-settings-repository.interface';
 import type { PaymentPlanId } from '../payments/pricing-plan-catalog';
-import type { CreateCouponDto } from './dto/admin.dto';
 import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
 import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
 
@@ -21,27 +14,7 @@ export class AdminSettingsService {
     private readonly adminSettingsRepository: IAdminSettingsRepository,
     @Inject(CACHE_PROVIDER)
     private readonly cache: ICacheProvider,
-    @Inject(PAYMENT_PROVIDER)
-    private provider: IPaymentProvider,
   ) {}
-
-  async listCoupons(): Promise<unknown[]> {
-    if (!this.provider.listCoupons) {
-      throw new ServiceUnavailableException(
-        'Promo codes are unavailable while the payment provider is disabled or unsupported.',
-      );
-    }
-    return this.provider.listCoupons();
-  }
-
-  async createCoupon(data: CreateCouponDto): Promise<unknown> {
-    if (!this.provider.createCoupon) {
-      throw new ServiceUnavailableException(
-        'Promo codes are unavailable while the payment provider is disabled or unsupported.',
-      );
-    }
-    return this.provider.createCoupon(data);
-  }
 
   async getPlans() {
     return this.adminSettingsRepository.getPlans();

@@ -29,7 +29,8 @@ test('invalidates admin and public pricing queries together after a plan update'
   await invalidatePlanCachesAfterAdminUpdate(queryClient);
 
   assert.deepEqual(invalidated, [
-    adminKeys.plans(),
+    adminKeys.billingSummary(),
+    adminKeys.billingPlans(),
     adminKeys.usersAll(),
     paymentKeys.plans(),
   ]);
@@ -55,7 +56,8 @@ test('still attempts every invalidation before surfacing a failure', async () =>
   );
 
   assert.deepEqual(attempted, [
-    adminKeys.plans(),
+    adminKeys.billingSummary(),
+    adminKeys.billingPlans(),
     adminKeys.usersAll(),
     paymentKeys.plans(),
   ]);

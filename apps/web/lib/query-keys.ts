@@ -129,10 +129,11 @@ export const adminKeys = {
   usersAll: () => [...adminKeys.all, 'users'] as const,
   users: (filters: { page?: number; limit?: number; search?: string }) =>
     [...adminKeys.usersAll(), filters] as const,
+  billing: () => [...adminKeys.all, 'billing'] as const,
+  billingSummary: () => [...adminKeys.billing(), 'summary'] as const,
+  billingPlans: () => [...adminKeys.billing(), 'plans'] as const,
   settings: () => [...adminKeys.all, 'settings'] as const,
   configs: () => [...adminKeys.settings(), 'configs'] as const,
-  plans: () => [...adminKeys.settings(), 'plans'] as const,
-  promoCodes: () => [...adminKeys.settings(), 'promo-codes'] as const,
   technicalBackups: () => [...adminKeys.settings(), 'technical-backups'] as const,
   systemBackupSettings: () =>
     [...adminKeys.settings(), 'system-backup-settings'] as const,

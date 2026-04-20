@@ -42,7 +42,7 @@ export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('health')
-  async getHealth() {
+  getHealth() {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -85,6 +85,25 @@ export class AdminController {
     @ZodBody(adminUpdateUserPlanSchema) body: AdminUpdateUserPlanDto,
   ) {
     return this.adminService.updateUserPlan(id, body.plan);
+  }
+
+  @Get('billing/summary')
+  async getBillingSummary() {
+    return this.adminService.getBillingSummary();
+  }
+
+  @Get('billing/plans')
+  async getBillingPlans() {
+    return this.adminService.getPlans();
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Patch('billing/plans/:id')
+  async updateBillingPlan(
+    @ZodParam('id', pricingPlanIdParamSchema) id: PricingPlanIdParamDto,
+    @ZodBody(updatePricingPlanSchema) body: UpdatePricingPlanDto,
+  ) {
+    return this.adminService.updatePlan(id, body);
   }
 
   @Get('settings/plans')

@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/unbound-method -- Jest mock assertions intentionally inspect service dependencies. */
-import type { IPaymentProvider } from '../payments/providers/payment-provider.interface';
 import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
 import { AdminSettingsService } from './admin-settings.service';
 import type { IAdminSettingsRepository } from './interfaces/admin-settings-repository.interface';
@@ -20,16 +19,7 @@ describe('AdminSettingsService', () => {
       getDel: jest.fn(),
       invalidatePrefix: jest.fn(),
     };
-    const provider: IPaymentProvider = {
-      createCheckoutSession: jest.fn(),
-      handleWebhook: jest.fn(),
-    };
-
-    const service = new AdminSettingsService(
-      adminSettingsRepository,
-      cache,
-      provider,
-    );
+    const service = new AdminSettingsService(adminSettingsRepository, cache);
 
     return {
       service,

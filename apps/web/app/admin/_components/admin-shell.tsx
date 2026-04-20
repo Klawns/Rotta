@@ -34,7 +34,7 @@ interface AdminShellProps {
 const ADMIN_NAVIGATION_ICONS = {
   '/admin/overview': LayoutDashboard,
   '/admin/users': Users,
-  '/admin/settings/finance/plans': WalletCards,
+  '/admin/billing': WalletCards,
   '/admin/settings/system/global': Settings2,
 } as const;
 

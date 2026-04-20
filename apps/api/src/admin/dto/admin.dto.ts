@@ -63,15 +63,3 @@ export const updateConfigSchema = z
   .strict();
 
 export type UpdateConfigDto = z.infer<typeof updateConfigSchema>;
-
-export const createCouponSchema = z
-  .object({
-    code: z.string().min(1),
-    percentOff: z.number().min(1).max(100).optional(),
-    amountOff: z.number().positive().optional(),
-    duration: z.enum(['once', 'repeating', 'forever']),
-    durationInMonths: z.number().positive().optional(),
-  })
-  .strict();
-
-export type CreateCouponDto = z.infer<typeof createCouponSchema>;

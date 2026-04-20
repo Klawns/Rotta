@@ -1,5 +1,5 @@
 import { ApiEnvelope } from '@/services/api';
-import { PaymentPlan, PaymentPlanId, PromoCode } from '@/types/payments';
+import { PaymentPlan, PaymentPlanId } from '@/types/payments';
 
 export interface AdminStats {
   totalUsers: number;
@@ -67,5 +67,3 @@ export interface ChangePasswordInput {
   newPassword: string;
   confirmPassword: string;
 }
-
-export type AdminPromoCode = PromoCode;

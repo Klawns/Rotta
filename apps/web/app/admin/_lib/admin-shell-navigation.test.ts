@@ -42,19 +42,21 @@ test('marks the users entry as active across nested user routes', () => {
   );
 });
 
-test('keeps finance navigation active across nested settings routes', () => {
+test('keeps billing navigation active across nested billing routes', () => {
   assert.equal(
-    isAdminNavigationItemActive('/admin/settings/finance/plans', {
-      href: '/admin/settings/finance/plans',
+    isAdminNavigationItemActive('/admin/billing/plans', {
+      href: '/admin/billing',
       matchMode: 'prefix',
+      activePrefix: '/admin/billing',
     }),
     true,
   );
 
   assert.equal(
     isAdminNavigationItemActive('/admin/settings/system/global', {
-      href: '/admin/settings/finance/plans',
+      href: '/admin/billing',
       matchMode: 'prefix',
+      activePrefix: '/admin/billing',
     }),
     false,
   );
@@ -74,12 +76,13 @@ test('returns users as the active primary navigation for the users route', () =>
   assert.equal(navigation.subNavigation, null);
 });
 
-test('returns the finance sub navigation for finance settings routes', () => {
-  const navigation = getAdminShellNavigation('/admin/settings/finance/coupons');
+test('returns the billing sub navigation for billing routes', () => {
+  const navigation = getAdminShellNavigation('/admin/billing/plans');
 
-  assert.equal(navigation.primaryActiveItem?.href, '/admin/settings/finance/plans');
+  assert.equal(navigation.primaryActiveItem?.href, '/admin/billing');
   assert.equal(navigation.subNavigation?.items.length, 2);
-  assert.equal(navigation.subNavigation?.items[1]?.href, '/admin/settings/finance/coupons');
+  assert.equal(navigation.subNavigation?.items[0]?.href, '/admin/billing');
+  assert.equal(navigation.subNavigation?.items[1]?.href, '/admin/billing/plans');
   assert.equal(navigation.subNavigation?.items[1]?.isActive, true);
 });
 

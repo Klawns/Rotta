@@ -24,7 +24,8 @@ export async function invalidatePlanCachesAfterAdminUpdate(
   queryClient: PlanInvalidationClient,
 ) {
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: adminKeys.plans() }),
+    queryClient.invalidateQueries({ queryKey: adminKeys.billingSummary() }),
+    queryClient.invalidateQueries({ queryKey: adminKeys.billingPlans() }),
     queryClient.invalidateQueries({ queryKey: adminKeys.usersAll() }),
     queryClient.invalidateQueries({ queryKey: paymentKeys.plans() }),
   ]);

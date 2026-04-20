@@ -16,6 +16,22 @@ import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import type { CreateUserDto } from '../users/interfaces/users-repository.interface';
 
+type AdminBillingGatewayStatus = 'enabled' | 'readOnly' | 'unavailable';
+
+export interface AdminBillingSummary {
+  gateway: {
+    status: AdminBillingGatewayStatus;
+    provider: string | null;
+    message: string | null;
+  };
+  metrics: {
+    activePlans: number;
+    highlightedPlanName: string | null;
+    monthlyRevenueInCents: number;
+    annualRevenueInCents: number | null;
+  };
+}
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -38,6 +54,31 @@ export class AdminService {
       this.configService.get<string>('ADMIN_BOOTSTRAP_EMAIL')?.trim() ||
       'admin@mdc.com'
     );
+  }
+
+  private get paymentGateway() {
+    return (
+      this.configService.get<string>('PAYMENT_GATEWAY')?.trim().toLowerCase() ||
+      'disabled'
+    );
+  }
+
+  private getBillingGatewayCapability(): AdminBillingSummary['gateway'] {
+    if (this.paymentGateway === 'disabled') {
+      return {
+        status: 'readOnly',
+        provider: null,
+        message:
+          'Gateway ainda nao configurado. O admin pode manter os planos prontos para a integracao futura.',
+      };
+    }
+
+    return {
+      status: 'enabled',
+      provider: this.paymentGateway,
+      message:
+        'Gateway configurado. Checkout e conciliacao podem evoluir sobre este provider.',
+    };
   }
 
   async getStats() {
@@ -114,6 +155,30 @@ export class AdminService {
 
   async getPlans() {
     return this.paymentsRepository.getAllPlans();
+  }
+
+  async getBillingSummary(): Promise<AdminBillingSummary> {
+    const [plans, revenue] = await Promise.all([
+      this.getPlans(),
+      this.paymentProvider.getRevenue
+        ? this.paymentProvider.getRevenue(
+            new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split('T')[0],
+            new Date().toISOString().split('T')[0],
+          )
+        : Promise.resolve({ total: 0 }),
+    ]);
+
+    return {
+      gateway: this.getBillingGatewayCapability(),
+      metrics: {
+        activePlans: plans.length,
+        highlightedPlanName: plans.find((plan) => plan.highlight)?.name ?? null,
+        monthlyRevenueInCents: revenue?.total || 0,
+        annualRevenueInCents: null,
+      },
+    };
   }
 
   async updatePlan(planId: PaymentPlanId, data: PricingPlanUpdate) {

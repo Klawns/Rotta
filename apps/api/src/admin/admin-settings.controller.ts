@@ -8,13 +8,11 @@ import {
   pricingPlanIdParamSchema,
   updatePricingPlanSchema,
   updateConfigSchema,
-  createCouponSchema,
 } from './dto/admin.dto';
 import type {
   PricingPlanIdParamDto,
   UpdatePricingPlanDto,
   UpdateConfigDto,
-  CreateCouponDto,
 } from './dto/admin.dto';
 
 @Controller('admin/settings')
@@ -48,16 +46,6 @@ export class AdminSettingsController {
       body.value,
       body.description,
     );
-  }
-
-  @Get('promo-codes')
-  async listCoupons() {
-    return this.settingsService.listCoupons();
-  }
-
-  @Post('promo-codes')
-  async createCoupon(@ZodBody(createCouponSchema) data: CreateCouponDto) {
-    return this.settingsService.createCoupon(data);
   }
 
   @Post('seed')

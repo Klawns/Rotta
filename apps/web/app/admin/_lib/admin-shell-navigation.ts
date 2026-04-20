@@ -33,9 +33,9 @@ const ADMIN_PRIMARY_NAVIGATION: AdminNavigationItem[] = [
   },
   {
     label: 'Faturamento',
-    href: '/admin/settings/finance/plans',
+    href: '/admin/billing',
     matchMode: 'prefix',
-    activePrefix: '/admin/settings/finance',
+    activePrefix: '/admin/billing',
   },
   {
     label: 'Sistema',
@@ -50,13 +50,13 @@ const ADMIN_SUB_NAVIGATION_GROUPS: AdminNavigationGroup[] = [
     title: 'Faturamento',
     items: [
       {
-        label: 'Planos',
-        href: '/admin/settings/finance/plans',
+        label: 'Resumo',
+        href: '/admin/billing',
         matchMode: 'exact',
       },
       {
-        label: 'Cupons',
-        href: '/admin/settings/finance/coupons',
+        label: 'Planos',
+        href: '/admin/billing/plans',
         matchMode: 'exact',
       },
     ],

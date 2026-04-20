@@ -27,8 +27,6 @@ export interface IPaymentProvider {
     status?: string;
     eventId: string;
   }>;
-  listCoupons?(): Promise<any[]>;
-  createCoupon?(data: any): Promise<any>;
   getRevenue?(startDate: string, endDate: string): Promise<{ total: number }>;
 }
 

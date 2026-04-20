@@ -14,15 +14,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
-import { AdminPricingPlan, UpdatePricingPlanInput } from '@/types/admin';
+import type { AdminBillingPlan } from '@/types/admin-billing';
+import type { UpdatePricingPlanInput } from '@/types/admin';
 
 interface PlanCardProps {
-  plan: AdminPricingPlan;
+  plan: AdminBillingPlan;
   isGlobalSaving: boolean;
   onSave: (id: string, data: UpdatePricingPlanInput) => Promise<void>;
 }
 
-function createPlanDraft(plan: AdminPricingPlan): UpdatePricingPlanInput {
+function createPlanDraft(plan: AdminBillingPlan): UpdatePricingPlanInput {
   return {
     price: plan.price,
     interval: plan.interval || '',
@@ -30,7 +31,7 @@ function createPlanDraft(plan: AdminPricingPlan): UpdatePricingPlanInput {
   };
 }
 
-function getPlanDraftKey(plan: AdminPricingPlan): string {
+function getPlanDraftKey(plan: AdminBillingPlan): string {
   return [
     plan.id,
     String(plan.price),

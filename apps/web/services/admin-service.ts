@@ -1,7 +1,6 @@
 import { apiClient } from '@/services/api';
 import {
   AdminConfigs,
-  AdminPricingPlan,
   AdminRecentUsersResponse,
   AdminStats,
   ChangePasswordInput,
@@ -9,12 +8,7 @@ import {
   PaginationMeta,
   UpdateAdminConfigInput,
   UpdateAdminUserPlanInput,
-  UpdatePricingPlanInput,
 } from '@/types/admin';
-import {
-  normalizeAdminPricingPlan,
-  type RawAdminPricingPlan,
-} from '@/services/admin-service.utils';
 
 export const adminService = {
   async getStats(signal?: AbortSignal): Promise<AdminStats> {
@@ -50,27 +44,6 @@ export const adminService = {
     plan,
   }: UpdateAdminUserPlanInput): Promise<void> {
     return apiClient.put(`/admin/users/${userId}/plan`, { plan });
-  },
-
-  async getPlans(signal?: AbortSignal): Promise<AdminPricingPlan[]> {
-    const plans = await apiClient.get<RawAdminPricingPlan[]>(
-      '/admin/settings/plans',
-      { signal },
-    );
-
-    return (plans || []).map(normalizeAdminPricingPlan);
-  },
-
-  async updatePlan(
-    planId: string,
-    data: UpdatePricingPlanInput,
-  ): Promise<void> {
-    const payload = {
-      ...data,
-      features: data.features ? JSON.stringify(data.features) : undefined,
-    };
-
-    return apiClient.patch(`/admin/settings/plans/${planId}`, payload);
   },
 
   async getConfigs(signal?: AbortSignal): Promise<AdminConfigs> {
