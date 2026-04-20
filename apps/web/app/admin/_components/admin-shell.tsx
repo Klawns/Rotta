@@ -8,6 +8,7 @@ import {
   LogOut,
   Menu,
   Settings2,
+  Users,
   WalletCards,
 } from 'lucide-react';
 
@@ -31,7 +32,8 @@ interface AdminShellProps {
 }
 
 const ADMIN_NAVIGATION_ICONS = {
-  '/admin': LayoutDashboard,
+  '/admin/overview': LayoutDashboard,
+  '/admin/users': Users,
   '/admin/settings/finance/plans': WalletCards,
   '/admin/settings/system/global': Settings2,
 } as const;

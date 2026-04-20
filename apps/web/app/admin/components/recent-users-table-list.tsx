@@ -11,23 +11,24 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { type AdminRecentUser } from '@/types/admin';
+import { type AdminUsersTableRowViewModel } from '../users/_presenters/admin-users-table.presenter';
 
 type UserPlan = 'starter' | 'premium' | 'lifetime';
 
 interface RecentUsersTableListProps {
-  users: AdminRecentUser[];
+  rows: AdminUsersTableRowViewModel[];
   isLoading: boolean;
   isUpdatingPlan: boolean;
   onDeleteUser: (user: AdminRecentUser) => void;
   onUpdatePlan: (user: AdminRecentUser, plan: UserPlan) => void;
 }
 
-function getPlanBadgeClassName(plan: AdminRecentUser['plan']) {
-  if (plan === 'lifetime') {
+function getPlanBadgeClassName(planTone: AdminUsersTableRowViewModel['planTone']) {
+  if (planTone === 'accent') {
     return 'bg-violet-100 text-violet-700 hover:bg-violet-200';
   }
 
-  if (plan === 'premium') {
+  if (planTone === 'success') {
     return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200';
   }
 
@@ -35,7 +36,7 @@ function getPlanBadgeClassName(plan: AdminRecentUser['plan']) {
 }
 
 export function RecentUsersTableList({
-  users,
+  rows,
   isLoading,
   isUpdatingPlan,
   onDeleteUser,
@@ -58,34 +59,34 @@ export function RecentUsersTableList({
               <td colSpan={4} className="h-20 bg-slate-50 px-8 py-6" />
             </tr>
           ))
-        ) : users.length === 0 ? (
+        ) : rows.length === 0 ? (
           <tr>
             <td colSpan={4} className="px-8 py-10 text-center italic text-slate-500">
               Nenhum usuario encontrado.
             </td>
           </tr>
         ) : (
-          users.map((user) => (
-            <tr key={user.id} className="group transition-colors hover:bg-slate-50/80">
-              <td className="px-8 py-6 font-semibold text-slate-950">{user.name}</td>
-              <td className="px-8 py-6 text-slate-600">{user.email}</td>
+          rows.map((row) => (
+            <tr key={row.id} className="group transition-colors hover:bg-slate-50/80">
+              <td className="px-8 py-6 font-semibold text-slate-950">{row.name}</td>
+              <td className="px-8 py-6 text-slate-600">{row.email}</td>
               <td className="px-8 py-6">
-                {user.role === 'admin' ? (
+                {row.roleBadgeLabel ? (
                   <span className="rounded-full bg-blue-100 px-3 py-1 text-[10px] font-extrabold uppercase text-blue-700">
-                    Admin
+                    {row.roleBadgeLabel}
                   </span>
                 ) : (
                   <Select
-                    value={user.plan || 'starter'}
+                    value={row.planValue}
                     onValueChange={(nextPlan) =>
-                      onUpdatePlan(user, nextPlan as UserPlan)
+                      onUpdatePlan(row.user, nextPlan as UserPlan)
                     }
-                    disabled={isUpdatingPlan}
+                    disabled={isUpdatingPlan || !row.canManagePlan}
                   >
                     <SelectTrigger
                       className={cn(
                         'h-7 border-none px-3 text-[10px] font-extrabold uppercase tracking-widest shadow-none focus:ring-0 focus:ring-offset-0',
-                        getPlanBadgeClassName(user.plan),
+                        getPlanBadgeClassName(row.planTone),
                       )}
                     >
                       <SelectValue />
@@ -113,16 +114,16 @@ export function RecentUsersTableList({
                   </Select>
                 )}
 
-                {user.plan === 'premium' && user.daysLeft !== null ? (
+                {row.planDetails ? (
                   <div className="ml-2 mt-1 text-[10px] font-semibold text-slate-500">
-                    {user.daysLeft} dias restantes
+                    {row.planDetails}
                   </div>
                 ) : null}
               </td>
               <td className="px-8 py-6 text-right">
                 <div className="flex items-center justify-end gap-2">
                   <button
-                    onClick={() => onDeleteUser(user)}
+                    onClick={() => onDeleteUser(row.user)}
                     className="p-2 text-red-500 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100"
                   >
                     <Trash2 size={18} />

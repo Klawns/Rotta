@@ -11,7 +11,7 @@ export function RecentUsersTableToolbar({
 }: RecentUsersTableToolbarProps) {
   return (
     <div className="flex items-center justify-between border-b border-border/70 bg-slate-50/80 p-8">
-      <h2 className="text-xl font-bold text-slate-950">Usuarios recentes</h2>
+      <h2 className="text-xl font-bold text-slate-950">Usuarios</h2>
 
       <button
         onClick={onCreateUser}

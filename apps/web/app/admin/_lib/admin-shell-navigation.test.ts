@@ -6,19 +6,37 @@ import {
   isAdminNavigationItemActive,
 } from './admin-shell-navigation';
 
-test('marks the dashboard entry as active only on the root admin route', () => {
+test('marks the overview entry as active only on the overview route', () => {
   assert.equal(
-    isAdminNavigationItemActive('/admin', {
-      href: '/admin',
+    isAdminNavigationItemActive('/admin/overview', {
+      href: '/admin/overview',
       matchMode: 'exact',
     }),
     true,
   );
 
   assert.equal(
-    isAdminNavigationItemActive('/admin/settings/finance/plans', {
-      href: '/admin',
+    isAdminNavigationItemActive('/admin/users', {
+      href: '/admin/overview',
       matchMode: 'exact',
+    }),
+    false,
+  );
+});
+
+test('marks the users entry as active across nested user routes', () => {
+  assert.equal(
+    isAdminNavigationItemActive('/admin/users', {
+      href: '/admin/users',
+      matchMode: 'prefix',
+    }),
+    true,
+  );
+
+  assert.equal(
+    isAdminNavigationItemActive('/admin/overview', {
+      href: '/admin/users',
+      matchMode: 'prefix',
     }),
     false,
   );
@@ -40,6 +58,20 @@ test('keeps finance navigation active across nested settings routes', () => {
     }),
     false,
   );
+});
+
+test('falls back to overview as the primary item on the root admin redirect route', () => {
+  const navigation = getAdminShellNavigation('/admin');
+
+  assert.equal(navigation.primaryActiveItem?.href, '/admin/overview');
+  assert.equal(navigation.subNavigation, null);
+});
+
+test('returns users as the active primary navigation for the users route', () => {
+  const navigation = getAdminShellNavigation('/admin/users');
+
+  assert.equal(navigation.primaryActiveItem?.href, '/admin/users');
+  assert.equal(navigation.subNavigation, null);
 });
 
 test('returns the finance sub navigation for finance settings routes', () => {

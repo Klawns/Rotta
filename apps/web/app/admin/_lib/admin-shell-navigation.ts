@@ -3,6 +3,7 @@ export type AdminNavigationMatchMode = 'exact' | 'prefix';
 export interface AdminNavigationItemInput {
   href: string;
   matchMode: AdminNavigationMatchMode;
+  activePrefix?: string;
 }
 
 export interface AdminNavigationItem extends AdminNavigationItemInput {
@@ -20,19 +21,27 @@ interface AdminNavigationGroup {
 
 const ADMIN_PRIMARY_NAVIGATION: AdminNavigationItem[] = [
   {
-    label: 'Painel',
-    href: '/admin',
+    label: 'Visao Geral',
+    href: '/admin/overview',
     matchMode: 'exact',
+  },
+  {
+    label: 'Usuarios',
+    href: '/admin/users',
+    matchMode: 'prefix',
+    activePrefix: '/admin/users',
   },
   {
     label: 'Faturamento',
     href: '/admin/settings/finance/plans',
     matchMode: 'prefix',
+    activePrefix: '/admin/settings/finance',
   },
   {
     label: 'Sistema',
     href: '/admin/settings/system/global',
     matchMode: 'prefix',
+    activePrefix: '/admin/settings/system',
   },
 ];
 
@@ -86,10 +95,6 @@ function normalizeAdminPath(pathname: string | null | undefined) {
   return pathname;
 }
 
-function getNavigationPrefix(href: string) {
-  return href.slice(0, href.lastIndexOf('/'));
-}
-
 export function isAdminNavigationItemActive(
   pathname: string | null | undefined,
   item: AdminNavigationItemInput,
@@ -101,7 +106,7 @@ export function isAdminNavigationItemActive(
     return normalizedPath === normalizedHref;
   }
 
-  const prefix = getNavigationPrefix(normalizedHref);
+  const prefix = normalizeAdminPath(item.activePrefix ?? normalizedHref);
   return (
     normalizedPath === normalizedHref ||
     normalizedPath.startsWith(`${prefix}/`)

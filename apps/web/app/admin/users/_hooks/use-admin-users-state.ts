@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+
 import { type AdminRecentUser } from '@/types/admin';
 
-export function useAdminDashboardState() {
+export function useAdminUsersState() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -34,7 +35,6 @@ export function useAdminDashboardState() {
 
   return {
     currentPage,
-    setCurrentPage,
     isDeleteModalOpen,
     setIsDeleteModalOpen: closeDeleteModal,
     isCreateModalOpen,

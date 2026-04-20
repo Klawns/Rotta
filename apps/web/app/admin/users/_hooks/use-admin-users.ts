@@ -1,17 +1,14 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
 import { adminKeys } from '@/lib/query-keys';
 import { adminService } from '@/services/admin-service';
-import { AdminRecentUser } from '@/types/admin';
+import { type AdminRecentUser } from '@/types/admin';
+import { invalidateAdminDashboardQueries } from '../../_lib/admin-dashboard-query-cache';
 
-export function useAdminDashboard(currentPage: number) {
+export function useAdminUsers(currentPage: number) {
   const queryClient = useQueryClient();
-
-  const statsQuery = useQuery({
-    queryKey: adminKeys.stats(),
-    queryFn: ({ signal }) => adminService.getStats(signal),
-  });
 
   const usersQuery = useQuery({
     queryKey: adminKeys.users({ page: currentPage, limit: 10 }),
@@ -27,18 +24,12 @@ export function useAdminDashboard(currentPage: number) {
 
   const updatePlanMutation = useMutation({
     mutationFn: adminService.updateUserPlan,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.usersAll() });
-    },
+    onSuccess: () => invalidateAdminDashboardQueries(queryClient),
   });
 
   return {
-    stats: statsQuery.data,
-    statsError: statsQuery.error ?? null,
-    isStatsPending: statsQuery.isPending,
-    refetchStats: statsQuery.refetch,
-    users: usersQuery.data?.data,
-    pagination: usersQuery.data?.meta,
+    users: usersQuery.data?.data ?? null,
+    pagination: usersQuery.data?.meta ?? null,
     usersError: usersQuery.error ?? null,
     isUsersPending: usersQuery.isPending,
     refetchUsers: usersQuery.refetch,

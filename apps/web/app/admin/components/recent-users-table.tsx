@@ -1,6 +1,10 @@
 'use client';
 
 import { type AdminRecentUser, type PaginationMeta } from '@/types/admin';
+import {
+  presentAdminUsersPagination,
+  presentAdminUsersTableRows,
+} from '../users/_presenters/admin-users-table.presenter';
 import { RecentUsersTableList } from './recent-users-table-list';
 import { RecentUsersTablePagination } from './recent-users-table-pagination';
 import { RecentUsersTableToolbar } from './recent-users-table-toolbar';
@@ -33,22 +37,27 @@ export function RecentUsersTable({
   onPreviousPage,
   onNextPage,
 }: RecentUsersTableProps) {
+  const rows = presentAdminUsersTableRows(users);
+  const paginationViewModel = presentAdminUsersPagination({
+    usersCount: users.length,
+    totalUsers: pagination.total,
+    currentPage,
+    totalPages: pagination.totalPages,
+    isLoading,
+  });
+
   return (
     <div className="w-full overflow-hidden rounded-[2rem] border border-border/80 bg-white/80 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
       <RecentUsersTableToolbar onCreateUser={onCreateUser} />
       <RecentUsersTableList
-        users={users}
+        rows={rows}
         isLoading={isLoading}
         isUpdatingPlan={isUpdatingPlan}
         onDeleteUser={onDeleteUser}
         onUpdatePlan={onUpdatePlan}
       />
       <RecentUsersTablePagination
-        usersCount={users.length}
-        totalUsers={pagination.total}
-        currentPage={currentPage}
-        totalPages={pagination.totalPages}
-        isLoading={isLoading}
+        pagination={paginationViewModel}
         onPreviousPage={onPreviousPage}
         onNextPage={onNextPage}
       />
