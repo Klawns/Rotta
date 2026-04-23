@@ -3,10 +3,15 @@ import type { User } from '@/hooks/use-auth';
 export const CHECKOUT_CTA_HREF = '/contato';
 export const DASHBOARD_HOME_PATH = '/dashboard';
 export const DASHBOARD_SETTINGS_PATH = '/dashboard/settings';
+export const DASHBOARD_SETTINGS_DANGER_PATH = '/dashboard/settings/danger';
+export const DASHBOARD_SETTINGS_BACKUPS_PATH =
+  '/dashboard/settings/backups';
 
 const DASHBOARD_ALLOWED_WHEN_LOCKED = new Set([
   DASHBOARD_HOME_PATH,
   DASHBOARD_SETTINGS_PATH,
+  DASHBOARD_SETTINGS_DANGER_PATH,
+  DASHBOARD_SETTINGS_BACKUPS_PATH,
 ]);
 
 export interface FreeTrialState {
