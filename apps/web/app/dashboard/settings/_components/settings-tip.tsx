@@ -1,17 +1,30 @@
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from 'lucide-react';
 
 export function SettingsTip() {
-    return (
-        <div className="flex items-start gap-4 p-6 bg-primary/5 rounded-3xl border border-primary/10">
-            <CheckCircle2 className="text-primary shrink-0 mt-0.5" />
-            <div>
-                <h4 className="font-display font-bold text-text-primary text-sm">Dica Pro</h4>
-                <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-                    Organize seus atalhos por distância ou região. Por exemplo, crie um atalho &ldquo;CENTRO&rdquo; com
-                    valor R$ 15,00 e outro &ldquo;AIRPORT&rdquo; com valor R$ 80,00. Isso agiliza seu dia a dia em até
-                    80%!
-                </p>
-            </div>
+  return (
+    <section className="rounded-[2rem] border border-border-subtle bg-card/40 p-5 shadow-sm">
+      <div className="flex items-start gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
+          <CheckCircle2 className="h-5 w-5" />
         </div>
-    );
+
+        <div className="space-y-2">
+          <div className="space-y-1">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-secondary/70">
+              Boas praticas
+            </p>
+            <h3 className="text-lg font-display font-bold tracking-tight text-text-primary">
+              Padronize os atalhos para leitura rapida
+            </h3>
+          </div>
+
+          <p className="max-w-3xl text-sm leading-6 text-text-secondary">
+            Agrupe por regiao, ponto de referencia ou faixa de valor. Exemplos
+            simples como Centro, Hospital e Aeroporto costumam funcionar melhor
+            no dia a dia do painel mobile.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
 }
