@@ -48,7 +48,7 @@ export function getBackupAutomationNoticeDescription(
       status.automation.functionalCron,
     );
 
-    return `Fique tranquilo! Seus backups são gerados automaticamente de forma segura ${frequency.noticeText}. Nós armazenamos os seus últimos ${status.retentionCount} backups.`;
+    return `Fique tranquilo! Seus backups são gerados automaticamente de forma segura ${frequency.noticeText}. Nós armazenamos os seus últimos ${status.retentionCount} backups. Quando um novo backup é concluído acima desse limite, mantemos os mais recentes e removemos os mais antigos.`;
   }
 
   return "O agendamento automático não está disponível no momento. Recomendamos gerar backups manuais para sua segurança.";

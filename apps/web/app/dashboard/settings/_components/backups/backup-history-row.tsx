@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { Info } from 'lucide-react';
-import { BackupDownloadInlineStatus } from '@/components/backup-download-inline-status';
-import { Button } from '@/components/ui/button';
+import { motion } from "framer-motion";
+import { Info } from "lucide-react";
+import { BackupDownloadInlineStatus } from "@/components/backup-download-inline-status";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import type { BackupDownloadState } from '@/hooks/use-backup-download';
-import type { BackupJobSummary } from '@/types/backups';
-import { getBackupHistoryRowPresentation } from '../../_mappers/backup-history.presenter';
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import type { BackupDownloadState } from "@/hooks/use-backup-download";
+import type { BackupJobSummary } from "@/types/backups";
+import { getBackupHistoryRowPresentation } from "../../_mappers/backup-history.presenter";
 
 interface BackupHistoryRowProps {
   backup: BackupJobSummary;
@@ -39,10 +39,10 @@ export function BackupHistoryRow({
   return (
     <motion.div
       layout
-      transition={{ duration: 0.22, ease: 'easeOut' }}
+      transition={{ duration: 0.22, ease: "easeOut" }}
       className={cn(
-        'flex flex-col px-6 py-4 transition-colors duration-300',
-        hasBorder && 'border-b border-border-subtle',
+        "flex flex-col px-6 py-4 transition-colors duration-300",
+        hasBorder && "border-b border-border-subtle",
         presentation.download.rowToneClassName,
       )}
     >
@@ -65,7 +65,7 @@ export function BackupHistoryRow({
         <div className="col-span-3 flex flex-col items-start gap-1">
           <span
             className={cn(
-              'inline-flex items-center gap-1.5 text-sm font-medium',
+              "inline-flex items-center gap-1.5 text-sm font-medium",
               presentation.status.className,
             )}
           >
@@ -89,7 +89,7 @@ export function BackupHistoryRow({
           >
             <DownloadIcon
               className={cn(
-                'mr-2 h-4 w-4',
+                "mr-2 h-4 w-4",
                 presentation.download.iconClassName,
               )}
             />

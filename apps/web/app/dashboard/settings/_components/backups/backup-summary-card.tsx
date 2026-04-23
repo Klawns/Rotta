@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   CalendarDays,
@@ -6,9 +6,9 @@ import {
   DatabaseBackup,
   Plus,
   ShieldCheck,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { getBackupAutomationFrequencyPresentation } from '../../_mappers/backup-automation.presenter';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { getBackupAutomationFrequencyPresentation } from "../../_mappers/backup-automation.presenter";
 
 interface BackupSummaryCardProps {
   retentionCount: number;
@@ -41,7 +41,8 @@ export function BackupSummaryCard({
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
             Mantenha seus dados seguros. Seus backups são gerados
             automaticamente, mas você pode criar cópias manuais a qualquer
-            momento.
+            momento. Quando o limite de retenção é atingido, os backups mais
+            recentes são mantidos e os mais antigos são removidos.
           </p>
         </div>
 
@@ -51,7 +52,7 @@ export function BackupSummaryCard({
           disabled={isCreating}
         >
           <Plus className="mr-2 h-4 w-4" />
-          {isCreating ? 'Enfileirando...' : 'Gerar backup agora'}
+          {isCreating ? "Enfileirando..." : "Gerar backup agora"}
         </Button>
       </div>
 
@@ -66,11 +67,11 @@ export function BackupSummaryCard({
             </div>
             <div className="mt-0.5 text-sm font-semibold text-foreground">
               {latestBackupAt
-                ? new Date(latestBackupAt).toLocaleString('pt-BR', {
-                    dateStyle: 'short',
-                    timeStyle: 'short',
+                ? new Date(latestBackupAt).toLocaleString("pt-BR", {
+                    dateStyle: "short",
+                    timeStyle: "short",
                   })
-                : 'Nenhum'}
+                : "Nenhum"}
             </div>
           </div>
         </div>
@@ -86,7 +87,7 @@ export function BackupSummaryCard({
             <div className="mt-0.5 text-sm font-semibold text-foreground">
               {isAutomationActive
                 ? `Ativa (${automationFrequency.summaryLabel})`
-                : 'Desativada'}
+                : "Desativada"}
             </div>
           </div>
         </div>
@@ -100,7 +101,7 @@ export function BackupSummaryCard({
               Retenção
             </div>
             <div className="mt-0.5 text-sm font-semibold text-foreground">
-              {retentionCount} dias
+              {retentionCount} backups
             </div>
           </div>
         </div>

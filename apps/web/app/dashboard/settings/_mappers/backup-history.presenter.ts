@@ -43,6 +43,7 @@ export interface BackupHistoryRowPresentation {
 interface BackupHistoryRowPresentationOptions {
   downloadState: BackupDownloadState;
   isPreparingDownload: boolean;
+  now?: Date;
 }
 
 const BACKUP_HISTORY_STATUS_MAP: Record<
@@ -198,7 +199,10 @@ export function getBackupHistoryRowPresentation(
   options: BackupHistoryRowPresentationOptions,
 ): BackupHistoryRowPresentation {
   return {
-    createdAtLabel: formatBackupHistoryRelativeDate(backup.createdAt),
+    createdAtLabel: formatBackupHistoryRelativeDate(
+      backup.createdAt,
+      options.now,
+    ),
     originLabel: getBackupOriginLabel(backup.trigger),
     sizeLabel: formatBackupHistorySize(backup.sizeBytes),
     status: BACKUP_HISTORY_STATUS_MAP[backup.status],

@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useBackupDownload } from '@/hooks/use-backup-download';
-import { getLatestSuccessfulSummaryBackup } from '@/lib/backup-history-presentation';
-import backupsService from '@/services/backups-service';
-import { useBackupImport } from './use-backup-import';
-import { useBackupsData } from './use-backups-data';
-import { useManualBackup } from './use-manual-backup';
+import { useBackupDownload } from "@/hooks/use-backup-download";
+import { getLatestSuccessfulSummaryBackup } from "@/lib/backup-history-presentation";
+import backupsService from "@/services/backups-service";
+import { useBackupImport } from "./use-backup-import";
+import { useBackupsData } from "./use-backups-data";
+import { useManualBackup } from "./use-manual-backup";
 
 export function useBackups() {
   const backupsData = useBackupsData();
@@ -18,11 +18,11 @@ export function useBackups() {
   const { downloadState, isPreparingDownload, startDownload } =
     useBackupDownload({
       requestDownloadUrl: (backupId) => backupsService.getDownloadUrl(backupId),
-      successTitle: 'Download iniciado',
-      successDescription: 'O navegador já iniciou a transferência do backup.',
-      errorTitle: 'Falha ao baixar backup',
+      successTitle: "Download iniciado",
+      successDescription: "O navegador já iniciou a transferência do backup.",
+      errorTitle: "Falha ao baixar backup",
       errorDescription:
-        'Não foi possível preparar o download do backup. Tente novamente.',
+        "Não foi possível preparar o download do backup. Tente novamente.",
     });
 
   return {

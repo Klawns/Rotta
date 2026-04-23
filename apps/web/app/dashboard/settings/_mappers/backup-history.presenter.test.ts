@@ -5,31 +5,55 @@ import {
   getBackupHistoryRowPresentation,
 } from "./backup-history.presenter";
 
+function toLocalIso(
+  year: number,
+  month: number,
+  day: number,
+  hours = 0,
+  minutes = 0,
+) {
+  return new Date(year, month - 1, day, hours, minutes, 0, 0).toISOString();
+}
+
+function createBackup(
+  overrides: Partial<
+    Parameters<typeof getBackupHistoryRowPresentation>[0]
+  > = {},
+) {
+  return {
+    id: "backup-1",
+    kind: "functional_user" as const,
+    trigger: "manual" as const,
+    status: "success" as const,
+    checksum: null,
+    sizeBytes: 0,
+    manifestVersion: 2,
+    errorMessage: null,
+    createdAt: toLocalIso(2026, 4, 1, 10, 0),
+    startedAt: null,
+    finishedAt: null,
+    metadata: null,
+    ...overrides,
+  };
+}
+
+function createIdleDownloadState() {
+  return {
+    backupId: null,
+    phase: "idle" as const,
+    message: null,
+  };
+}
+
 test("keeps failed download feedback on the matching backup row", () => {
-  const presentation = getBackupHistoryRowPresentation(
-    {
-      id: "backup-1",
-      kind: "functional_user",
-      trigger: "manual",
-      status: "success",
-      checksum: null,
-      sizeBytes: 0,
-      manifestVersion: 2,
-      errorMessage: null,
-      createdAt: "2026-04-01T10:00:00.000Z",
-      startedAt: null,
-      finishedAt: null,
-      metadata: null,
+  const presentation = getBackupHistoryRowPresentation(createBackup(), {
+    downloadState: {
+      backupId: "backup-1",
+      phase: "failed",
+      message: "falhou",
     },
-    {
-      downloadState: {
-        backupId: "backup-1",
-        phase: "failed",
-        message: "falhou",
-      },
-      isPreparingDownload: false,
-    },
-  );
+    isPreparingDownload: false,
+  });
 
   assert.equal(presentation.sizeLabel, "0,00 MB");
   assert.equal(presentation.download.label, "Tentar novamente");
@@ -53,4 +77,32 @@ test("formats today and yesterday labels with calendar awareness", () => {
     formatBackupHistoryRelativeDate("invalid", now),
     "Data indisponível",
   );
+});
+
+test("maps failed jobs to a public error message", () => {
+  const presentation = getBackupHistoryRowPresentation(
+    createBackup({
+      status: "failed",
+      errorMessage: "internal",
+    }),
+    {
+      downloadState: createIdleDownloadState(),
+      isPreparingDownload: false,
+    },
+  );
+
+  assert.equal(presentation.status.label, "Falhou");
+  assert.match(presentation.errorLabel ?? "", /revise a configuração/i);
+  assert.equal(presentation.download.isDisabled, true);
+});
+
+test("disables download while another request is being prepared", () => {
+  const presentation = getBackupHistoryRowPresentation(createBackup(), {
+    downloadState: createIdleDownloadState(),
+    isPreparingDownload: true,
+  });
+
+  assert.equal(presentation.download.label, "Baixar");
+  assert.equal(presentation.download.isDisabled, true);
+  assert.equal(presentation.download.isFeedbackVisible, false);
 });
