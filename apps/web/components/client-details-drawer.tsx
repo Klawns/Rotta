@@ -117,8 +117,8 @@ export function ClientDetailsDrawer({
 
   const bulkDeleteDescription =
     selection.selectedCount === 1
-      ? "Deseja realmente excluir a corrida selecionada? Esta acao e irreversivel."
-      : `Deseja realmente excluir as ${selection.selectedCount} corridas selecionadas? Esta acao e irreversivel.`;
+      ? "Deseja realmente excluir a corrida selecionada? Esta ação é irreversível."
+      : `Deseja realmente excluir as ${selection.selectedCount} corridas selecionadas? Esta ação é irreversível.`;
 
   return (
     <AnimatePresence mode="wait">
