@@ -26,6 +26,10 @@ describe('RideStatusService', () => {
               Number(value) - Number(paidExternally ?? 0),
             ),
           ),
+          paidExternally: Math.max(
+            0,
+            Math.min(Number(paidExternally ?? 0), Number(value)),
+          ),
           paymentStatus:
             Number(value) -
               Number(paidExternally ?? 0) -
@@ -73,6 +77,7 @@ describe('RideStatusService', () => {
     expect(result).toEqual({
       status: 'COMPLETED',
       debtValue: 25,
+      paidExternally: 0,
     });
   });
 
@@ -94,6 +99,7 @@ describe('RideStatusService', () => {
       expect.objectContaining({
         value: 6,
         paidWithBalance: 6,
+        paidExternally: 0,
         paymentStatus: 'PAID',
         debtValue: 0,
       }),
@@ -118,6 +124,7 @@ describe('RideStatusService', () => {
         clientId: 'client-2',
         value: 10,
         paidWithBalance: 0,
+        paidExternally: 0,
         paymentStatus: 'PENDING',
         debtValue: 10,
         }),
@@ -141,6 +148,7 @@ describe('RideStatusService', () => {
       expect.objectContaining({
         value: 15,
         paidWithBalance: 10,
+        paidExternally: 0,
         paymentStatus: 'PENDING',
         debtValue: 5,
       }),
@@ -165,6 +173,7 @@ describe('RideStatusService', () => {
       expect.objectContaining({
         value: 25,
         paidWithBalance: 0,
+        paidExternally: 25,
         paymentStatus: 'PAID',
         debtValue: 0,
       }),

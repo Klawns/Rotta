@@ -12,6 +12,7 @@ export class RideStatusService {
     const updateData: Omit<UpdateRideDto, 'rideDate'> & {
       rideDate?: Date | null;
       paidWithBalance?: number;
+      paidExternally?: number;
       debtValue?: number;
     } = { ...restData };
     const financialInputsChanged =
@@ -19,7 +20,9 @@ export class RideStatusService {
       data.paymentStatus !== undefined ||
       data.clientId !== undefined;
     const paymentInputsChanged =
-      data.value !== undefined || data.clientId !== undefined;
+      data.value !== undefined ||
+      data.clientId !== undefined ||
+      data.paymentStatus !== undefined;
     const previousRideValue = Number(existingRide.value);
     const nextClientId = data.clientId ?? existingRide.clientId;
     const nextRideValue = Number(data.value ?? Number(existingRide.value));
@@ -27,7 +30,10 @@ export class RideStatusService {
     const previousDebtValue = Number(existingRide.debtValue ?? 0);
     const previousPaidExternally = Math.max(
       0,
-      previousRideValue - previousPaidWithBalance - previousDebtValue,
+      Number(
+        existingRide.paidExternally ??
+          (previousRideValue - previousPaidWithBalance - previousDebtValue),
+      ),
     );
     const maxRetainedBalance = Math.max(0, nextRideValue - previousPaidExternally);
     const nextPaidWithBalance =
@@ -40,16 +46,26 @@ export class RideStatusService {
     }
 
     if (financialInputsChanged) {
-      const { rideTotal, paidWithBalance, debtValue, paymentStatus } =
+      const {
+        rideTotal,
+        paidWithBalance,
+        paidExternally,
+        debtValue,
+        paymentStatus,
+      } =
         this.rideAccountingService.resolvePaymentSnapshot({
           value: nextRideValue,
           paidWithBalance: nextPaidWithBalance,
-          paidExternally: paymentInputsChanged ? previousPaidExternally : undefined,
+          paidExternally:
+            paymentInputsChanged && data.paymentStatus === undefined
+              ? previousPaidExternally
+              : undefined,
           paymentStatus: data.paymentStatus ?? existingRide.paymentStatus,
         });
 
       updateData.value = rideTotal;
       updateData.paidWithBalance = paidWithBalance;
+      updateData.paidExternally = paidExternally;
       updateData.debtValue = debtValue;
       updateData.paymentStatus = paymentStatus;
     }
@@ -67,7 +83,10 @@ export class RideStatusService {
   }
 
   prepareStatusUpdate(existingRide: Ride, data: UpdateRideStatusDto) {
-    const updateData: UpdateRideStatusDto & { debtValue?: number } = {
+    const updateData: UpdateRideStatusDto & {
+      debtValue?: number;
+      paidExternally?: number;
+    } = {
       ...data,
     };
 
@@ -77,7 +96,7 @@ export class RideStatusService {
     }
 
     if (data.paymentStatus !== undefined) {
-      const { debtValue, paymentStatus } =
+      const { debtValue, paidExternally, paymentStatus } =
         this.rideAccountingService.resolvePaymentSnapshot({
           value: Number(existingRide.value),
           paidWithBalance: Number(existingRide.paidWithBalance ?? 0),
@@ -85,18 +104,22 @@ export class RideStatusService {
         });
 
       updateData.paymentStatus = paymentStatus;
+      updateData.paidExternally = paidExternally;
       updateData.debtValue = debtValue;
       return updateData;
     }
 
     if (existingRide.status === 'CANCELLED' && data.status !== undefined) {
-      const { debtValue } = this.rideAccountingService.resolvePaymentSnapshot({
-        value: Number(existingRide.value),
-        paidWithBalance: Number(existingRide.paidWithBalance ?? 0),
-        paymentStatus: existingRide.paymentStatus,
-      });
+      const { debtValue, paidExternally } =
+        this.rideAccountingService.resolvePaymentSnapshot({
+          value: Number(existingRide.value),
+          paidWithBalance: Number(existingRide.paidWithBalance ?? 0),
+          paidExternally: Number(existingRide.paidExternally ?? 0),
+          paymentStatus: existingRide.paymentStatus,
+        });
 
       updateData.debtValue = debtValue;
+      updateData.paidExternally = paidExternally;
     }
 
     return updateData;

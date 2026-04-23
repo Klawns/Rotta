@@ -31,6 +31,7 @@ import type {
   Ride,
   RideWithClient,
 } from './interfaces/rides-repository.interface';
+import { ClientPaymentReconciliationService } from '../clients/services/client-payment-reconciliation.service';
 
 type TransactionRunner = {
   transaction<T>(callback: (tx: unknown) => Promise<T>): Promise<T>;
@@ -80,6 +81,7 @@ export class RidesService {
     private readonly rideAccountingService: RideAccountingService,
     private readonly ridePhotoReferenceService: RidePhotoReferenceService,
     private readonly rideStatusService: RideStatusService,
+    private readonly clientPaymentReconciliationService: ClientPaymentReconciliationService,
   ) {}
 
   private async getRideOrThrow(
@@ -167,6 +169,20 @@ export class RidesService {
     }
   }
 
+  private async reconcileClients(
+    userId: string,
+    clientIds: Iterable<string>,
+    executor: unknown,
+  ) {
+    for (const clientId of new Set(Array.from(clientIds).filter(Boolean))) {
+      await this.clientPaymentReconciliationService.reconcileClientPayments(
+        userId,
+        clientId,
+        executor,
+      );
+    }
+  }
+
   async findAll(
     userId: string,
     limit: number = 20,
@@ -228,6 +244,7 @@ export class RidesService {
         const {
           rideTotal,
           paidWithBalance: normalizedPaidWithBalance,
+          paidExternally,
           debtValue,
           paymentStatus,
         } = this.rideAccountingService.resolvePaymentSnapshot({
@@ -236,12 +253,13 @@ export class RidesService {
           paymentStatus: data.paymentStatus,
         });
 
-        return this.ridesRepository.create(
+        const createdRide = await this.ridesRepository.create(
           {
             id: randomUUID(),
             clientId: data.clientId,
             value: rideTotal,
             paidWithBalance: normalizedPaidWithBalance,
+            paidExternally,
             debtValue,
             location: data.location,
             notes: data.notes,
@@ -250,9 +268,13 @@ export class RidesService {
             rideDate: data.rideDate ? new Date(data.rideDate) : new Date(),
             photo,
             userId,
-          } as any,
+          },
           tx,
         );
+
+        await this.reconcileClients(userId, [data.clientId], tx);
+
+        return createdRide;
       },
     );
 
@@ -309,7 +331,15 @@ export class RidesService {
           tx,
         );
 
-        return this.ridesRepository.update(userId, id, updateData, tx);
+        const updatedRide = await this.ridesRepository.update(userId, id, updateData, tx);
+
+        await this.reconcileClients(
+          userId,
+          [existingRide.clientId, nextClientId],
+          tx,
+        );
+
+        return updatedRide;
       },
     );
 
@@ -355,7 +385,11 @@ export class RidesService {
           tx,
         );
 
-        return this.ridesRepository.delete(userId, id, tx);
+        const deletedRide = await this.ridesRepository.delete(userId, id, tx);
+
+        await this.reconcileClients(userId, [existingRide.clientId], tx);
+
+        return deletedRide;
       },
     );
     timings.transactionMs = Date.now() - transactionStartedAt;
@@ -438,6 +472,12 @@ export class RidesService {
         tx,
       );
       deletedCount = deletedRides.length;
+
+      await this.reconcileClients(
+        userId,
+        ridesToDelete.map((ride) => ride.clientId),
+        tx,
+      );
     });
 
     await Promise.all(
@@ -508,6 +548,12 @@ export class RidesService {
       }
 
       await this.ridesRepository.deleteAll(userId, tx);
+
+      await this.reconcileClients(
+        userId,
+        ridesWithBalance.map((ride) => ride.clientId),
+        tx,
+      );
     });
 
     await Promise.all(
@@ -533,10 +579,19 @@ export class RidesService {
       data,
     );
 
-    const result = await this.ridesRepository.updateStatus(
-      userId,
-      id,
-      updateData,
+    const result = await (this.drizzle.db as TransactionRunner).transaction(
+      async (tx) => {
+        const updatedRide = await this.ridesRepository.updateStatus(
+          userId,
+          id,
+          updateData,
+          tx,
+        );
+
+        await this.reconcileClients(userId, [existingRide.clientId], tx);
+
+        return updatedRide;
+      },
     );
 
     if (!result) {

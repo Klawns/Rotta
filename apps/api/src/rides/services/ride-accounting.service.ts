@@ -52,6 +52,7 @@ export class RideAccountingService {
     return {
       rideTotal,
       paidWithBalance: normalizedPaidWithBalance,
+      paidExternally: normalizedPaidExternally,
       paymentStatus: normalizedPaymentStatus,
       debtValue,
     };

@@ -32,6 +32,10 @@ export interface ClientBalance {
     pendingRides: number;
     unusedPayments: number;
     clientBalance: number;
+    unappliedPaymentAmount: number;
+    hasPartialPaymentCarryover: boolean;
+    nextRideAmount: number | null;
+    nextRideShortfall: number | null;
 }
 
 export interface FrequentClient extends Client {

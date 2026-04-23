@@ -10,6 +10,7 @@ import { UserDashboardCacheService } from '../cache/user-dashboard-cache.service
 import { RideAccountingService } from './services/ride-accounting.service';
 import { RidePhotoReferenceService } from './services/ride-photo-reference.service';
 import { RideStatusService } from './services/ride-status.service';
+import { ClientPaymentReconciliationService } from '../clients/services/client-payment-reconciliation.service';
 
 describe('RidesService', () => {
   const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
@@ -23,6 +24,7 @@ describe('RidesService', () => {
   let rideAccountingMock: any;
   let ridePhotoReferenceMock: any;
   let rideStatusMock: any;
+  let reconciliationServiceMock: any;
   let loggerErrorSpy: jest.SpyInstance;
 
   const sampleRide = {
@@ -35,6 +37,7 @@ describe('RidesService', () => {
     status: 'COMPLETED',
     paymentStatus: 'PAID',
     paidWithBalance: 10,
+    paidExternally: 32,
     debtValue: 0,
     rideDate: new Date('2026-04-08T15:00:00.000Z'),
     createdAt: new Date('2026-04-08T15:05:00.000Z'),
@@ -62,6 +65,7 @@ describe('RidesService', () => {
         status: 'COMPLETED',
         paymentStatus: 'PAID',
         paidWithBalance: 0,
+        paidExternally: 25.5,
         debtValue: 0,
         rideDate: new Date('2026-04-08T12:28:00.000Z'),
         createdAt: new Date('2026-04-08T12:28:00.000Z'),
@@ -127,6 +131,10 @@ describe('RidesService', () => {
         }) => ({
           rideTotal: Number(value),
           paidWithBalance: Number(paidWithBalance ?? 0),
+          paidExternally:
+            paymentStatus === 'PENDING'
+              ? 0
+              : Number(value) - Number(paidWithBalance ?? 0),
           paymentStatus: paymentStatus === 'PENDING' ? 'PENDING' : 'PAID',
           debtValue:
             paymentStatus === 'PENDING'
@@ -186,6 +194,9 @@ describe('RidesService', () => {
         }),
       ),
     };
+    reconciliationServiceMock = {
+      reconcileClientPayments: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -221,6 +232,10 @@ describe('RidesService', () => {
         {
           provide: RideStatusService,
           useValue: rideStatusMock,
+        },
+        {
+          provide: ClientPaymentReconciliationService,
+          useValue: reconciliationServiceMock,
         },
       ],
     }).compile();
@@ -350,6 +365,7 @@ describe('RidesService', () => {
         paymentStatus: 'PAID',
         debtValue: 0,
       }),
+      'tx',
     );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
@@ -388,6 +404,7 @@ describe('RidesService', () => {
         status: 'CANCELLED',
         debtValue: 0,
       }),
+      'tx',
     );
   });
 
@@ -428,6 +445,7 @@ describe('RidesService', () => {
         status: 'COMPLETED',
         debtValue: 25,
       }),
+      'tx',
     );
   });
 

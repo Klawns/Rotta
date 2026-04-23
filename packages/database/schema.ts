@@ -10,6 +10,7 @@ import {
   serial as pgSerial,
   text as pgText,
   timestamp as pgTimestamp,
+  uniqueIndex as pgUniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -38,6 +39,7 @@ export const subscriptionStatusEnum = pgEnum('subscription_status', [
 ]);
 export const paymentUsedStatusEnum = pgEnum('payment_used_status', [
   'UNUSED',
+  'PARTIALLY_USED',
   'USED',
 ]);
 export const backupJobKindEnum = pgEnum('backup_job_kind', [
@@ -166,6 +168,13 @@ export const pgRides = pgTable(
     })
       .notNull()
       .default(0),
+    paidExternally: pgNumeric('paid_externally', {
+      precision: 10,
+      scale: 2,
+      mode: 'number',
+    })
+      .notNull()
+      .default(0),
     debtValue: pgNumeric('debt_value', {
       precision: 10,
       scale: 2,
@@ -280,9 +289,17 @@ export const pgClientPayments = pgTable(
       scale: 2,
       mode: 'number',
     }).notNull(),
+    remainingAmount: pgNumeric('remaining_amount', {
+      precision: 10,
+      scale: 2,
+      mode: 'number',
+    })
+      .notNull()
+      .default(0),
     paymentDate: pgTimestamp('payment_date', { withTimezone: true })
       .notNull()
       .defaultNow(),
+    idempotencyKey: pgText('idempotency_key'),
     status: paymentUsedStatusEnum('status').notNull().default('UNUSED'),
     notes: pgText('notes'),
     createdAt: pgTimestamp('created_at', { withTimezone: true })
@@ -293,6 +310,10 @@ export const pgClientPayments = pgTable(
     userIdIdx: pgIndex('client_payments_user_id_idx').on(table.userId),
     clientIdIdx: pgIndex('client_payments_client_id_idx').on(table.clientId),
     statusIdx: pgIndex('client_payments_status_idx').on(table.status),
+    idempotencyKeyIdx: pgUniqueIndex('client_payments_user_idempotency_key_idx').on(
+      table.userId,
+      table.idempotencyKey,
+    ),
   }),
 );
 

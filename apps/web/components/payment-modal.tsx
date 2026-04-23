@@ -17,6 +17,7 @@ import { invalidateRideCachesForClient } from '@/lib/ride-cache';
 import { clientKeys, financeKeys } from '@/lib/query-keys';
 import { clientsService } from '@/services/clients-service';
 import { type CreateClientPaymentInput } from '@/types/client-payments';
+import { buildPaymentSuccessMessage } from '@/components/payment-modal/payment-feedback';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -28,6 +29,14 @@ interface PaymentModalProps {
 
 interface PaymentModalFormProps extends Omit<PaymentModalProps, 'isOpen'> {}
 
+function createIdempotencyKey() {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `payment-${Date.now()}`;
+}
+
 function PaymentModalForm({
   onClose,
   onSuccess,
@@ -36,13 +45,14 @@ function PaymentModalForm({
 }: PaymentModalFormProps) {
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
+  const [idempotencyKey] = useState(createIdempotencyKey);
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: (payload: CreateClientPaymentInput) =>
       clientsService.addClientPayment(clientId, payload),
-    onSuccess: async (payment) => {
-      upsertClientPaymentCaches(queryClient, payment);
+    onSuccess: async (result) => {
+      upsertClientPaymentCaches(queryClient, result.payment);
 
       await Promise.all([
         invalidateRideCachesForClient(queryClient, clientId),
@@ -57,7 +67,7 @@ function PaymentModalForm({
         queryClient.invalidateQueries({ queryKey: financeKeys.all }),
       ]);
 
-      toast.success('Pagamento registrado com sucesso.');
+      toast.success(buildPaymentSuccessMessage(result.summary));
       onSuccess();
       onClose();
     },
@@ -78,6 +88,7 @@ function PaymentModalForm({
     mutation.mutate({
       amount: Number(amount),
       notes: notes.trim() || undefined,
+      idempotencyKey,
     });
   };
 

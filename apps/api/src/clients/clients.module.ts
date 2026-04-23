@@ -9,10 +9,12 @@ import { DrizzleBalanceTransactionsRepository } from './repositories/drizzle-bal
 import { IBalanceTransactionsRepository } from './interfaces/balance-transactions-repository.interface';
 import { RidesModule } from '../rides/rides.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { ClientPaymentReconciliationService } from './services/client-payment-reconciliation.service';
 
 @Module({
   providers: [
     ClientsService,
+    ClientPaymentReconciliationService,
     {
       provide: IClientsRepository,
       useClass: DrizzleClientsRepository,
@@ -30,6 +32,7 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
   controllers: [ClientsController],
   exports: [
     ClientsService,
+    ClientPaymentReconciliationService,
     IClientsRepository,
     IClientPaymentsRepository,
     IBalanceTransactionsRepository,

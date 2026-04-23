@@ -48,12 +48,13 @@ export type GetClientDirectoryDto = z.infer<typeof getClientDirectorySchema>;
 export const addPartialPaymentSchema = z.object({
   amount: z.coerce.number().positive(),
   notes: z.string().optional(),
+  idempotencyKey: z.string().trim().min(1),
 });
 
 export type AddPartialPaymentDto = z.infer<typeof addPartialPaymentSchema>;
 
 export const getClientPaymentsSchema = z.object({
-  status: z.enum(['UNUSED', 'USED']).optional(),
+  status: z.enum(['UNUSED', 'PARTIALLY_USED', 'USED']).optional(),
 });
 
 export type GetClientPaymentsDto = z.infer<typeof getClientPaymentsSchema>;

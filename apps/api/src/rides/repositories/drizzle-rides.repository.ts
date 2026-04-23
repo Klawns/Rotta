@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Drizzle is consumed through a dialect-agnostic runtime boundary in this repository. */
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, ne, inArray } from 'drizzle-orm';
+import { eq, and, ne, inArray, asc } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.provider';
 import type { DrizzleClient } from '../../database/database.provider';
 import {
@@ -89,6 +89,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
       status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
       paymentStatus?: 'PENDING' | 'PAID';
       debtValue?: number;
+      paidExternally?: number;
     },
     executor?: any,
   ): Promise<Ride> {
@@ -223,6 +224,48 @@ export class DrizzleRidesRepository implements IRidesRepository {
       userId,
       executor,
     );
+  }
+
+  findSettlementCandidatesByClient(
+    clientId: string,
+    userId: string,
+    executor?: any,
+  ): Promise<Ride[]> {
+    return this.getExecutor(executor)
+      .select()
+      .from(this.schema.rides)
+      .where(
+        and(
+          eq(this.schema.rides.clientId, clientId),
+          eq(this.schema.rides.userId, userId),
+          ne(this.schema.rides.status, 'CANCELLED'),
+        ),
+      )
+      .orderBy(
+        asc(this.schema.rides.rideDate),
+        asc(this.schema.rides.createdAt),
+        asc(this.schema.rides.id),
+      );
+  }
+
+  async updateFinancialSnapshot(
+    userId: string,
+    id: string,
+    data: {
+      paymentStatus: 'PENDING' | 'PAID';
+      debtValue: number;
+    },
+    executor?: any,
+  ): Promise<Ride> {
+    const results = await this.getExecutor(executor)
+      .update(this.schema.rides)
+      .set(data as any)
+      .where(
+        and(eq(this.schema.rides.id, id), eq(this.schema.rides.userId, userId)),
+      )
+      .returning();
+
+    return results[0];
   }
 
   async markAllAsPaidForClient(

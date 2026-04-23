@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument -- Drizzle is consumed through a dialect-agnostic runtime boundary in this repository. */
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { eq, and, sql, desc, count } from 'drizzle-orm';
+import { eq, and, sql, desc, count, asc, ne } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
 import { DRIZZLE } from '../../database/database.provider';
@@ -35,7 +35,7 @@ export class DrizzleClientPaymentsRepository implements IClientPaymentsRepositor
   findByClient(
     clientId: string,
     userId: string,
-    status?: 'UNUSED' | 'USED',
+    status?: 'UNUSED' | 'PARTIALLY_USED' | 'USED',
   ): Promise<ClientPayment[]> {
     const conditions = [
       eq(this.schema.clientPayments.clientId, clientId),
@@ -51,6 +51,46 @@ export class DrizzleClientPaymentsRepository implements IClientPaymentsRepositor
       .from(this.schema.clientPayments)
       .where(and(...conditions))
       .orderBy(desc(this.schema.clientPayments.createdAt));
+  }
+
+  async findOne(
+    paymentId: string,
+    userId: string,
+    executor?: any,
+  ): Promise<ClientPayment | undefined> {
+    const results = await this.getExecutor(executor)
+      .select()
+      .from(this.schema.clientPayments)
+      .where(
+        and(
+          eq(this.schema.clientPayments.id, paymentId),
+          eq(this.schema.clientPayments.userId, userId),
+        ),
+      )
+      .limit(1);
+
+    return results[0];
+  }
+
+  async findByIdempotencyKey(
+    clientId: string,
+    userId: string,
+    idempotencyKey: string,
+    executor?: any,
+  ): Promise<ClientPayment | undefined> {
+    const results = await this.getExecutor(executor)
+      .select()
+      .from(this.schema.clientPayments)
+      .where(
+        and(
+          eq(this.schema.clientPayments.clientId, clientId),
+          eq(this.schema.clientPayments.userId, userId),
+          eq(this.schema.clientPayments.idempotencyKey, idempotencyKey),
+        ),
+      )
+      .limit(1);
+
+    return results[0];
   }
 
   async create(
@@ -75,14 +115,55 @@ export class DrizzleClientPaymentsRepository implements IClientPaymentsRepositor
   ): Promise<void> {
     await this.getExecutor(executor)
       .update(this.schema.clientPayments)
-      .set({ status: 'USED' })
+      .set({ status: 'USED', remainingAmount: 0 })
       .where(
         and(
           eq(this.schema.clientPayments.clientId, clientId),
           eq(this.schema.clientPayments.userId, userId),
-          eq(this.schema.clientPayments.status, 'UNUSED'),
+          ne(this.schema.clientPayments.status, 'USED'),
         ),
       );
+  }
+
+  findSettlementPaymentsByClient(
+    clientId: string,
+    userId: string,
+    executor?: any,
+  ): Promise<ClientPayment[]> {
+    return this.getExecutor(executor)
+      .select()
+      .from(this.schema.clientPayments)
+      .where(
+        and(
+          eq(this.schema.clientPayments.clientId, clientId),
+          eq(this.schema.clientPayments.userId, userId),
+        ),
+      )
+      .orderBy(
+        asc(this.schema.clientPayments.paymentDate),
+        asc(this.schema.clientPayments.createdAt),
+        asc(this.schema.clientPayments.id),
+      );
+  }
+
+  async updateFinancialState(
+    paymentId: string,
+    userId: string,
+    data: Pick<ClientPayment, 'remainingAmount' | 'status'>,
+    executor?: any,
+  ): Promise<ClientPayment> {
+    const results = await this.getExecutor(executor)
+      .update(this.schema.clientPayments)
+      .set(data as any)
+      .where(
+        and(
+          eq(this.schema.clientPayments.id, paymentId),
+          eq(this.schema.clientPayments.userId, userId),
+        ),
+      )
+      .returning();
+
+    return results[0];
   }
 
   async getUnusedPaymentsStats(
@@ -92,7 +173,7 @@ export class DrizzleClientPaymentsRepository implements IClientPaymentsRepositor
   ): Promise<{ totalPaid: number; unusedPaymentsCount: number }> {
     const result = await this.getExecutor(executor)
       .select({
-        total: sql<number>`SUM(${this.schema.clientPayments.amount})`,
+        total: sql<number>`SUM(${this.schema.clientPayments.remainingAmount})`,
         count: count(),
       })
       .from(this.schema.clientPayments)
@@ -100,7 +181,7 @@ export class DrizzleClientPaymentsRepository implements IClientPaymentsRepositor
         and(
           eq(this.schema.clientPayments.clientId, clientId),
           eq(this.schema.clientPayments.userId, userId),
-          eq(this.schema.clientPayments.status, 'UNUSED'),
+          ne(this.schema.clientPayments.status, 'USED'),
         ),
       );
 

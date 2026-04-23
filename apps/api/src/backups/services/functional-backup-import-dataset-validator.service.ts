@@ -9,7 +9,7 @@ import type {
 
 const RIDE_STATUSES = ['PENDING', 'COMPLETED', 'CANCELLED'] as const;
 const RIDE_PAYMENT_STATUSES = ['PENDING', 'PAID'] as const;
-const CLIENT_PAYMENT_STATUSES = ['UNUSED', 'USED'] as const;
+const CLIENT_PAYMENT_STATUSES = ['UNUSED', 'PARTIALLY_USED', 'USED'] as const;
 const TRANSACTION_TYPES = ['CREDIT', 'DEBIT'] as const;
 const TRANSACTION_ORIGINS = [
   'PAYMENT_OVERFLOW',
@@ -155,6 +155,10 @@ export class FunctionalBackupImportDatasetValidatorService {
         `corrida ${ride.id} pago com saldo`,
       );
       this.parseOptionalNumericValue(
+        ride.paidExternally,
+        `corrida ${ride.id} pago externamente`,
+      );
+      this.parseOptionalNumericValue(
         ride.debtValue,
         `corrida ${ride.id} valor em aberto`,
       );
@@ -182,6 +186,10 @@ export class FunctionalBackupImportDatasetValidatorService {
         `status do pagamento ${payment.id}`,
       );
       this.parseNumericValue(payment.amount, `pagamento ${payment.id} valor`);
+      this.parseOptionalNumericValue(
+        payment.remainingAmount,
+        `pagamento ${payment.id} saldo disponivel`,
+      );
       this.normalizeDate(payment.paymentDate);
       this.normalizeDate(payment.createdAt);
     }

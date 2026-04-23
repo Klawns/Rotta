@@ -106,12 +106,7 @@ export class ClientsController {
     @Param('id') id: string,
     @ZodBody(Dtos.addPartialPaymentSchema) body: Dtos.AddPartialPaymentDto,
   ) {
-    return this.clientsService.addPartialPayment(
-      req.user.id,
-      id,
-      body.amount,
-      body.notes,
-    );
+    return this.clientsService.addPartialPayment(req.user.id, id, body);
   }
 
   @Get(':id/payments')

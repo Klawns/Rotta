@@ -104,10 +104,13 @@ export function ClientFinancePanel({
 }: ClientFinancePanelProps) {
   const remainingBalance = balance ? formatCurrency(balance.remainingBalance) : '---';
   const totalDebt = balance ? formatCurrency(balance.totalDebt) : '---';
-  const totalPaid = balance ? formatCurrency(balance.totalPaid) : '---';
+  const unappliedPaymentAmount = balance
+    ? formatCurrency(balance.unappliedPaymentAmount)
+    : '---';
   const clientBalance = balance ? formatCurrency(balance.clientBalance) : '---';
   const pendingRides = balance ? String(balance.pendingRides) : '---';
   const hasOpenDebt = !!balance && balance.remainingBalance > 0;
+  const hasPaymentCarryover = !!balance?.hasPartialPaymentCarryover;
 
   return (
     <section className="rounded-[2rem] border border-border-subtle bg-background/55 p-5 shadow-sm lg:p-6">
@@ -125,10 +128,27 @@ export function ClientFinancePanel({
 
         <div className="grid grid-cols-2 gap-3">
           <SummaryMetric label="Total em corridas" value={totalDebt} />
-          <SummaryMetric label="Pago parcial" value={totalPaid} tone="brand" />
+          <SummaryMetric
+            label="Recebido pendente"
+            value={unappliedPaymentAmount}
+            tone="brand"
+          />
           <SummaryMetric label="Credito disponivel" value={clientBalance} tone="success" />
           <SummaryMetric label="Corridas pendentes" value={pendingRides} />
         </div>
+
+        {hasPaymentCarryover ? (
+          <div className="rounded-[1.75rem] border border-icon-brand/20 bg-icon-brand/10 p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-icon-brand">
+              Valor pendente de complemento
+            </p>
+            <p className="mt-2 text-sm font-semibold text-text-primary">
+              Já recebemos {formatCurrency(balance.unappliedPaymentAmount)}. Faltam{' '}
+              {formatCurrency(balance.nextRideShortfall ?? 0)} para quitar a próxima
+              corrida.
+            </p>
+          </div>
+        ) : null}
 
         <div className="space-y-3 border-t border-border-subtle pt-5">
           {hasOpenDebt ? (

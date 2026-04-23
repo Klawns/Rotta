@@ -12,6 +12,8 @@ import type { DrizzleClient } from '../database/database.provider';
 import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
 import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
 import { UserDashboardCacheService } from '../cache/user-dashboard-cache.service';
+import type { AddPartialPaymentDto } from './dto/clients.dto';
+import { ClientPaymentReconciliationService } from './services/client-payment-reconciliation.service';
 
 type TransactionRunner = {
   transaction<T>(callback: (tx: unknown) => Promise<T>): Promise<T>;
@@ -40,6 +42,7 @@ export class ClientsService {
     @Inject(DRIZZLE) private readonly drizzle: DrizzleClient,
     @Inject(CACHE_PROVIDER) private readonly cache: ICacheProvider,
     private readonly userDashboardCacheService: UserDashboardCacheService,
+    private readonly clientPaymentReconciliationService: ClientPaymentReconciliationService,
   ) {}
 
   private normalizeDirectorySearch(search?: string) {
@@ -293,6 +296,11 @@ export class ClientsService {
         clientId,
         userId,
       );
+    const paymentSummary =
+      await this.clientPaymentReconciliationService.getClientPaymentSummary(
+        userId,
+        clientId,
+      );
 
     const client = await this.getClientOrThrow(userId, clientId);
     const persistedBalance = client.balance || 0;
@@ -307,39 +315,71 @@ export class ClientsService {
         Math.max(0, Number(totalPaid) - Number(totalDebt)),
       pendingRides: pendingRidesCount,
       unusedPayments: unusedPaymentsCount,
+      unappliedPaymentAmount: paymentSummary.unappliedAmount,
+      hasPartialPaymentCarryover: paymentSummary.hasPartialPaymentCarryover,
+      nextRideAmount: paymentSummary.nextRideAmount,
+      nextRideShortfall: paymentSummary.nextRideShortfall,
     };
   }
 
   async addPartialPayment(
     userId: string,
     clientId: string,
-    amount: number,
-    notes?: string,
+    data: AddPartialPaymentDto,
   ) {
-    await this.getClientOrThrow(userId, clientId);
+    const { paymentId, reconciliation } = await (
+      this.drizzle.db as TransactionRunner
+    ).transaction(async (tx) => {
+        await this.getClientOrThrow(userId, clientId, tx, { forUpdate: true });
 
-    const result = await this.clientPaymentsRepository.create({
-      id: randomUUID(),
-      clientId,
-      userId,
-      amount,
-      notes: notes || 'Pagamento parcial',
-    });
+        const existingPayment =
+          await this.clientPaymentsRepository.findByIdempotencyKey(
+            clientId,
+            userId,
+            data.idempotencyKey,
+            tx,
+          );
 
-    const { totalDebt } = await this.ridesRepository.getPendingDebtStats(
-      clientId,
-      userId,
-    );
-    const { totalPaid } =
-      await this.clientPaymentsRepository.getUnusedPaymentsStats(
-        clientId,
-        userId,
-      );
+        if (existingPayment) {
+          const reconciliation =
+            await this.clientPaymentReconciliationService.reconcileClientPayments(
+              userId,
+              clientId,
+              tx,
+            );
 
-    if (Number(totalPaid) >= Number(totalDebt)) {
-      await this.closeDebt(userId, clientId);
-      return result;
-    }
+          return {
+            paymentId: existingPayment.id,
+            reconciliation,
+          };
+        }
+
+        const createdPayment = await this.clientPaymentsRepository.create(
+          {
+            id: randomUUID(),
+            clientId,
+            userId,
+            amount: data.amount,
+            remainingAmount: data.amount,
+            idempotencyKey: data.idempotencyKey,
+            notes: data.notes || 'Pagamento parcial',
+          },
+          tx,
+        );
+
+        const reconciliation =
+          await this.clientPaymentReconciliationService.reconcileClientPayments(
+            userId,
+            clientId,
+            tx,
+          );
+
+        return {
+          paymentId: createdPayment.id,
+          reconciliation,
+        };
+      });
+    const payment = await this.clientPaymentsRepository.findOne(paymentId, userId);
 
     await this.invalidateCachesAfterWrite(
       userId,
@@ -351,38 +391,33 @@ export class ClientsService {
         },
       ],
     );
-    return result;
+
+    return {
+      payment,
+      summary: {
+        settledRides: reconciliation.settledRides,
+        unappliedAmount: reconciliation.unappliedAmount,
+        nextRideAmount: reconciliation.nextRideAmount,
+        nextRideShortfall: reconciliation.nextRideShortfall,
+        generatedBalance: reconciliation.generatedBalance,
+      },
+    };
   }
 
   async closeDebt(userId: string, clientId: string) {
     const result = await (this.drizzle.db as TransactionRunner).transaction(
       async (tx) => {
         await this.getClientOrThrow(userId, clientId, tx, { forUpdate: true });
-        const { totalDebt } = await this.ridesRepository.getPendingDebtStats(
-          clientId,
-          userId,
-          tx,
-        );
-        const { totalPaid } =
-          await this.clientPaymentsRepository.getUnusedPaymentsStats(
-            clientId,
+        const reconciliation =
+          await this.clientPaymentReconciliationService.reconcileClientPayments(
             userId,
+            clientId,
             tx,
           );
 
-        // Apenas prossegue para quitar (marcar como pago e consumir pagamentos)
 
-        const settledCount = await this.ridesRepository.markAllAsPaidForClient(
-          clientId,
-          userId,
-          tx,
-        );
-
-        await this.clientPaymentsRepository.markAsUsed(clientId, userId, tx);
-
-        const overflow = Number(totalPaid) - Number(totalDebt);
-        if (overflow > 0) {
-          const updatedClient = await this.clientsRepository.incrementBalance(
+        /*
+        return {
             userId,
             clientId,
             overflow,
@@ -407,11 +442,12 @@ export class ClientsService {
             tx,
           );
         }
+        */
 
         return {
           success: true,
-          settledRides: settledCount,
-          generatedBalance: overflow > 0 ? overflow : 0,
+          settledRides: reconciliation.settledRides,
+          generatedBalance: reconciliation.generatedBalance,
         };
       },
     );
@@ -428,7 +464,7 @@ export class ClientsService {
   async getClientPayments(
     userId: string,
     clientId: string,
-    status?: 'UNUSED' | 'USED',
+    status?: 'UNUSED' | 'PARTIALLY_USED' | 'USED',
   ) {
     await this.getClientOrThrow(userId, clientId);
     return this.clientPaymentsRepository.findByClient(clientId, userId, status);

@@ -31,6 +31,7 @@ export interface ImportedRideRecord {
   status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
   paymentStatus?: 'PENDING' | 'PAID';
   paidWithBalance?: number | string | null;
+  paidExternally?: number | string | null;
   debtValue?: number | string | null;
   rideDate?: string | Date | null;
   photo?: string | null;
@@ -42,8 +43,10 @@ export interface ImportedClientPaymentRecord {
   clientId: string;
   userId?: string;
   amount: number | string;
+  remainingAmount?: number | string | null;
   paymentDate?: string | Date | null;
-  status?: 'UNUSED' | 'USED';
+  idempotencyKey?: string | null;
+  status?: 'UNUSED' | 'PARTIALLY_USED' | 'USED';
   notes?: string | null;
   createdAt?: string | Date | null;
 }

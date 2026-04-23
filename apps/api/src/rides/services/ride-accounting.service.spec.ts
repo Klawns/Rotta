@@ -55,6 +55,7 @@ describe('RideAccountingService', () => {
     ).toEqual({
       rideTotal: 25,
       paidWithBalance: 10,
+      paidExternally: 0,
       paymentStatus: 'PENDING',
       debtValue: 15,
     });
@@ -70,6 +71,7 @@ describe('RideAccountingService', () => {
     ).toEqual({
       rideTotal: 25,
       paidWithBalance: 25,
+      paidExternally: 0,
       paymentStatus: 'PAID',
       debtValue: 0,
     });
@@ -86,6 +88,7 @@ describe('RideAccountingService', () => {
     ).toEqual({
       rideTotal: 25,
       paidWithBalance: 10,
+      paidExternally: 15,
       paymentStatus: 'PAID',
       debtValue: 0,
     });

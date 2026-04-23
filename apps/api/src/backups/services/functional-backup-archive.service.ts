@@ -56,6 +56,7 @@ interface ExportedRideRecord {
   status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
   paymentStatus: 'PENDING' | 'PAID';
   paidWithBalance: number | string;
+  paidExternally: number | string;
   debtValue: number | string;
   rideDate: Date | string | null;
   photo: null;
@@ -66,8 +67,10 @@ interface ExportedClientPaymentRecord {
   id: string;
   clientId: string;
   amount: number | string;
+  remainingAmount: number | string;
   paymentDate: Date | string | null;
-  status: 'UNUSED' | 'USED';
+  idempotencyKey: string | null;
+  status: 'UNUSED' | 'PARTIALLY_USED' | 'USED';
   notes: string | null;
   createdAt: Date | string | null;
 }
@@ -186,6 +189,7 @@ export class FunctionalBackupArchiveService {
       status: ride.status,
       paymentStatus: ride.paymentStatus,
       paidWithBalance: ride.paidWithBalance ?? 0,
+      paidExternally: ride.paidExternally ?? 0,
       debtValue: ride.debtValue ?? 0,
       rideDate: ride.rideDate ?? null,
       photo: null,
@@ -196,7 +200,9 @@ export class FunctionalBackupArchiveService {
         id: payment.id,
         clientId: payment.clientId,
         amount: payment.amount,
+        remainingAmount: payment.remainingAmount ?? 0,
         paymentDate: payment.paymentDate ?? null,
+        idempotencyKey: payment.idempotencyKey ?? null,
         status: payment.status,
         notes: payment.notes ?? null,
         createdAt: payment.createdAt ?? null,

@@ -56,6 +56,7 @@ export interface IRidesRepository {
       status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
       paymentStatus?: 'PENDING' | 'PAID';
       debtValue?: number;
+      paidExternally?: number;
     },
     executor?: unknown,
   ): Promise<Ride>;
@@ -114,6 +115,22 @@ export interface IRidesRepository {
     userId: string,
     executor?: unknown,
   ): Promise<{ totalDebt: number; pendingRidesCount: number }>;
+
+  findSettlementCandidatesByClient(
+    clientId: string,
+    userId: string,
+    executor?: unknown,
+  ): Promise<Ride[]>;
+
+  updateFinancialSnapshot(
+    userId: string,
+    id: string,
+    data: {
+      paymentStatus: 'PENDING' | 'PAID';
+      debtValue: number;
+    },
+    executor?: unknown,
+  ): Promise<Ride>;
 
   markAllAsPaidForClient(
     clientId: string,

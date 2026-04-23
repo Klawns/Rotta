@@ -57,6 +57,13 @@
       "when": 1775668419046,
       "tag": "0007_modern_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776894381668,
+      "tag": "0008_superb_supernaut",
+      "breakpoints": true
     }
   ]
 }

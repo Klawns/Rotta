@@ -10,6 +10,7 @@ import { DRIZZLE } from '../database/database.provider';
 import { CACHE_PROVIDER } from '../cache/interfaces/cache-provider.interface';
 import type { ICacheProvider } from '../cache/interfaces/cache-provider.interface';
 import { UserDashboardCacheService } from '../cache/user-dashboard-cache.service';
+import { ClientPaymentReconciliationService } from './services/client-payment-reconciliation.service';
 
 describe('ClientsService', () => {
   let service: ClientsService;
@@ -20,6 +21,7 @@ describe('ClientsService', () => {
   let drizzleMock: any;
   let dashboardCacheMock: any;
   let cacheMock: jest.Mocked<ICacheProvider>;
+  let reconciliationServiceMock: any;
   let loggerErrorSpy: jest.SpyInstance;
 
   beforeEach(async () => {
@@ -72,6 +74,10 @@ describe('ClientsService', () => {
     paymentsRepoMock = {
       create: jest.fn().mockResolvedValue({ id: 'payment-1' }),
       findByClient: jest.fn().mockResolvedValue([]),
+      findByIdempotencyKey: jest.fn().mockResolvedValue(undefined),
+      findOne: jest.fn().mockImplementation(async (paymentId: string) => ({
+        id: paymentId,
+      })),
       getUnusedPaymentsStats: jest
         .fn()
         .mockResolvedValue({ totalPaid: 50, unusedPaymentsCount: 1 }),
@@ -81,6 +87,24 @@ describe('ClientsService', () => {
     balanceTransactionsRepoMock = {
       create: jest.fn().mockResolvedValue(undefined),
       findByClient: jest.fn().mockResolvedValue([]),
+    };
+    reconciliationServiceMock = {
+      getClientPaymentSummary: jest.fn().mockResolvedValue({
+        unappliedAmount: 50,
+        nextRideAmount: 80,
+        nextRideShortfall: 30,
+        hasPartialPaymentCarryover: true,
+      }),
+      reconcileClientPayments: jest
+        .fn()
+        .mockResolvedValue({
+          settledRides: 0,
+          generatedBalance: 0,
+          unappliedAmount: 30,
+          nextRideAmount: 40,
+          nextRideShortfall: 10,
+          hasPartialPaymentCarryover: true,
+        }),
     };
 
     dashboardCacheMock = {
@@ -116,6 +140,10 @@ describe('ClientsService', () => {
         {
           provide: UserDashboardCacheService,
           useValue: dashboardCacheMock,
+        },
+        {
+          provide: ClientPaymentReconciliationService,
+          useValue: reconciliationServiceMock,
         },
         {
           provide: CACHE_PROVIDER,
@@ -263,6 +291,9 @@ describe('ClientsService', () => {
       'uuid-123',
       'user-1',
     );
+    expect(
+      reconciliationServiceMock.getClientPaymentSummary,
+    ).toHaveBeenCalledWith('user-1', 'uuid-123');
     expect(balance).toEqual({
       totalDebt: 100,
       totalPaid: 50,
@@ -270,14 +301,14 @@ describe('ClientsService', () => {
       clientBalance: 0,
       pendingRides: 2,
       unusedPayments: 1,
+      unappliedPaymentAmount: 50,
+      hasPartialPaymentCarryover: true,
+      nextRideAmount: 80,
+      nextRideShortfall: 30,
     });
   });
 
-  it('should not reject debt closing when partial payments do not cover the debt', async () => {
-    paymentsRepoMock.getUnusedPaymentsStats.mockResolvedValueOnce({
-      totalPaid: 50,
-      unusedPaymentsCount: 1,
-    });
+  it('should keep rides pending when partial payments do not cover the debt', async () => {
     clientsRepoMock.findOneForUpdate.mockResolvedValueOnce({
       id: 'uuid-123',
       name: 'Client Test',
@@ -286,27 +317,24 @@ describe('ClientsService', () => {
 
     const result = await service.closeDebt('user-1', 'uuid-123');
 
-    expect(ridesRepoMock.markAllAsPaidForClient).toHaveBeenCalledWith(
-      'uuid-123',
+    expect(ridesRepoMock.markAllAsPaidForClient).not.toHaveBeenCalled();
+    expect(paymentsRepoMock.markAsUsed).not.toHaveBeenCalled();
+    expect(reconciliationServiceMock.reconcileClientPayments).toHaveBeenCalledWith(
       'user-1',
-      'tx',
-    );
-    expect(paymentsRepoMock.markAsUsed).toHaveBeenCalledWith(
       'uuid-123',
-      'user-1',
       'tx',
     );
     expect(result).toEqual({
       success: true,
-      settledRides: 2,
+      settledRides: 0,
       generatedBalance: 0,
     });
   });
 
   it('should close debt atomically when total paid covers the debt', async () => {
-    paymentsRepoMock.getUnusedPaymentsStats.mockResolvedValueOnce({
-      totalPaid: 120,
-      unusedPaymentsCount: 1,
+    reconciliationServiceMock.reconcileClientPayments.mockResolvedValueOnce({
+      settledRides: 2,
+      generatedBalance: 20,
     });
     clientsRepoMock.findOneForUpdate.mockResolvedValueOnce({
       id: 'uuid-123',
@@ -317,35 +345,14 @@ describe('ClientsService', () => {
     const result = await service.closeDebt('user-1', 'uuid-123');
 
     expect(drizzleMock.db.transaction).toHaveBeenCalled();
-    expect(ridesRepoMock.markAllAsPaidForClient).toHaveBeenCalledWith(
-      'uuid-123',
+    expect(reconciliationServiceMock.reconcileClientPayments).toHaveBeenCalledWith(
       'user-1',
-      'tx',
-    );
-    expect(paymentsRepoMock.markAsUsed).toHaveBeenCalledWith(
       'uuid-123',
-      'user-1',
       'tx',
     );
     expect(clientsRepoMock.findOneForUpdate).toHaveBeenCalledWith(
       'user-1',
       'uuid-123',
-      'tx',
-    );
-    expect(clientsRepoMock.incrementBalance).toHaveBeenCalledWith(
-      'user-1',
-      'uuid-123',
-      20,
-      'tx',
-    );
-    expect(balanceTransactionsRepoMock.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        clientId: 'uuid-123',
-        userId: 'user-1',
-        amount: 20,
-        type: 'CREDIT',
-        origin: 'PAYMENT_OVERFLOW',
-      }),
       'tx',
     );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
@@ -360,8 +367,11 @@ describe('ClientsService', () => {
     const result = await service.addPartialPayment(
       'user-1',
       'uuid-123',
-      30,
-      'Pagamento avulso',
+      {
+        amount: 30,
+        notes: 'Pagamento avulso',
+        idempotencyKey: 'payment-key-1',
+      },
     );
 
     expect(paymentsRepoMock.create).toHaveBeenCalledWith(
@@ -369,11 +379,28 @@ describe('ClientsService', () => {
         clientId: 'uuid-123',
         userId: 'user-1',
         amount: 30,
+        remainingAmount: 30,
         notes: 'Pagamento avulso',
+        idempotencyKey: 'payment-key-1',
       }),
+      'tx',
+    );
+    expect(reconciliationServiceMock.reconcileClientPayments).toHaveBeenCalledWith(
+      'user-1',
+      'uuid-123',
+      'tx',
     );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
-    expect(result).toEqual({ id: 'payment-1' });
+    expect(result).toEqual({
+      payment: { id: 'payment-1' },
+      summary: {
+        settledRides: 0,
+        unappliedAmount: 30,
+        nextRideAmount: 40,
+        nextRideShortfall: 10,
+        generatedBalance: 0,
+      },
+    });
   });
 
   it('should keep successful client creation even when cache invalidation fails after persistence', async () => {
@@ -412,8 +439,21 @@ describe('ClientsService', () => {
     );
 
     await expect(
-      service.addPartialPayment('user-1', 'uuid-123', 30, 'Pagamento avulso'),
-    ).resolves.toEqual({ id: 'payment-1' });
+      service.addPartialPayment('user-1', 'uuid-123', {
+        amount: 30,
+        notes: 'Pagamento avulso',
+        idempotencyKey: 'payment-key-2',
+      }),
+    ).resolves.toEqual({
+      payment: { id: 'payment-1' },
+      summary: {
+        settledRides: 0,
+        unappliedAmount: 30,
+        nextRideAmount: 40,
+        nextRideShortfall: 10,
+        generatedBalance: 0,
+      },
+    });
 
     expect(paymentsRepoMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -421,10 +461,52 @@ describe('ClientsService', () => {
         userId: 'user-1',
         amount: 30,
       }),
+      'tx',
     );
     expect(loggerErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Falha ao invalidar cache user dashboard'),
       expect.any(String),
+    );
+  });
+
+  it('should return the existing payment when the idempotency key is replayed', async () => {
+    paymentsRepoMock.findByIdempotencyKey.mockResolvedValueOnce({
+      id: 'payment-existing',
+      clientId: 'uuid-123',
+      userId: 'user-1',
+      amount: 30,
+      remainingAmount: 10,
+      status: 'PARTIALLY_USED',
+      idempotencyKey: 'payment-key-3',
+    });
+    paymentsRepoMock.findOne.mockResolvedValueOnce({
+      id: 'payment-existing',
+      status: 'PARTIALLY_USED',
+    });
+
+    const result = await service.addPartialPayment('user-1', 'uuid-123', {
+      amount: 30,
+      notes: 'Pagamento repetido',
+      idempotencyKey: 'payment-key-3',
+    });
+
+    expect(paymentsRepoMock.create).not.toHaveBeenCalled();
+    expect(reconciliationServiceMock.reconcileClientPayments).toHaveBeenCalledWith(
+      'user-1',
+      'uuid-123',
+      'tx',
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        payment: expect.objectContaining({
+          id: 'payment-existing',
+          status: 'PARTIALLY_USED',
+        }),
+        summary: expect.objectContaining({
+          unappliedAmount: 30,
+          nextRideShortfall: 10,
+        }),
+      }),
     );
   });
 });

@@ -36,6 +36,19 @@ export interface CloseDebtResult {
   generatedBalance: number;
 }
 
+export interface ClientPaymentMutationSummary {
+  settledRides: number;
+  unappliedAmount: number;
+  nextRideAmount: number | null;
+  nextRideShortfall: number | null;
+  generatedBalance: number;
+}
+
+export interface ClientPaymentMutationResult {
+  payment: ClientPayment;
+  summary: ClientPaymentMutationSummary;
+}
+
 function normalizeDate(value: unknown) {
   if (typeof value === 'string') {
     return value;
@@ -52,8 +65,24 @@ function normalizeAmount(value: unknown) {
   return typeof value === 'number' ? value : Number(value ?? 0);
 }
 
+function normalizeNullableAmount(value: unknown) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  return normalizeAmount(value);
+}
+
 function normalizeStatus(value: unknown): ClientPaymentStatus {
-  return value === 'USED' ? 'USED' : 'UNUSED';
+  if (value === 'USED') {
+    return 'USED';
+  }
+
+  if (value === 'PARTIALLY_USED') {
+    return 'PARTIALLY_USED';
+  }
+
+  return 'UNUSED';
 }
 
 function normalizeClientPayment(payload: unknown): ClientPayment {
@@ -67,10 +96,64 @@ function normalizeClientPayment(payload: unknown): ClientPayment {
     clientId: typeof source.clientId === 'string' ? source.clientId : '',
     userId: typeof source.userId === 'string' ? source.userId : undefined,
     amount: normalizeAmount(source.amount),
+    remainingAmount: normalizeAmount(source.remainingAmount ?? source.amount),
     paymentDate: normalizeDate(source.paymentDate),
     status: normalizeStatus(source.status),
+    idempotencyKey:
+      typeof source.idempotencyKey === 'string' ? source.idempotencyKey : null,
     notes: typeof source.notes === 'string' ? source.notes : null,
     createdAt: normalizeDate(source.createdAt),
+  };
+}
+
+function normalizeClientBalance(payload: unknown): ClientBalance {
+  const source =
+    payload && typeof payload === 'object'
+      ? (payload as Record<string, unknown>)
+      : {};
+
+  return {
+    totalDebt: normalizeAmount(source.totalDebt),
+    totalPaid: normalizeAmount(source.totalPaid),
+    remainingBalance: normalizeAmount(source.remainingBalance),
+    pendingRides: normalizeAmount(source.pendingRides),
+    unusedPayments: normalizeAmount(source.unusedPayments),
+    clientBalance: normalizeAmount(source.clientBalance),
+    unappliedPaymentAmount: normalizeAmount(source.unappliedPaymentAmount),
+    hasPartialPaymentCarryover: Boolean(source.hasPartialPaymentCarryover),
+    nextRideAmount: normalizeNullableAmount(source.nextRideAmount),
+    nextRideShortfall: normalizeNullableAmount(source.nextRideShortfall),
+  };
+}
+
+function normalizeClientPaymentMutationSummary(
+  payload: unknown,
+): ClientPaymentMutationSummary {
+  const source =
+    payload && typeof payload === 'object'
+      ? (payload as Record<string, unknown>)
+      : {};
+
+  return {
+    settledRides: normalizeAmount(source.settledRides),
+    unappliedAmount: normalizeAmount(source.unappliedAmount),
+    nextRideAmount: normalizeNullableAmount(source.nextRideAmount),
+    nextRideShortfall: normalizeNullableAmount(source.nextRideShortfall),
+    generatedBalance: normalizeAmount(source.generatedBalance),
+  };
+}
+
+function normalizeClientPaymentMutationResult(
+  payload: unknown,
+): ClientPaymentMutationResult {
+  const source =
+    payload && typeof payload === 'object'
+      ? (payload as Record<string, unknown>)
+      : {};
+
+  return {
+    payment: normalizeClientPayment(source.payment),
+    summary: normalizeClientPaymentMutationSummary(source.summary),
   };
 }
 
@@ -115,9 +198,11 @@ export const clientsService = {
   },
 
   async getClientBalance(clientId: string, signal?: AbortSignal) {
-    return apiClient.get<ClientBalance>(`/clients/${clientId}/balance`, {
+    const balance = await apiClient.get<unknown>(`/clients/${clientId}/balance`, {
       signal,
     });
+
+    return normalizeClientBalance(balance);
   },
 
   async getClientPayments(
@@ -136,13 +221,13 @@ export const clientsService = {
   async addClientPayment(
     clientId: string,
     data: CreateClientPaymentInput,
-  ): Promise<ClientPayment> {
-    const payment = await apiClient.post<unknown>(
+  ): Promise<ClientPaymentMutationResult> {
+    const result = await apiClient.post<unknown>(
       `/clients/${clientId}/payments`,
       data,
     );
 
-    return normalizeClientPayment(payment);
+    return normalizeClientPaymentMutationResult(result);
   },
 
   async deleteClient(clientId: string): Promise<void> {

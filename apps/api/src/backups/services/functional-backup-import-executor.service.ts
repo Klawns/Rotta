@@ -147,6 +147,7 @@ export class FunctionalBackupImportExecutorService {
       status: ride.status ?? 'COMPLETED',
       paymentStatus: ride.paymentStatus ?? 'PAID',
       paidWithBalance: ride.paidWithBalance ?? 0,
+      paidExternally: ride.paidExternally ?? 0,
       debtValue: ride.debtValue ?? 0,
       rideDate: this.normalizeDate(ride.rideDate),
       photo: null,
@@ -163,7 +164,11 @@ export class FunctionalBackupImportExecutorService {
       clientId: payment.clientId,
       userId,
       amount: payment.amount,
+      remainingAmount:
+        payment.remainingAmount ??
+        (payment.status === 'USED' ? 0 : payment.amount),
       paymentDate: this.normalizeDate(payment.paymentDate) ?? new Date(),
+      idempotencyKey: payment.idempotencyKey ?? null,
       status: payment.status ?? 'UNUSED',
       notes: payment.notes ?? null,
       createdAt: this.normalizeDate(payment.createdAt) ?? new Date(),
