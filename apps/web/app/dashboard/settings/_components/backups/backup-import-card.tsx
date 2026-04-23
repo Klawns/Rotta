@@ -1,19 +1,16 @@
-'use client';
+"use client";
 
-import { useRef, useState } from 'react';
-import {
-  AlertTriangle,
-  ChevronDown,
-} from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ConfirmDangerousActionModal } from '@/components/confirm-dangerous-action-modal';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/use-auth';
-import { getBackupImportCardPresentation } from '../../_mappers/backup-import.presenter';
-import type { BackupImportJobResponse } from '@/types/backups';
-import { BackupImportProgressStep } from './backup-import-progress-step';
-import { BackupImportReviewStep } from './backup-import-review-step';
-import { BackupImportUploadStep } from './backup-import-upload-step';
+import { useRef, useState } from "react";
+import { AlertTriangle, ChevronDown } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ConfirmDangerousActionModal } from "@/components/confirm-dangerous-action-modal";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { getBackupImportCardPresentation } from "../../_mappers/backup-import.presenter";
+import type { BackupImportJobResponse } from "@/types/backups";
+import { BackupImportProgressStep } from "./backup-import-progress-step";
+import { BackupImportReviewStep } from "./backup-import-review-step";
+import { BackupImportUploadStep } from "./backup-import-upload-step";
 
 interface BackupImportCardProps {
   preview: BackupImportJobResponse | null;
@@ -60,7 +57,7 @@ export function BackupImportCard({
     } catch {
       setSelectedFileName(null);
     } finally {
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 
@@ -114,7 +111,7 @@ export function BackupImportCard({
         </div>
         <ChevronDown
           className={`h-5 w-5 text-destructive transition-transform duration-300 ${
-            presentation.isExpanded ? '-rotate-180' : ''
+            presentation.isExpanded ? "-rotate-180" : ""
           }`}
         />
       </button>
@@ -123,20 +120,20 @@ export function BackupImportCard({
         {presentation.isExpanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
           >
             <div className="border-t border-destructive/20 p-6 pt-2">
               <div className="mb-6 space-y-2">
                 <p className="max-w-3xl text-sm leading-6 text-foreground/80">
-                  A restauração irá{' '}
+                  A restauração irá{" "}
                   <strong className="font-bold text-destructive">
                     apagar todos os dados atuais da sua operação
-                  </strong>{' '}
+                  </strong>{" "}
                   e substituí-los pelo conteúdo do backup selecionado.
-                  Certifique-se de que ninguém está utilizando o sistema
-                  durante este processo.
+                  Certifique-se de que ninguém está utilizando o sistema durante
+                  este processo.
                 </p>
               </div>
 
@@ -189,7 +186,7 @@ export function BackupImportCard({
         onClose={() => setIsConfirmModalOpen(false)}
         onConfirm={handleConfirmRestore}
         isLoading={isExecuting}
-        title="Restaurar Backup?"
+        title="Restaurar backup"
         description="Antes de restaurar, será gerado um backup de segurança do estado atual. Depois disso, os dados atuais serão apagados e substituídos pelo conteúdo deste backup. Esta ação é irreversível."
         requiredText="RESTAURAR"
       />

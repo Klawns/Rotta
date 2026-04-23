@@ -52,7 +52,7 @@ export default function RidesPage() {
         isOpen={page.deleteDialog.isOpen}
         onClose={page.deleteDialog.onClose}
         onConfirm={page.deleteDialog.onConfirm}
-        title="Excluir Corrida"
+        title="Excluir corrida"
         description="Tem certeza que deseja excluir esta corrida? Esta ação é irreversível."
         variant="danger"
         isLoading={page.deleteDialog.isLoading}

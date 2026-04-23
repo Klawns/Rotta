@@ -115,7 +115,7 @@ export default function MobileDashboard(props: MobileDashboardProps) {
 
         <FeatureLockShell
           isLocked={trial.shouldLockFeatures}
-                    title="Histórico bloqueado"
+          title="Histórico bloqueado"
           description="As corridas recentes permanecem visíveis no mobile, mas as interações ficam desabilitadas."
           ctaHref={trial.ctaHref}
           ctaLabel={trial.ctaLabel}
@@ -136,7 +136,7 @@ export default function MobileDashboard(props: MobileDashboardProps) {
 
         <FeatureLockShell
           isLocked={trial.shouldLockFeatures}
-                    title="Exportação bloqueada"
+          title="Exportação bloqueada"
           description="Os atalhos de exportação continuam aparentes, mas exigem assinatura para uso."
           ctaHref={trial.ctaHref}
           ctaLabel={trial.ctaLabel}
@@ -156,7 +156,7 @@ export default function MobileDashboard(props: MobileDashboardProps) {
         isOpen={!!dashboard.dialogs.rideToDelete}
         onClose={dashboard.dialogs.closeRideDelete}
         onConfirm={dashboard.dialogs.confirmRideDelete}
-        title="Excluir Corrida"
+        title="Excluir corrida"
         description="Tem certeza que deseja excluir esta corrida? Esta ação não pode ser desfeita."
         isLoading={dashboard.dialogs.isDeletingRide}
       />

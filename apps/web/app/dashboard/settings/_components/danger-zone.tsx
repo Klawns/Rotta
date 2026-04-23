@@ -8,140 +8,168 @@ import { ConfirmModal } from "@/components/confirm-modal";
 import { useBulkDelete } from "../_hooks/use-bulk-delete";
 
 export function DangerZone() {
-    const {
-        deleteAllClients,
-        isDeletingClients,
-        deleteAllRides,
-        isDeletingRides,
-    } = useBulkDelete();
+  const {
+    deleteAllClients,
+    isDeletingClients,
+    deleteAllRides,
+    isDeletingRides,
+  } = useBulkDelete();
 
-    const [isConfirmClientsOpen, setIsConfirmClientsOpen] = useState(false);
-    const [isConfirmRidesOpen, setIsConfirmRidesOpen] = useState(false);
+  const [isConfirmClientsOpen, setIsConfirmClientsOpen] = useState(false);
+  const [isConfirmRidesOpen, setIsConfirmRidesOpen] = useState(false);
 
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-8"
-        >
-            <div className="space-y-2">
-                <h3 className="text-2xl font-display font-extrabold text-destructive tracking-tight flex items-center gap-2">
-                    <ShieldAlert size={24} />
-                    Limpeza de Dados
-                </h3>
-                <p className="text-sm text-text-muted font-medium">Ações irreversíveis para gerenciar seus dados de forma definitiva.</p>
-            </div>
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-8"
+    >
+      <div className="space-y-2">
+        <h3 className="flex items-center gap-2 text-2xl font-display font-bold tracking-tight text-destructive">
+          <ShieldAlert size={24} />
+          Limpeza de dados
+        </h3>
+        <p className="max-w-2xl text-sm font-medium leading-6 text-text-secondary">
+          Ações irreversíveis para remover dados críticos do sistema com
+          segurança e clareza.
+        </p>
+      </div>
 
-            <div className="grid gap-6">
-                <div className="p-8 bg-card-background border border-destructive/10 rounded-[2.5rem] flex flex-col gap-6 transition-all hover:border-destructive/30 group relative overflow-hidden">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-8 w-full">
-                        <div className="space-y-3 relative z-10 text-center md:text-left">
-                            <h4 className="text-xl font-display font-black text-text-primary uppercase tracking-tight">Excluir todos os clientes</h4>
-                            <p className="text-text-secondary text-sm font-medium max-w-md leading-relaxed">
-                                Isso removerá permanentemente todos os dados de clientes cadastrados. <span className="text-destructive font-bold underline">Esta ação não pode ser desfeita.</span>
-                            </p>
+      <div className="grid gap-6">
+        <div className="relative flex flex-col gap-6 overflow-hidden rounded-[2.5rem] border border-destructive/10 bg-card-background/95 p-8 shadow-sm transition-all hover:border-destructive/25">
+          <div className="flex w-full flex-col items-center justify-between gap-8 md:flex-row">
+            <div className="relative z-10 max-w-xl space-y-3 text-center md:text-left">
+              <h4 className="text-xl font-display font-bold tracking-tight text-text-primary">
+                Excluir todos os clientes
+              </h4>
+              <p className="text-sm font-medium leading-7 text-text-secondary">
+                Remove permanentemente todos os clientes cadastrados, incluindo
+                vínculos operacionais e financeiros.{" "}
+                <span className="font-semibold text-destructive">
+                  Essa ação não pode ser desfeita.
+                </span>
+              </p>
 
-                            <div className="flex items-start gap-2 p-3 bg-destructive/5 rounded-xl border border-destructive/10 max-w-md">
-                                <AlertTriangle size={16} className="text-destructive shrink-0 mt-0.5" />
-                                <p className="text-[11px] text-destructive/80 font-bold leading-tight uppercase tracking-wide">
-                                    Aviso: ao excluir clientes, todas as corridas e pagamentos vinculados a eles também serão apagados permanentemente.
-                                </p>
-                            </div>
-                        </div>
-
-                        <Button
-                            onClick={() => setIsConfirmClientsOpen(true)}
-                            disabled={isDeletingClients}
-                            className="bg-destructive/10 hover:bg-destructive text-destructive hover:text-destructive-foreground font-display font-black px-8 h-14 rounded-2xl transition-all shadow-sm active:scale-95 flex items-center gap-2 uppercase tracking-widest text-[10px] w-full md:w-auto min-w-[200px] relative z-20"
-                        >
-                            {isDeletingClients ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} strokeWidth={3} />}
-                            {isDeletingClients ? "EXCLUINDO..." : "EXCLUIR TUDO"}
-                        </Button>
-                    </div>
-
-                    <AnimatePresence>
-                        {isDeletingClients && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="flex items-center gap-2 text-[10px] font-display font-black text-destructive uppercase tracking-widest relative z-10"
-                            >
-                                <Loader2 className="animate-spin" size={12} />
-                                Processando exclusão em massa...
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-
-                <div className="p-8 bg-card-background border border-destructive/10 rounded-[2.5rem] flex flex-col gap-6 transition-all hover:border-destructive/30 group relative overflow-hidden">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-8 w-full">
-                        <div className="space-y-3 relative z-10 text-center md:text-left">
-                            <h4 className="text-xl font-display font-black text-text-primary uppercase tracking-tight">Limpar histórico de corridas</h4>
-                            <p className="text-text-secondary text-sm font-medium max-w-md leading-relaxed">
-                                Todos os registros de corridas e estatísticas serão apagados definitivamente. <span className="text-destructive font-bold underline">Ação irreversível.</span>
-                            </p>
-                        </div>
-
-                        <Button
-                            onClick={() => setIsConfirmRidesOpen(true)}
-                            disabled={isDeletingRides}
-                            className="bg-destructive/10 hover:bg-destructive text-destructive hover:text-destructive-foreground font-display font-black px-8 h-14 rounded-2xl transition-all shadow-sm active:scale-95 flex items-center gap-2 uppercase tracking-widest text-[10px] w-full md:w-auto min-w-[200px] relative z-20"
-                        >
-                            {isDeletingRides ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} strokeWidth={3} />}
-                            {isDeletingRides ? "LIMPANDO..." : "LIMPAR TUDO"}
-                        </Button>
-                    </div>
-
-                    <AnimatePresence>
-                        {isDeletingRides && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="flex items-center gap-2 text-[10px] font-display font-black text-destructive uppercase tracking-widest relative z-10"
-                            >
-                                <Loader2 className="animate-spin" size={12} />
-                                Resetando histórico de atividades...
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-            </div>
-
-            <div className="p-6 bg-destructive/5 border border-dashed border-destructive/20 rounded-3xl">
-                <p className="text-[12px] text-destructive font-display font-black uppercase tracking-widest text-center opacity-70">
-                    Cuidado: as ações acima são permanentes e não podem ser recuperadas após a confirmação.
+              <div className="flex max-w-md items-start gap-3 rounded-[1.25rem] border border-destructive/10 bg-destructive/5 p-4">
+                <AlertTriangle
+                  size={16}
+                  className="mt-0.5 shrink-0 text-destructive"
+                />
+                <p className="text-[12px] font-medium leading-5 text-destructive/85">
+                  Ao excluir os clientes, corridas e pagamentos vinculados a
+                  eles também serão apagados permanentemente.
                 </p>
+              </div>
             </div>
 
-            <ConfirmModal
-                isOpen={isConfirmClientsOpen}
-                onClose={() => setIsConfirmClientsOpen(false)}
-                onConfirm={async () => {
-                    await deleteAllClients();
-                    setIsConfirmClientsOpen(false);
-                }}
-                title="Excluir todos os clientes?"
-                description="Tem certeza absoluta que deseja excluir todos os clientes? Esta ação removerá permanentemente todos os registros de clientes, corridas e pagamentos do sistema."
-                confirmText="Sim, excluir tudo"
-                variant="danger"
-                isLoading={isDeletingClients}
-            />
+            <Button
+              onClick={() => setIsConfirmClientsOpen(true)}
+              disabled={isDeletingClients}
+              className="relative z-20 h-12 w-full min-w-[200px] rounded-2xl bg-destructive/10 px-6 text-sm font-semibold tracking-[0.01em] text-destructive shadow-sm transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-[0.98] md:w-auto"
+            >
+              {isDeletingClients ? (
+                <Loader2 className="animate-spin" size={16} />
+              ) : (
+                <Trash2 size={16} strokeWidth={2.4} />
+              )}
+              {isDeletingClients ? "Excluindo..." : "Excluir tudo"}
+            </Button>
+          </div>
 
-            <ConfirmModal
-                isOpen={isConfirmRidesOpen}
-                onClose={() => setIsConfirmRidesOpen(false)}
-                onConfirm={async () => {
-                    await deleteAllRides();
-                    setIsConfirmRidesOpen(false);
-                }}
-                title="Limpar histórico?"
-                description="Deseja realmente apagar todo o histórico de corridas? Suas estatísticas e registros serão resetados permanentemente."
-                confirmText="Sim, limpar histórico"
-                variant="danger"
-                isLoading={isDeletingRides}
-            />
-        </motion.div>
-    );
+          <AnimatePresence>
+            {isDeletingClients && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="relative z-10 flex items-center gap-2 text-xs font-semibold text-destructive"
+              >
+                <Loader2 className="animate-spin" size={12} />
+                Processando exclusão em massa...
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="relative flex flex-col gap-6 overflow-hidden rounded-[2.5rem] border border-destructive/10 bg-card-background/95 p-8 shadow-sm transition-all hover:border-destructive/25">
+          <div className="flex w-full flex-col items-center justify-between gap-8 md:flex-row">
+            <div className="relative z-10 max-w-xl space-y-3 text-center md:text-left">
+              <h4 className="text-xl font-display font-bold tracking-tight text-text-primary">
+                Limpar histórico de corridas
+              </h4>
+              <p className="text-sm font-medium leading-7 text-text-secondary">
+                Apaga os registros e estatísticas de corridas do sistema de
+                forma definitiva.{" "}
+                <span className="font-semibold text-destructive">
+                  Essa ação é irreversível.
+                </span>
+              </p>
+            </div>
+
+            <Button
+              onClick={() => setIsConfirmRidesOpen(true)}
+              disabled={isDeletingRides}
+              className="relative z-20 h-12 w-full min-w-[200px] rounded-2xl bg-destructive/10 px-6 text-sm font-semibold tracking-[0.01em] text-destructive shadow-sm transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-[0.98] md:w-auto"
+            >
+              {isDeletingRides ? (
+                <Loader2 className="animate-spin" size={16} />
+              ) : (
+                <Trash2 size={16} strokeWidth={2.4} />
+              )}
+              {isDeletingRides ? "Limpando..." : "Limpar histórico"}
+            </Button>
+          </div>
+
+          <AnimatePresence>
+            {isDeletingRides && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="relative z-10 flex items-center gap-2 text-xs font-semibold text-destructive"
+              >
+                <Loader2 className="animate-spin" size={12} />
+                Resetando histórico de atividades...
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-dashed border-destructive/20 bg-destructive/5 p-6">
+        <p className="text-center text-sm font-semibold leading-6 text-destructive/80">
+          As ações acima são permanentes e não podem ser recuperadas depois da
+          confirmação.
+        </p>
+      </div>
+
+      <ConfirmModal
+        isOpen={isConfirmClientsOpen}
+        onClose={() => setIsConfirmClientsOpen(false)}
+        onConfirm={async () => {
+          await deleteAllClients();
+          setIsConfirmClientsOpen(false);
+        }}
+        title="Excluir todos os clientes"
+        description="Todos os registros de clientes, corridas e pagamentos serão removidos definitivamente do sistema. Revise com cuidado antes de continuar."
+        confirmText="Excluir tudo"
+        variant="danger"
+        isLoading={isDeletingClients}
+      />
+
+      <ConfirmModal
+        isOpen={isConfirmRidesOpen}
+        onClose={() => setIsConfirmRidesOpen(false)}
+        onConfirm={async () => {
+          await deleteAllRides();
+          setIsConfirmRidesOpen(false);
+        }}
+        title="Limpar histórico de corridas"
+        description="Todos os registros e estatísticas de corridas serão apagados permanentemente. Use esta ação apenas se quiser recomeçar esse histórico do zero."
+        confirmText="Limpar histórico"
+        variant="danger"
+        isLoading={isDeletingRides}
+      />
+    </motion.div>
+  );
 }
