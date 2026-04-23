@@ -5,13 +5,13 @@ import {
   Loader2,
   XCircle,
   type LucideIcon,
-} from 'lucide-react';
-import { formatDisplayDateValue, normalizeDateValue } from '@/lib/date-utils';
+} from "lucide-react";
+import { formatDisplayDateValue, normalizeDateValue } from "@/lib/date-utils";
 import type {
   BackupDownloadPhase,
   BackupDownloadState,
-} from '@/hooks/use-backup-download';
-import type { BackupJobSummary } from '@/types/backups';
+} from "@/hooks/use-backup-download";
+import type { BackupJobSummary } from "@/types/backups";
 
 interface TechnicalBackupStatusPresentation {
   label: string;
@@ -57,50 +57,49 @@ interface TechnicalBackupRowPresentationOptions {
 }
 
 const TECHNICAL_BACKUP_STATUS_MAP: Record<
-  BackupJobSummary['status'],
+  BackupJobSummary["status"],
   TechnicalBackupStatusPresentation
 > = {
   success: {
-    label: 'Concluido',
+    label: "Concluído",
     icon: CheckCircle2,
-    className:
-      'text-success bg-success/10 border-success/20 label-success',
+    className: "text-success bg-success/10 border-success/20 label-success",
   },
   failed: {
-    label: 'Falhou',
+    label: "Falhou",
     icon: XCircle,
     className:
-      'text-destructive bg-destructive/10 border-destructive/20 label-destructive',
+      "text-destructive bg-destructive/10 border-destructive/20 label-destructive",
   },
   running: {
-    label: 'Em progresso',
+    label: "Em progresso",
     icon: Clock,
     className:
-      'text-warning bg-warning/10 border-warning/20 label-warning animate-pulse',
+      "text-warning bg-warning/10 border-warning/20 label-warning animate-pulse",
   },
   pending: {
-    label: 'Na fila',
+    label: "Na fila",
     icon: Clock,
-    className: 'text-muted-foreground bg-background/80 border-border-subtle',
+    className: "text-muted-foreground bg-background/80 border-border-subtle",
   },
 };
 
-function getTriggerLabel(trigger: BackupJobSummary['trigger']) {
+function getTriggerLabel(trigger: BackupJobSummary["trigger"]) {
   switch (trigger) {
-    case 'scheduled':
-      return 'Agendada';
-    case 'manual':
-      return 'Manual';
-    case 'pre_import':
-      return 'Pre-importacao';
+    case "scheduled":
+      return "Agendada";
+    case "manual":
+      return "Manual";
+    case "pre_import":
+      return "Pré-importação";
     default:
-      return 'Desconhecida';
+      return "Desconhecida";
   }
 }
 
 function formatBackupSize(sizeBytes: number | null) {
   if (sizeBytes === null) {
-    return '-';
+    return "-";
   }
 
   return `${(sizeBytes / 1024 / 1024).toFixed(2)} MB`;
@@ -109,19 +108,19 @@ function formatBackupSize(sizeBytes: number | null) {
 function formatBackupTime(value: string | null) {
   const date = normalizeDateValue(value);
   if (!date) {
-    return '-';
+    return "-";
   }
 
-  return date.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
+  return date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 function formatChecksum(checksum: string | null) {
   if (!checksum) {
     return {
-      label: 'Checksum indisponivel',
+      label: "Checksum indisponível",
       title: null,
     };
   }
@@ -139,46 +138,46 @@ function getDownloadPresentation(
   const isCurrentDownload =
     options.downloadState.backupId === backup.id &&
     (options.isDownloadActive(backup.id) ||
-      options.downloadState.phase === 'failed');
-  const phase = isCurrentDownload ? options.downloadState.phase : 'idle';
+      options.downloadState.phase === "failed");
+  const phase = isCurrentDownload ? options.downloadState.phase : "idle";
 
   const rowToneClassName =
-    phase === 'requesting'
-      ? 'bg-info/5'
-      : phase === 'started'
-        ? 'bg-success/5'
-        : phase === 'failed'
-          ? 'bg-destructive/5'
-          : '';
+    phase === "requesting"
+      ? "bg-info/5"
+      : phase === "started"
+        ? "bg-success/5"
+        : phase === "failed"
+          ? "bg-destructive/5"
+          : "";
 
   return {
     phase,
     label:
-      phase === 'requesting'
-        ? 'Preparando...'
-        : phase === 'started'
-          ? 'Iniciado'
-          : phase === 'failed'
-            ? 'Tentar novamente'
-            : 'Baixar',
+      phase === "requesting"
+        ? "Preparando..."
+        : phase === "started"
+          ? "Iniciado"
+          : phase === "failed"
+            ? "Tentar novamente"
+            : "Baixar",
     icon:
-      phase === 'requesting'
+      phase === "requesting"
         ? Loader2
-        : phase === 'started'
+        : phase === "started"
           ? CheckCircle2
           : Download,
     iconClassName:
-      phase === 'requesting'
-        ? 'animate-spin'
-        : phase === 'started'
-          ? 'text-success'
+      phase === "requesting"
+        ? "animate-spin"
+        : phase === "started"
+          ? "text-success"
           : undefined,
     rowToneClassName,
     isDisabled:
-      backup.status !== 'success' ||
+      backup.status !== "success" ||
       options.isPreparingDownload ||
-      phase === 'started',
-    isFeedbackVisible: isCurrentDownload && phase !== 'idle',
+      phase === "started",
+    isFeedbackVisible: isCurrentDownload && phase !== "idle",
   };
 }
 

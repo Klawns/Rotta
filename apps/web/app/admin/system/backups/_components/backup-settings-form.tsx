@@ -100,7 +100,7 @@ export function BackupSettingsForm({
         </Field>
 
         <Field>
-          <FieldLabel>Modo de retencao</FieldLabel>
+          <FieldLabel>Modo de retenção</FieldLabel>
           <FieldContent>
             <Select
               value={values.retentionMode}
@@ -119,7 +119,7 @@ export function BackupSettingsForm({
               </SelectContent>
             </Select>
             <FieldDescription>
-              Defina se a limpeza automatica deve usar quantidade maxima ou idade maxima.
+              Defina se a limpeza automática deve usar quantidade máxima ou idade máxima.
             </FieldDescription>
           </FieldContent>
         </Field>
@@ -155,7 +155,7 @@ export function BackupSettingsForm({
           Cancelar
         </Button>
         <Button onClick={onSubmit} disabled={isSaving}>
-          {isSaving ? 'Salvando...' : 'Salvar configuracao'}
+          {isSaving ? 'Salvando...' : 'Salvar configuração'}
         </Button>
       </div>
     </div>

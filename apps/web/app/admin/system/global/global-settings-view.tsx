@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Mail, Smartphone } from 'lucide-react';
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Mail, Smartphone } from "lucide-react";
 
 import {
   AdminCard,
@@ -9,18 +9,18 @@ import {
   AdminLoadingState,
   AdminPage,
   AdminPageHeader,
-} from '@/app/admin/_components/admin-ui';
-import { QueryErrorState } from '@/components/query-error-state';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { parseApiError } from '@/lib/api-error';
+} from "@/app/admin/_components/admin-ui";
+import { QueryErrorState } from "@/components/query-error-state";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { parseApiError } from "@/lib/api-error";
 import {
   buildAdminSystemConfigUpdates,
   getAdminSystemConfigFormValues,
   type AdminSystemConfigFormValues,
-} from './_lib/admin-system-config-form';
-import { useAdminConfigs } from './_hooks/use-admin-configs';
+} from "./_lib/admin-system-config-form";
+import { useAdminConfigs } from "./_hooks/use-admin-configs";
 
 export function GlobalSettingsView() {
   const {
@@ -40,8 +40,8 @@ export function GlobalSettingsView() {
   if (isLoading) {
     return (
       <AdminLoadingState
-        title="Carregando configuracoes"
-        description="Buscando os parametros globais ativos na plataforma."
+        title="Carregando configurações"
+        description="Buscando os parâmetros globais ativos na plataforma."
       />
     );
   }
@@ -50,8 +50,8 @@ export function GlobalSettingsView() {
     return (
       <QueryErrorState
         error={error}
-        title="Nao foi possivel carregar as configuracoes globais"
-        description="Revise a conectividade da area administrativa e tente novamente."
+        title="Não foi possível carregar as configurações globais"
+        description="Revise a conectividade da área administrativa e tente novamente."
         onRetry={() => {
           void refetch();
         }}
@@ -62,7 +62,7 @@ export function GlobalSettingsView() {
   return (
     <AdminPage>
       <AdminPageHeader
-        title="Configuracoes globais"
+        title="Configurações globais"
         description="Valores globais utilizados em toda a plataforma."
       />
 
@@ -78,7 +78,7 @@ export function GlobalSettingsView() {
 interface GlobalSettingsFormProps {
   initialValues: AdminSystemConfigFormValues;
   isSaving: boolean;
-  onSave: ReturnType<typeof useAdminConfigs>['saveConfigs'];
+  onSave: ReturnType<typeof useAdminConfigs>["saveConfigs"];
 }
 
 function GlobalSettingsForm({
@@ -89,7 +89,7 @@ function GlobalSettingsForm({
   const [formValues, setFormValues] =
     useState<AdminSystemConfigFormValues>(initialValues);
   const [message, setMessage] = useState<{
-    tone: 'success' | 'danger';
+    tone: "success" | "danger";
     text: string;
   } | null>(null);
 
@@ -109,8 +109,8 @@ function GlobalSettingsForm({
 
     if (!hasChanges) {
       setMessage({
-        tone: 'danger',
-        text: 'Nenhuma alteracao pendente para salvar.',
+        tone: "danger",
+        text: "Nenhuma alteração pendente para salvar.",
       });
       return;
     }
@@ -118,15 +118,15 @@ function GlobalSettingsForm({
     try {
       await onSave(pendingUpdates);
       setMessage({
-        tone: 'success',
-        text: 'Configuracoes globais atualizadas com sucesso.',
+        tone: "success",
+        text: "Configurações globais atualizadas com sucesso.",
       });
     } catch (error) {
       setMessage({
-        tone: 'danger',
+        tone: "danger",
         text: parseApiError(
           error,
-          'Nao foi possivel salvar as configuracoes globais.',
+          "Não foi possível salvar as configurações globais.",
         ),
       });
     }
@@ -139,7 +139,7 @@ function GlobalSettingsForm({
           Canais de suporte
         </h2>
         <p className="text-sm leading-6 text-muted-foreground">
-          Atualize de forma explicita os contatos publicados para suporte.
+          Atualize de forma explícita os contatos publicados para suporte.
         </p>
       </div>
 
@@ -183,7 +183,9 @@ function GlobalSettingsForm({
         </div>
 
         {message ? (
-          <AdminInlineNotice tone={message.tone}>{message.text}</AdminInlineNotice>
+          <AdminInlineNotice tone={message.tone}>
+            {message.text}
+          </AdminInlineNotice>
         ) : null}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
@@ -197,14 +199,14 @@ function GlobalSettingsForm({
               setMessage(null);
             }}
           >
-            Descartar alteracoes
+            Descartar alterações
           </Button>
           <Button
             type="submit"
             className="rounded-xl"
             disabled={isSaving || !hasChanges}
           >
-            {isSaving ? 'Salvando...' : 'Salvar configuracoes'}
+            {isSaving ? "Salvando..." : "Salvar configurações"}
           </Button>
         </div>
       </form>

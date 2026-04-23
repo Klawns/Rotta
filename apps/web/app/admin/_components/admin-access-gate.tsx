@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
-import { QueryErrorState } from '@/components/query-error-state';
-import { useAuth } from '@/hooks/use-auth';
-import { useAdminAccess } from '../_hooks/use-admin-access';
-import { AdminLoadingState } from './admin-ui';
+import { QueryErrorState } from "@/components/query-error-state";
+import { useAuth } from "@/hooks/use-auth";
+import { useAdminAccess } from "../_hooks/use-admin-access";
+import { AdminLoadingState } from "./admin-ui";
 
 interface AdminAccessGateProps {
   children: ReactNode;
@@ -20,8 +20,8 @@ export function AdminAccessGate({ children }: AdminAccessGateProps) {
       <div className="light admin-shell admin-shell-state">
         <QueryErrorState
           error={authError}
-          title="Nao foi possivel validar o acesso administrativo"
-          description="A sessao nao foi confirmada por uma falha operacional. Tente novamente."
+          title="Não foi possível validar o acesso administrativo"
+          description="A sessão não foi confirmada por uma falha operacional. Tente novamente."
           onRetry={() => {
             void verify();
           }}
@@ -36,7 +36,7 @@ export function AdminAccessGate({ children }: AdminAccessGateProps) {
       <div className="light admin-shell admin-shell-state">
         <AdminLoadingState
           title="Validando acesso restrito"
-          description="Conferindo a sessao administrativa antes de liberar o shell."
+          description="Conferindo a sessão administrativa antes de liberar o shell."
         />
       </div>
     );

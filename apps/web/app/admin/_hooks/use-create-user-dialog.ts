@@ -84,9 +84,9 @@ export function useCreateUserDialog({
     open,
     form,
     error: createUserMutation.error
-      ? parseApiError(
+        ? parseApiError(
           createUserMutation.error,
-          "Ocorreu um erro ao criar o usuario.",
+          "Ocorreu um erro ao criar o usuário.",
         )
       : null,
     isSubmitting: createUserMutation.isPending,

@@ -103,7 +103,7 @@ export function BackupListSection({
           <div className="space-y-1">
             <CardTitle>Listagem</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Consulte o historico, verifique falhas e baixe apenas os dumps concluidos.
+              Consulte o histórico, verifique falhas e baixe apenas os dumps concluídos.
             </p>
           </div>
 
@@ -148,8 +148,8 @@ export function BackupListSection({
           <div className="px-4 py-6 sm:px-6">
             <QueryErrorState
               error={error}
-              title="Nao foi possivel carregar os backups"
-              description="O historico tecnico nao foi carregado. Tente novamente."
+              title="Não foi possível carregar os backups"
+              description="O histórico técnico não foi carregado. Tente novamente."
               onRetry={onRetry}
             />
           </div>
@@ -163,12 +163,12 @@ export function BackupListSection({
                   <DatabaseBackup />
                 </EmptyMedia>
                 <EmptyTitle>
-                  {isFilteredEmpty ? 'Nenhum resultado para os filtros atuais' : 'Nenhum backup tecnico ainda'}
+                  {isFilteredEmpty ? 'Nenhum resultado para os filtros atuais' : 'Nenhum backup técnico ainda'}
                 </EmptyTitle>
                 <EmptyDescription>
                   {isFilteredEmpty
                     ? 'Ajuste os filtros para voltar a exibir registros.'
-                    : 'Quando um dump tecnico for criado, ele aparecera nesta lista com status e detalhes operacionais.'}
+                    : 'Quando um dump técnico for criado, ele aparecerá nesta lista com status e detalhes operacionais.'}
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent />

@@ -38,7 +38,7 @@ export function useDeleteUserDialog({
   const isOpen = open && Boolean(user);
   const isConfirmationValid = canDeleteUser(confirmationValue);
   const error = deleteUserError
-    ? parseApiError(deleteUserError, 'Erro ao excluir usuario.')
+    ? parseApiError(deleteUserError, 'Erro ao excluir usuário.')
     : null;
 
   const handleOpenChange = (nextOpen: boolean) => {

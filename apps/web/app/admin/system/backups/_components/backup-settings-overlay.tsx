@@ -1,37 +1,42 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { AlertCircle, ChevronDown, ChevronRight, PencilLine } from 'lucide-react';
-import { QueryErrorState } from '@/components/query-error-state';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import {
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  PencilLine,
+} from "lucide-react";
+import { QueryErrorState } from "@/components/query-error-state";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+} from "@/components/ui/collapsible";
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-} from '@/components/ui/drawer';
+} from "@/components/ui/drawer";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useIsMobile } from '@/components/ui/use-mobile';
-import { useBackupSettingsForm } from '../_hooks/use-backup-settings-form';
+} from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/components/ui/use-mobile";
+import { useBackupSettingsForm } from "../_hooks/use-backup-settings-form";
 import type {
   BackupSettingsSummaryViewModel,
   SystemBackupSettingsDto,
   UpdateSystemBackupSettingsDto,
-} from '../_types/admin-backups.types';
-import { BackupSettingsForm } from './backup-settings-form';
+} from "../_types/admin-backups.types";
+import { BackupSettingsForm } from "./backup-settings-form";
 
 interface BackupSettingsOverlayProps {
   settings: SystemBackupSettingsDto | null;
@@ -46,18 +51,18 @@ interface BackupSettingsOverlayProps {
 function createFallbackSettings(): SystemBackupSettingsDto {
   return {
     enabled: false,
-    providerId: '--',
+    providerId: "--",
     scheduler: {
-      health: 'disabled',
+      health: "disabled",
       lastSyncedAt: null,
     },
     schedule: {
-      mode: 'disabled',
+      mode: "disabled",
       fixedTime: null,
       intervalMinutes: null,
     },
     retention: {
-      mode: 'count',
+      mode: "count",
       maxCount: 7,
       maxAgeDays: null,
     },
@@ -109,14 +114,14 @@ function BackupSettingsSnapshot({
           <button
             type="button"
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-            aria-label={isExpanded ? 'Ocultar detalhes' : 'Exibir detalhes'}
+            aria-label={isExpanded ? "Ocultar detalhes" : "Exibir detalhes"}
           >
             {isExpanded ? (
               <ChevronDown className="size-4" />
             ) : (
               <ChevronRight className="size-4" />
             )}
-            {isExpanded ? 'Ocultar detalhes' : 'Ver mais'}
+            {isExpanded ? "Ocultar detalhes" : "Ver mais"}
           </button>
         </CollapsibleTrigger>
       </div>
@@ -125,7 +130,7 @@ function BackupSettingsSnapshot({
         <div className="mt-4 grid gap-x-6 gap-y-4 border-t pt-4 sm:grid-cols-2">
           <div className="min-w-0 space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              Ultima sincronizacao
+              Última sincronização
             </p>
             <p className="break-words text-sm font-medium leading-6 text-foreground">
               {settingsSummary.lastSyncedLabel}
@@ -143,7 +148,7 @@ function BackupSettingsSnapshot({
 
           <div className="min-w-0 space-y-1 sm:col-span-2">
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              Retencao
+              Retenção
             </p>
             <p className="break-words text-sm font-medium leading-6 text-foreground">
               {settingsSummary.retentionSummary}
@@ -178,8 +183,8 @@ export function BackupSettingsOverlay({
         <div className="px-4 pb-4">
           <QueryErrorState
             error={error}
-            title="Nao foi possivel carregar as configuracoes"
-            description="A configuracao do backup sistemico falhou ao carregar."
+            title="Não foi possível carregar as configurações"
+            description="A configuração do backup sistêmico falhou ao carregar."
             onRetry={onRetry}
           />
         </div>
@@ -200,7 +205,7 @@ export function BackupSettingsOverlay({
             <section className="space-y-3 px-4">
               <div className="border-b pb-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                  Ultimo incidente
+                  Último incidente
                 </p>
               </div>
               <Collapsible>
@@ -248,7 +253,7 @@ export function BackupSettingsOverlay({
                 Regras
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Ajuste agendamento e retencao do fluxo de backup tecnico.
+                Ajuste agendamento e retenção do fluxo de backup técnico.
               </p>
             </div>
             <BackupSettingsForm
@@ -297,9 +302,9 @@ export function BackupSettingsOverlay({
         >
           <DrawerContent className="max-h-[90vh] overflow-hidden rounded-t-3xl border-border">
             <DrawerHeader className="px-4 pt-5 text-left">
-              <DrawerTitle>Configuracoes de backup</DrawerTitle>
+              <DrawerTitle>Configurações de backup</DrawerTitle>
               <DrawerDescription>
-                Ajuste agendamento e retencao sem poluir a tela principal.
+                Ajuste agendamento e retenção sem poluir a tela principal.
               </DrawerDescription>
             </DrawerHeader>
             <div className="min-h-0 overflow-y-auto overscroll-contain scrollbar-hide">
@@ -327,9 +332,9 @@ export function BackupSettingsOverlay({
           className="w-full gap-0 overflow-hidden sm:max-w-xl"
         >
           <SheetHeader className="border-b px-6 py-5 text-left">
-            <SheetTitle>Configuracoes de backup</SheetTitle>
+            <SheetTitle>Configurações de backup</SheetTitle>
             <SheetDescription>
-              Ajuste agendamento e retencao sem poluir a tela principal.
+              Ajuste agendamento e retenção sem poluir a tela principal.
             </SheetDescription>
           </SheetHeader>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide py-4">

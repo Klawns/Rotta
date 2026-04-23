@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useBackupDownload } from '@/hooks/use-backup-download';
-import { useToast } from '@/hooks/use-toast';
-import { shouldPollBackupJobs } from '@/lib/backup-query-state';
-import { parseApiError } from '@/lib/api-error';
-import { adminKeys } from '@/lib/query-keys';
-import { adminSystemService } from '@/services/admin-system.service';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useBackupDownload } from "@/hooks/use-backup-download";
+import { useToast } from "@/hooks/use-toast";
+import { shouldPollBackupJobs } from "@/lib/backup-query-state";
+import { parseApiError } from "@/lib/api-error";
+import { adminKeys } from "@/lib/query-keys";
+import { adminSystemService } from "@/services/admin-system.service";
 
 export function useAdminBackups() {
   const { toast } = useToast();
@@ -35,18 +35,18 @@ export function useAdminBackups() {
         queryKey: adminKeys.technicalBackups(),
       });
       toast({
-        title: 'Backup tecnico iniciado',
-        description: 'O dump completo foi enviado para a fila.',
+        title: "Backup técnico iniciado",
+        description: "O dump completo foi enviado para a fila.",
       });
     },
     onError: (error) => {
       toast({
-        title: 'Falha ao iniciar backup tecnico',
+        title: "Falha ao iniciar backup técnico",
         description: parseApiError(
           error,
-          'Nao foi possivel iniciar o backup tecnico agora. Tente novamente em instantes.',
+          "Não foi possível iniciar o backup técnico agora. Tente novamente em instantes.",
         ),
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
@@ -61,18 +61,18 @@ export function useAdminBackups() {
         queryKey: adminKeys.technicalBackups(),
       });
       toast({
-        title: 'Configuracao de backup atualizada',
-        description: 'O scheduler e a retencao sistêmica foram reaplicados.',
+        title: "Configuração de backup atualizada",
+        description: "O scheduler e a retenção sistêmica foram reaplicados.",
       });
     },
     onError: (error) => {
       toast({
-        title: 'Falha ao salvar configuracao de backup',
+        title: "Falha ao salvar configuração de backup",
         description: parseApiError(
           error,
-          'Nao foi possivel salvar a configuracao do backup sistêmico.',
+          "Não foi possível salvar a configuração do backup sistêmico.",
         ),
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
@@ -85,11 +85,12 @@ export function useAdminBackups() {
   } = useBackupDownload({
     requestDownloadUrl: (backupId) =>
       adminSystemService.getTechnicalDownloadUrl(backupId),
-    successTitle: 'Download tecnico iniciado',
-    successDescription: 'O navegador ja iniciou a transferencia do dump tecnico.',
-    errorTitle: 'Falha ao baixar dump tecnico',
+    successTitle: "Download técnico iniciado",
+    successDescription:
+      "O navegador já iniciou a transferência do dump técnico.",
+    errorTitle: "Falha ao baixar dump técnico",
     errorDescription:
-      'Nao foi possivel preparar o download do dump tecnico. Tente novamente.',
+      "Não foi possível preparar o download do dump técnico. Tente novamente.",
   });
 
   return {
@@ -101,13 +102,13 @@ export function useAdminBackups() {
     errorMessage: backupsQuery.isError
       ? parseApiError(
           backupsQuery.error,
-          'Nao foi possivel carregar o historico de backups tecnicos.',
+          "Não foi possível carregar o histórico de backups técnicos.",
         )
       : null,
     settingsErrorMessage: settingsQuery.isError
       ? parseApiError(
           settingsQuery.error,
-          'Nao foi possivel carregar a configuracao do backup sistêmico.',
+          "Não foi possível carregar a configuração do backup sistêmico.",
         )
       : null,
     isCreating: createTechnicalBackupMutation.isPending,
@@ -116,9 +117,11 @@ export function useAdminBackups() {
     isDownloadActive,
     refresh: backupsQuery.refetch,
     createTechnicalBackup: () => createTechnicalBackupMutation.mutateAsync(),
-    saveSystemBackupSettings: (input: Parameters<
-      typeof adminSystemService.updateSystemBackupSettings
-    >[0]) => updateSystemBackupSettingsMutation.mutateAsync(input),
+    saveSystemBackupSettings: (
+      input: Parameters<
+        typeof adminSystemService.updateSystemBackupSettings
+      >[0],
+    ) => updateSystemBackupSettingsMutation.mutateAsync(input),
     openDownloadUrl: startDownload,
   };
 }

@@ -13,7 +13,7 @@ interface AdminStatsGridProps {
 export function AdminStatsGrid({ stats }: AdminStatsGridProps) {
   const cards = [
     {
-      label: 'Total de usuarios',
+      label: 'Total de usuários',
       value: stats.totalUsers || 0,
       icon: Users,
       color: 'text-blue-600 bg-blue-50',

@@ -89,7 +89,7 @@ export function presentAdminUsersPagination({
   );
 
   return {
-    summary: `Mostrando ${usersCount} de ${totalUsers} usuarios`,
+    summary: `Mostrando ${usersCount} de ${totalUsers} usuários`,
     currentPageLabel: `${resolvedCurrentPage} / ${resolvedTotalPages}`,
     isPreviousDisabled: isLoading || resolvedCurrentPage === 1,
     isNextDisabled: isLoading || resolvedCurrentPage === resolvedTotalPages,

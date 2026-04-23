@@ -24,11 +24,11 @@ export function DeleteUserModalView({ dialog }: DeleteUserModalViewProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold text-red-600">
             <AlertTriangle size={24} />
-            Excluir usuario?
+            Excluir usuário?
           </DialogTitle>
           <DialogDescription className="text-slate-500">
-            Esta acao e irreversivel. O usuario <strong>{dialog.user?.name}</strong>{' '}
-            ({dialog.user?.email}) sera removido permanentemente, junto com todas
+            Esta ação é irreversível. O usuário <strong>{dialog.user?.name}</strong>{' '}
+            ({dialog.user?.email}) será removido permanentemente, junto com todas
             as suas corridas e clientes.
           </DialogDescription>
         </DialogHeader>
@@ -90,7 +90,7 @@ export function DeleteUserModalView({ dialog }: DeleteUserModalViewProps) {
               ) : (
                 <>
                   <Trash2 size={16} />
-                  Confirmar exclusao
+                  Confirmar exclusão
                 </>
               )}
             </Button>

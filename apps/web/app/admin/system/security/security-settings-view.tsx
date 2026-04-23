@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from "react";
 
 import {
   AdminCard,
   AdminInlineNotice,
   AdminPage,
   AdminPageHeader,
-} from '@/app/admin/_components/admin-ui';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useAdminPasswordChange } from './_hooks/use-admin-password-change';
+} from "@/app/admin/_components/admin-ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAdminPasswordChange } from "./_hooks/use-admin-password-change";
 
 export function SecuritySettingsView() {
   return (
     <AdminPage>
       <AdminPageHeader
-        title="Seguranca de conta"
+        title="Segurança de conta"
         description="Atualize as credenciais administrativas com um fluxo direto e feedback claro."
       />
 
@@ -31,13 +31,13 @@ export function SecuritySettingsView() {
 function PasswordChangeForm() {
   const { changePassword, isSubmitting } = useAdminPasswordChange();
   const [message, setMessage] = useState<{
-    type: 'success' | 'error';
+    type: "success" | "error";
     text: string;
   } | null>(null);
   const [form, setForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -46,8 +46,8 @@ function PasswordChangeForm() {
 
     if (form.newPassword !== form.confirmPassword) {
       setMessage({
-        type: 'error',
-        text: 'A confirmacao da nova senha deve ser igual a senha informada.',
+        type: "error",
+        text: "A confirmação da nova senha deve ser igual à senha informada.",
       });
       return;
     }
@@ -55,11 +55,11 @@ function PasswordChangeForm() {
     const result = await changePassword(form);
     setMessage(result);
 
-    if (result.type === 'success') {
+    if (result.type === "success") {
       setForm({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
       });
     }
   };
@@ -121,7 +121,9 @@ function PasswordChangeForm() {
       </div>
 
       {message ? (
-        <AdminInlineNotice tone={message.type === 'success' ? 'success' : 'danger'}>
+        <AdminInlineNotice
+          tone={message.type === "success" ? "success" : "danger"}
+        >
           {message.text}
         </AdminInlineNotice>
       ) : null}
@@ -131,7 +133,7 @@ function PasswordChangeForm() {
         disabled={isSubmitting}
         className="h-12 w-full rounded-xl"
       >
-        {isSubmitting ? 'Salvando...' : 'Salvar nova senha'}
+        {isSubmitting ? "Salvando..." : "Salvar nova senha"}
       </Button>
     </form>
   );

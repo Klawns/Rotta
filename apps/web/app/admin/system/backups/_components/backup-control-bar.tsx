@@ -68,7 +68,7 @@ export function BackupControlBar({
         {settingsSummary?.environmentNotice ? (
           <Alert className="border-warning/30 bg-warning/5 text-warning [&>svg]:text-warning">
             <AlertCircle className="size-4" />
-            <AlertTitle>Criacao manual bloqueada</AlertTitle>
+            <AlertTitle>Criação manual bloqueada</AlertTitle>
             <AlertDescription>{settingsSummary.environmentNotice}</AlertDescription>
           </Alert>
         ) : null}

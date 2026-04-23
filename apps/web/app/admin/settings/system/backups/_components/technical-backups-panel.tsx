@@ -1,26 +1,22 @@
-'use client';
+"use client";
 
-import {
-  DatabaseBackup,
-  Filter,
-  ShieldCheck,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import type { BackupDownloadState } from '@/hooks/use-backup-download';
+import { useState } from "react";
+import { DatabaseBackup, Filter, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { BackupDownloadState } from "@/hooks/use-backup-download";
 import type {
   BackupJobSummary,
   SystemBackupSettingsResponse,
   UpdateSystemBackupSettingsInput,
-} from '@/types/backups';
+} from "@/types/backups";
 import {
   getSystemBackupFailoverSummary,
   getSystemBackupHealthLabel,
   getSystemBackupRetentionSummary,
   getSystemBackupScheduleSummary,
-} from '../_mappers/system-backup-settings.presenter';
-import { useTechnicalBackupsPanel } from '../_hooks/use-technical-backups-panel';
-import { TechnicalBackupRow } from './technical-backup-row';
-import { useState } from 'react';
+} from "../_mappers/system-backup-settings.presenter";
+import { useTechnicalBackupsPanel } from "../_hooks/use-technical-backups-panel";
+import { TechnicalBackupRow } from "./technical-backup-row";
 
 interface TechnicalBackupsPanelProps {
   backups: BackupJobSummary[];
@@ -69,7 +65,7 @@ export function TechnicalBackupsPanel({
                 retention: systemSettings.retention,
                 failover: systemSettings.failover,
               })
-            : 'system-backup-settings'
+            : "system-backup-settings"
         }
         settings={systemSettings}
         isLoading={isSettingsLoading}
@@ -87,7 +83,7 @@ export function TechnicalBackupsPanel({
             Dumps Puros (PostgreSQL)
           </h1>
           <p className="text-sm text-muted-foreground">
-            Historico e execucao de dumps completos para disaster recovery
+            Histórico e execução de dumps completos para disaster recovery
             extremo.
           </p>
         </div>
@@ -99,10 +95,10 @@ export function TechnicalBackupsPanel({
         >
           <DatabaseBackup className="mr-2 h-4 w-4" />
           {isCreating
-            ? 'Enfileirando...'
+            ? "Enfileirando..."
             : systemSettings?.enabled === false
-              ? 'Desativado'
-              : 'Gerar Dump Agora'}
+              ? "Desativado"
+              : "Gerar Dump Agora"}
         </Button>
       </div>
 
@@ -144,8 +140,8 @@ export function TechnicalBackupsPanel({
 
         <div className="p-0">
           {isLoading ? (
-            <div className="flex h-32 items-center justify-center text-sm text-muted-foreground animate-pulse">
-              Carregando historico tecnico...
+            <div className="flex h-32 animate-pulse items-center justify-center text-sm text-muted-foreground">
+              Carregando histórico técnico...
             </div>
           ) : errorMessage ? (
             <div className="m-6 rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
@@ -153,7 +149,7 @@ export function TechnicalBackupsPanel({
             </div>
           ) : panel.filteredCount === 0 ? (
             <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-              Nenhum dump compativel com o filtro.
+              Nenhum dump compatível com o filtro.
             </div>
           ) : (
             <div className="flex flex-col divide-y divide-border-subtle">
@@ -162,7 +158,7 @@ export function TechnicalBackupsPanel({
                 <div className="col-span-2">Origem</div>
                 <div className="col-span-3">Status</div>
                 <div className="col-span-2 text-right">Tamanho</div>
-                <div className="col-span-2 text-right">Acoes</div>
+                <div className="col-span-2 text-right">Ações</div>
               </div>
 
               {panel.rows.map((backup) => (
@@ -182,8 +178,8 @@ export function TechnicalBackupsPanel({
         {panel.hasPagination ? (
           <div className="flex items-center justify-between border-t border-border-subtle bg-background/50 px-6 py-4">
             <span className="text-sm text-muted-foreground">
-              Pagina{' '}
-              <strong className="text-foreground">{panel.currentPage}</strong>{' '}
+              Página{" "}
+              <strong className="text-foreground">{panel.currentPage}</strong>{" "}
               de {panel.totalPages}
             </span>
 
@@ -204,7 +200,7 @@ export function TechnicalBackupsPanel({
                 onClick={panel.goToNextPage}
                 disabled={panel.currentPage === panel.totalPages}
               >
-                Proxima
+                Próxima
               </Button>
             </div>
           </div>
@@ -230,16 +226,20 @@ function SystemBackupSettingsCard({
   onSave,
 }: SystemBackupSettingsCardProps) {
   const [scheduleMode, setScheduleMode] = useState<
-    UpdateSystemBackupSettingsInput['schedule']['mode']
-  >(settings?.schedule.mode ?? 'fixed_time');
-  const [fixedTime, setFixedTime] = useState(settings?.schedule.fixedTime ?? '04:00');
+    UpdateSystemBackupSettingsInput["schedule"]["mode"]
+  >(settings?.schedule.mode ?? "fixed_time");
+  const [fixedTime, setFixedTime] = useState(
+    settings?.schedule.fixedTime ?? "04:00",
+  );
   const [intervalMinutes, setIntervalMinutes] = useState(
     String(settings?.schedule.intervalMinutes ?? 120),
   );
   const [retentionMode, setRetentionMode] = useState<
-    UpdateSystemBackupSettingsInput['retention']['mode']
-  >(settings?.retention.mode ?? 'count');
-  const [maxCount, setMaxCount] = useState(String(settings?.retention.maxCount ?? 7));
+    UpdateSystemBackupSettingsInput["retention"]["mode"]
+  >(settings?.retention.mode ?? "count");
+  const [maxCount, setMaxCount] = useState(
+    String(settings?.retention.maxCount ?? 7),
+  );
   const [maxAgeDays, setMaxAgeDays] = useState(
     String(settings?.retention.maxAgeDays ?? 15),
   );
@@ -247,7 +247,7 @@ function SystemBackupSettingsCard({
   if (isLoading) {
     return (
       <div className="rounded-[2rem] border border-border-subtle bg-card/70 p-6 text-sm text-muted-foreground shadow-sm backdrop-blur-xl">
-        Carregando configuracao do backup sistêmico...
+        Carregando configuração do backup sistêmico...
       </div>
     );
   }
@@ -268,20 +268,20 @@ function SystemBackupSettingsCard({
     onSave({
       schedule: {
         mode: scheduleMode,
-        fixedTime: scheduleMode === 'fixed_time' ? fixedTime : null,
+        fixedTime: scheduleMode === "fixed_time" ? fixedTime : null,
         intervalMinutes:
-          scheduleMode === 'interval'
+          scheduleMode === "interval"
             ? Number.parseInt(intervalMinutes, 10) || null
             : null,
       },
       retention: {
         mode: retentionMode,
         maxCount:
-          retentionMode === 'count'
+          retentionMode === "count"
             ? Number.parseInt(maxCount, 10) || null
             : null,
         maxAgeDays:
-          retentionMode === 'max_age'
+          retentionMode === "max_age"
             ? Number.parseInt(maxAgeDays, 10) || null
             : null,
       },
@@ -296,10 +296,13 @@ function SystemBackupSettingsCard({
             System Backup
           </div>
           <h2 className="text-xl font-bold text-foreground">
-            Agendamento e Retencao do pg_dump
+            Agendamento e Retenção do pg_dump
           </h2>
           <div className="space-y-1 text-sm text-muted-foreground">
-            <p>Provider ativo: <strong className="text-foreground">{settings.providerId}</strong></p>
+            <p>
+              Provider ativo:{" "}
+              <strong className="text-foreground">{settings.providerId}</strong>
+            </p>
             <p>{getSystemBackupHealthLabel(settings)}</p>
             <p>{getSystemBackupScheduleSummary(settings).summary}</p>
             <p>{getSystemBackupRetentionSummary(settings)}</p>
@@ -311,25 +314,29 @@ function SystemBackupSettingsCard({
           ) : null}
           {settings.enabled === false ? (
             <div className="rounded-2xl border border-warning/20 bg-warning/10 px-4 py-3 text-sm text-warning">
-              O kill switch `PG_DUMP_BACKUP_ENABLED=false` bloqueia execucoes manuais e agendadas neste ambiente.
+              O kill switch `PG_DUMP_BACKUP_ENABLED=false` bloqueia execuções
+              manuais e agendadas neste ambiente.
             </div>
           ) : null}
         </div>
 
         <div className="grid w-full gap-4 lg:max-w-2xl lg:grid-cols-2">
           <label className="space-y-2 text-sm">
-            <span className="font-medium text-foreground">Modo de agendamento</span>
+            <span className="font-medium text-foreground">
+              Modo de agendamento
+            </span>
             <select
               value={scheduleMode}
               onChange={(event) =>
                 setScheduleMode(
-                  event.target.value as UpdateSystemBackupSettingsInput['schedule']['mode'],
+                  event.target
+                    .value as UpdateSystemBackupSettingsInput["schedule"]["mode"],
                 )
               }
               className="h-10 w-full rounded-xl border border-border-subtle bg-background/60 px-3 text-foreground"
               disabled={isSaving}
             >
-              <option value="fixed_time">Horario fixo</option>
+              <option value="fixed_time">Horário fixo</option>
               <option value="interval">Intervalo</option>
               <option value="disabled">Desativado</option>
             </select>
@@ -337,14 +344,14 @@ function SystemBackupSettingsCard({
 
           <label className="space-y-2 text-sm">
             <span className="font-medium text-foreground">
-              {scheduleMode === 'interval' ? 'Intervalo (minutos)' : 'Horario'}
+              {scheduleMode === "interval" ? "Intervalo (minutos)" : "Horário"}
             </span>
-            {scheduleMode === 'interval' ? (
+            {scheduleMode === "interval" ? (
               <input
                 value={intervalMinutes}
                 onChange={(event) => setIntervalMinutes(event.target.value)}
                 className="h-10 w-full rounded-xl border border-border-subtle bg-background/60 px-3 text-foreground"
-                disabled={isSaving || scheduleMode !== 'interval'}
+                disabled={isSaving || scheduleMode !== "interval"}
                 inputMode="numeric"
               />
             ) : (
@@ -353,36 +360,41 @@ function SystemBackupSettingsCard({
                 value={fixedTime}
                 onChange={(event) => setFixedTime(event.target.value)}
                 className="h-10 w-full rounded-xl border border-border-subtle bg-background/60 px-3 text-foreground"
-                disabled={isSaving || scheduleMode !== 'fixed_time'}
+                disabled={isSaving || scheduleMode !== "fixed_time"}
               />
             )}
           </label>
 
           <label className="space-y-2 text-sm">
-            <span className="font-medium text-foreground">Modo de retencao</span>
+            <span className="font-medium text-foreground">
+              Modo de retenção
+            </span>
             <select
               value={retentionMode}
               onChange={(event) =>
                 setRetentionMode(
-                  event.target.value as UpdateSystemBackupSettingsInput['retention']['mode'],
+                  event.target
+                    .value as UpdateSystemBackupSettingsInput["retention"]["mode"],
                 )
               }
               className="h-10 w-full rounded-xl border border-border-subtle bg-background/60 px-3 text-foreground"
               disabled={isSaving}
             >
               <option value="count">Quantidade de arquivos</option>
-              <option value="max_age">Tempo maximo</option>
+              <option value="max_age">Tempo máximo</option>
             </select>
           </label>
 
           <label className="space-y-2 text-sm">
             <span className="font-medium text-foreground">
-              {retentionMode === 'count' ? 'Maximo de arquivos' : 'Maximo de dias'}
+              {retentionMode === "count"
+                ? "Máximo de arquivos"
+                : "Máximo de dias"}
             </span>
             <input
-              value={retentionMode === 'count' ? maxCount : maxAgeDays}
+              value={retentionMode === "count" ? maxCount : maxAgeDays}
               onChange={(event) =>
-                retentionMode === 'count'
+                retentionMode === "count"
                   ? setMaxCount(event.target.value)
                   : setMaxAgeDays(event.target.value)
               }
@@ -400,7 +412,7 @@ function SystemBackupSettingsCard({
           onClick={handleSave}
           disabled={isSaving}
         >
-          {isSaving ? 'Salvando...' : 'Salvar Configuracao'}
+          {isSaving ? "Salvando..." : "Salvar Configuração"}
         </Button>
       </div>
     </div>

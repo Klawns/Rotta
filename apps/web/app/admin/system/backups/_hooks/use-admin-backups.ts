@@ -48,10 +48,10 @@ export function useAdminBackups() {
     requestDownloadUrl: (backupId) =>
       adminBackupsService.getTechnicalDownloadUrl(backupId),
     successTitle: 'Download iniciado',
-    successDescription: 'O navegador ja iniciou a transferencia do dump tecnico.',
-    errorTitle: 'Falha ao baixar dump tecnico',
+    successDescription: 'O navegador já iniciou a transferência do dump técnico.',
+    errorTitle: 'Falha ao baixar dump técnico',
     errorDescription:
-      'Nao foi possivel preparar o download do dump tecnico. Tente novamente.',
+      'Não foi possível preparar o download do dump técnico. Tente novamente.',
   });
 
   return {
@@ -67,7 +67,7 @@ export function useAdminBackups() {
       errorMessage: backupsQuery.isError
         ? parseApiError(
             backupsQuery.error,
-            'Nao foi possivel carregar o historico de backups tecnicos.',
+            'Não foi possível carregar o histórico de backups técnicos.',
           )
         : null,
       refetch: backupsQuery.refetch,
@@ -79,7 +79,7 @@ export function useAdminBackups() {
       errorMessage: settingsQuery.isError
         ? parseApiError(
             settingsQuery.error,
-            'Nao foi possivel carregar a configuracao do backup sistemico.',
+            'Não foi possível carregar a configuração do backup sistêmico.',
           )
         : null,
       refetch: settingsQuery.refetch,

@@ -24,16 +24,16 @@ export function useUpdateAdminBackupSettings() {
         }),
       ]);
       toast({
-        title: 'Configuracao atualizada',
-        description: 'Scheduler e retencao foram reaplicados.',
+        title: 'Configuração atualizada',
+        description: 'Scheduler e retenção foram reaplicados.',
       });
     },
     onError: (error) => {
       toast({
-        title: 'Falha ao salvar configuracao',
+        title: 'Falha ao salvar configuração',
         description: parseApiError(
           error,
-          'Nao foi possivel salvar a configuracao do backup sistemico.',
+          'Não foi possível salvar a configuração do backup sistêmico.',
         ),
         variant: 'destructive',
       });

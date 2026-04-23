@@ -17,16 +17,16 @@ export function useCreateAdminBackup() {
         queryKey: adminKeys.technicalBackups(),
       });
       toast({
-        title: 'Backup tecnico iniciado',
+        title: 'Backup técnico iniciado',
         description: 'O dump completo foi enviado para a fila.',
       });
     },
     onError: (error) => {
       toast({
-        title: 'Falha ao iniciar backup tecnico',
+        title: 'Falha ao iniciar backup técnico',
         description: parseApiError(
           error,
-          'Nao foi possivel iniciar o backup tecnico agora. Tente novamente em instantes.',
+          'Não foi possível iniciar o backup técnico agora. Tente novamente em instantes.',
         ),
         variant: 'destructive',
       });

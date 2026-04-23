@@ -18,7 +18,7 @@ export default function AdminBillingPlansPage() {
     return (
       <AdminLoadingState
         title="Carregando planos"
-        description="Buscando os planos disponiveis para edicao."
+        description="Buscando os planos disponíveis para edição."
       />
     );
   }
@@ -27,8 +27,8 @@ export default function AdminBillingPlansPage() {
     return (
       <QueryErrorState
         error={error}
-        title="Nao foi possivel carregar os planos de faturamento"
-        description="Revise a conectividade da area administrativa e tente novamente."
+        title="Não foi possível carregar os planos de faturamento"
+        description="Revise a conectividade da área administrativa e tente novamente."
         onRetry={() => {
           void refetch();
         }}
@@ -39,7 +39,7 @@ export default function AdminBillingPlansPage() {
   return (
     <AdminPage>
       <AdminPageHeader
-        title="Planos de precos"
+        title="Planos de preços"
         description="Configure os valores e intervalos das assinaturas ativas na plataforma."
       />
 

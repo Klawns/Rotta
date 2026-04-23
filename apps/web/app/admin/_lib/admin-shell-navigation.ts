@@ -1,4 +1,4 @@
-export type AdminNavigationMatchMode = 'exact' | 'prefix';
+export type AdminNavigationMatchMode = "exact" | "prefix";
 
 export interface AdminNavigationItemInput {
   href: string;
@@ -21,63 +21,63 @@ interface AdminNavigationGroup {
 
 const ADMIN_PRIMARY_NAVIGATION: AdminNavigationItem[] = [
   {
-    label: 'Visao Geral',
-    href: '/admin/overview',
-    matchMode: 'exact',
+    label: "Visão Geral",
+    href: "/admin/overview",
+    matchMode: "exact",
   },
   {
-    label: 'Usuarios',
-    href: '/admin/users',
-    matchMode: 'prefix',
-    activePrefix: '/admin/users',
+    label: "Usuários",
+    href: "/admin/users",
+    matchMode: "prefix",
+    activePrefix: "/admin/users",
   },
   {
-    label: 'Faturamento',
-    href: '/admin/billing',
-    matchMode: 'prefix',
-    activePrefix: '/admin/billing',
+    label: "Faturamento",
+    href: "/admin/billing",
+    matchMode: "prefix",
+    activePrefix: "/admin/billing",
   },
   {
-    label: 'Sistema',
-    href: '/admin/system/global',
-    matchMode: 'prefix',
-    activePrefix: '/admin/system',
+    label: "Sistema",
+    href: "/admin/system/global",
+    matchMode: "prefix",
+    activePrefix: "/admin/system",
   },
 ];
 
 const ADMIN_SUB_NAVIGATION_GROUPS: AdminNavigationGroup[] = [
   {
-    title: 'Faturamento',
+    title: "Faturamento",
     items: [
       {
-        label: 'Resumo',
-        href: '/admin/billing',
-        matchMode: 'exact',
+        label: "Resumo",
+        href: "/admin/billing",
+        matchMode: "exact",
       },
       {
-        label: 'Planos',
-        href: '/admin/billing/plans',
-        matchMode: 'exact',
+        label: "Planos",
+        href: "/admin/billing/plans",
+        matchMode: "exact",
       },
     ],
   },
   {
-    title: 'Sistema',
+    title: "Sistema",
     items: [
       {
-        label: 'Global',
-        href: '/admin/system/global',
-        matchMode: 'exact',
+        label: "Global",
+        href: "/admin/system/global",
+        matchMode: "exact",
       },
       {
-        label: 'Seguranca',
-        href: '/admin/system/security',
-        matchMode: 'exact',
+        label: "Segurança",
+        href: "/admin/system/security",
+        matchMode: "exact",
       },
       {
-        label: 'Backups',
-        href: '/admin/system/backups',
-        matchMode: 'exact',
+        label: "Backups",
+        href: "/admin/system/backups",
+        matchMode: "exact",
       },
     ],
   },
@@ -85,10 +85,10 @@ const ADMIN_SUB_NAVIGATION_GROUPS: AdminNavigationGroup[] = [
 
 function normalizeAdminPath(pathname: string | null | undefined) {
   if (!pathname) {
-    return '/admin';
+    return "/admin";
   }
 
-  if (pathname.length > 1 && pathname.endsWith('/')) {
+  if (pathname.length > 1 && pathname.endsWith("/")) {
     return pathname.slice(0, -1);
   }
 
@@ -102,14 +102,13 @@ export function isAdminNavigationItemActive(
   const normalizedPath = normalizeAdminPath(pathname);
   const normalizedHref = normalizeAdminPath(item.href);
 
-  if (item.matchMode === 'exact') {
+  if (item.matchMode === "exact") {
     return normalizedPath === normalizedHref;
   }
 
   const prefix = normalizeAdminPath(item.activePrefix ?? normalizedHref);
   return (
-    normalizedPath === normalizedHref ||
-    normalizedPath.startsWith(`${prefix}/`)
+    normalizedPath === normalizedHref || normalizedPath.startsWith(`${prefix}/`)
   );
 }
 
@@ -131,8 +130,8 @@ export function getAdminShellNavigation(pathname: string | null | undefined) {
   const primaryActiveItem =
     primaryNavigation.find((item) => item.isActive) ?? primaryNavigation[0];
 
-  const subNavigationGroup = ADMIN_SUB_NAVIGATION_GROUPS.find((group) =>
-    group.title === primaryActiveItem.label,
+  const subNavigationGroup = ADMIN_SUB_NAVIGATION_GROUPS.find(
+    (group) => group.title === primaryActiveItem.label,
   );
 
   return {

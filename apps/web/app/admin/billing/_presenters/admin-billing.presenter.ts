@@ -1,8 +1,8 @@
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency } from "@/lib/utils";
 import type {
   AdminBillingGatewayCapability,
   AdminBillingSummary,
-} from '@/types/admin-billing';
+} from "@/types/admin-billing";
 
 interface AdminBillingMetricPresentation {
   label: string;
@@ -13,7 +13,7 @@ interface AdminBillingGatewayPresentation {
   badgeLabel: string;
   description: string;
   providerLabel: string;
-  tone: 'success' | 'warning' | 'muted';
+  tone: "success" | "warning" | "muted";
 }
 
 export interface AdminBillingSummaryPresentation {
@@ -28,7 +28,7 @@ export interface AdminBillingSummaryPresentation {
 
 export function formatBillingTextFallback(value: string | null | undefined) {
   if (!value?.trim()) {
-    return '--';
+    return "--";
   }
 
   return value;
@@ -37,40 +37,40 @@ export function formatBillingTextFallback(value: string | null | undefined) {
 export function formatBillingCurrencyFallback(
   valueInCents: number | null | undefined,
 ) {
-  return formatCurrency((valueInCents ?? 0) / 100).replace(/\u00a0/g, ' ');
+  return formatCurrency((valueInCents ?? 0) / 100).replace(/\u00a0/g, " ");
 }
 
 export function getAdminBillingGatewayPresentation(
   gateway: AdminBillingGatewayCapability,
 ): AdminBillingGatewayPresentation {
   switch (gateway.status) {
-    case 'enabled':
+    case "enabled":
       return {
-        badgeLabel: 'Gateway ativo',
+        badgeLabel: "Gateway ativo",
         description:
           gateway.message ??
-          'Checkout e conciliacao ja podem evoluir sobre o provider atual.',
+          "Checkout e conciliação já podem evoluir sobre o provider atual.",
         providerLabel: formatBillingTextFallback(gateway.provider),
-        tone: 'success',
+        tone: "success",
       };
-    case 'unavailable':
+    case "unavailable":
       return {
-        badgeLabel: 'Gateway indisponivel',
+        badgeLabel: "Gateway indisponível",
         description:
           gateway.message ??
-          'Nao foi possivel carregar a capacidade do gateway neste momento.',
+          "Não foi possível carregar a capacidade do gateway neste momento.",
         providerLabel: formatBillingTextFallback(gateway.provider),
-        tone: 'muted',
+        tone: "muted",
       };
-    case 'readOnly':
+    case "readOnly":
     default:
       return {
-        badgeLabel: 'Somente preparacao',
+        badgeLabel: "Somente preparação",
         description:
           gateway.message ??
-          'O gateway ainda nao esta configurado. A area segue pronta para receber a integracao futura.',
+          "O gateway ainda não está configurado. A área segue pronta para receber a integração futura.",
         providerLabel: formatBillingTextFallback(gateway.provider),
-        tone: 'warning',
+        tone: "warning",
       };
   }
 }
@@ -82,24 +82,24 @@ export function getAdminBillingSummaryPresentation(
     gateway: getAdminBillingGatewayPresentation(summary.gateway),
     metrics: {
       activePlans: {
-        label: 'Planos ativos',
+        label: "Planos ativos",
         value:
-          typeof summary.metrics.activePlans === 'number'
+          typeof summary.metrics.activePlans === "number"
             ? String(summary.metrics.activePlans)
-            : '--',
+            : "--",
       },
       highlightedPlanName: {
-        label: 'Plano em destaque',
+        label: "Plano em destaque",
         value: formatBillingTextFallback(summary.metrics.highlightedPlanName),
       },
       monthlyRevenue: {
-        label: 'Receita mensal',
+        label: "Receita mensal",
         value: formatBillingCurrencyFallback(
           summary.metrics.monthlyRevenueInCents,
         ),
       },
       annualRevenue: {
-        label: 'Receita anual',
+        label: "Receita anual",
         value: formatBillingCurrencyFallback(
           summary.metrics.annualRevenueInCents,
         ),

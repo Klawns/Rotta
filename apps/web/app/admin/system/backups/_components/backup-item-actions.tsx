@@ -36,7 +36,7 @@ export function BackupItemActions({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label="Abrir menu de acoes do backup">
+        <Button variant="ghost" size="icon-sm" aria-label="Abrir menu de ações do backup">
           <MoreHorizontal />
         </Button>
       </DropdownMenuTrigger>

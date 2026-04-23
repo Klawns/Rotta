@@ -32,7 +32,7 @@ export default function AdminBillingSummaryPage() {
     return (
       <AdminLoadingState
         title="Carregando resumo de faturamento"
-        description="Buscando capacidade do gateway e metricas principais."
+        description="Buscando capacidade do gateway e métricas principais."
       />
     );
   }
@@ -41,7 +41,7 @@ export default function AdminBillingSummaryPage() {
     return (
       <QueryErrorState
         error={error}
-        title="Nao foi possivel carregar o resumo de faturamento"
+        title="Não foi possível carregar o resumo de faturamento"
         description="Revise o estado do gateway e tente novamente."
         onRetry={() => {
           void refetch();
@@ -66,7 +66,7 @@ export default function AdminBillingSummaryPage() {
       <AdminPage>
         <AdminPageHeader
           title="Resumo de billing"
-          description="Visao geral do dominio de faturamento com fallbacks e capacidade do gateway centralizados."
+          description="Visão geral do domínio de faturamento com fallbacks e capacidade do gateway centralizados."
         />
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.8fr)]">

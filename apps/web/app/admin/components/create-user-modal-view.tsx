@@ -24,7 +24,7 @@ export function CreateUserModalView({ dialog }: CreateUserModalViewProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold text-blue-700">
             <UserPlus size={24} />
-            Cadastrar novo usuario
+            Cadastrar novo usuário
           </DialogTitle>
           <DialogDescription className="text-slate-500">
             Preencha os dados abaixo para criar uma conta manualmente para o
@@ -113,7 +113,7 @@ export function CreateUserModalView({ dialog }: CreateUserModalViewProps) {
               {dialog.isSubmitting ? (
                 <Loader2 className="animate-spin" size={18} />
               ) : (
-                'Criar usuario'
+                'Criar usuário'
               )}
             </Button>
           </DialogFooter>

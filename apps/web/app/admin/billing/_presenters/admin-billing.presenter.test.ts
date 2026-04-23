@@ -1,24 +1,24 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   formatBillingCurrencyFallback,
   formatBillingTextFallback,
   getAdminBillingGatewayPresentation,
   getAdminBillingSummaryPresentation,
-} from './admin-billing.presenter';
+} from "./admin-billing.presenter";
 
-test('formats billing fallbacks for missing money and text values', () => {
-  assert.equal(formatBillingCurrencyFallback(null), 'R$ 0,00');
-  assert.equal(formatBillingCurrencyFallback(undefined), 'R$ 0,00');
-  assert.equal(formatBillingTextFallback(''), '--');
-  assert.equal(formatBillingTextFallback(null), '--');
+test("formats billing fallbacks for missing money and text values", () => {
+  assert.equal(formatBillingCurrencyFallback(null), "R$ 0,00");
+  assert.equal(formatBillingCurrencyFallback(undefined), "R$ 0,00");
+  assert.equal(formatBillingTextFallback(""), "--");
+  assert.equal(formatBillingTextFallback(null), "--");
 });
 
-test('builds a read-only billing summary when the gateway is disabled', () => {
+test("builds a read-only billing summary when the gateway is disabled", () => {
   const presentation = getAdminBillingSummaryPresentation({
     gateway: {
-      status: 'readOnly',
+      status: "readOnly",
       provider: null,
       message: null,
     },
@@ -30,26 +30,26 @@ test('builds a read-only billing summary when the gateway is disabled', () => {
     },
   });
 
-  assert.equal(presentation.metrics.activePlans.value, '--');
-  assert.equal(presentation.metrics.highlightedPlanName.value, '--');
-  assert.equal(presentation.metrics.monthlyRevenue.value, 'R$ 0,00');
-  assert.equal(presentation.metrics.annualRevenue.value, 'R$ 0,00');
-  assert.equal(presentation.gateway.badgeLabel, 'Somente preparacao');
+  assert.equal(presentation.metrics.activePlans.value, "--");
+  assert.equal(presentation.metrics.highlightedPlanName.value, "--");
+  assert.equal(presentation.metrics.monthlyRevenue.value, "R$ 0,00");
+  assert.equal(presentation.metrics.annualRevenue.value, "R$ 0,00");
+  assert.equal(presentation.gateway.badgeLabel, "Somente preparação");
   assert.match(
     presentation.gateway.description,
-    /gateway ainda nao esta configurado/i,
+    /gateway ainda não está configurado/i,
   );
 });
 
-test('builds an enabled gateway presentation with provider metadata', () => {
+test("builds an enabled gateway presentation with provider metadata", () => {
   const gateway = getAdminBillingGatewayPresentation({
-    status: 'enabled',
-    provider: 'abacatepay',
-    message: 'Checkout e conciliacao disponiveis.',
+    status: "enabled",
+    provider: "abacatepay",
+    message: "Checkout e conciliação disponíveis.",
   });
 
-  assert.equal(gateway.badgeLabel, 'Gateway ativo');
-  assert.equal(gateway.providerLabel, 'abacatepay');
-  assert.equal(gateway.tone, 'success');
-  assert.equal(gateway.description, 'Checkout e conciliacao disponiveis.');
+  assert.equal(gateway.badgeLabel, "Gateway ativo");
+  assert.equal(gateway.providerLabel, "abacatepay");
+  assert.equal(gateway.tone, "success");
+  assert.equal(gateway.description, "Checkout e conciliação disponíveis.");
 });

@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 
-import { QueryErrorBoundary } from '@/components/query-error-boundary';
-import { QueryErrorState } from '@/components/query-error-state';
-import { CreateUserModal } from '../components/create-user-modal';
-import { DeleteUserModal } from '../components/delete-user-modal';
-import { RecentUsersTable } from '../components/recent-users-table';
-import { AdminPage, AdminPageHeader } from '../_components/admin-ui';
-import { useAdminUsers } from './_hooks/use-admin-users';
-import { useAdminUsersState } from './_hooks/use-admin-users-state';
+import { QueryErrorBoundary } from "@/components/query-error-boundary";
+import { QueryErrorState } from "@/components/query-error-state";
+import { CreateUserModal } from "../components/create-user-modal";
+import { DeleteUserModal } from "../components/delete-user-modal";
+import { RecentUsersTable } from "../components/recent-users-table";
+import { AdminPage, AdminPageHeader } from "../_components/admin-ui";
+import { useAdminUsers } from "./_hooks/use-admin-users";
+import { useAdminUsersState } from "./_hooks/use-admin-users-state";
 
 export default function AdminUsersPage() {
   const state = useAdminUsersState();
@@ -40,15 +40,15 @@ export default function AdminUsersPage() {
       >
         <AdminPage>
           <AdminPageHeader
-            title="Gestao administrativa de usuarios"
-            description="Listagem paginada com criacao, exclusao e troca de plano sem misturar a visao geral do painel."
+            title="Gestão administrativa de usuários"
+            description="Listagem paginada com criação, exclusão e troca de plano sem misturar a visão geral do painel."
           />
 
-          <QueryErrorBoundary message="Nao foi possivel carregar a lista de usuarios.">
+          <QueryErrorBoundary message="Não foi possível carregar a lista de usuários.">
             {usersError && !users ? (
               <QueryErrorState
                 error={usersError}
-                title="Nao foi possivel carregar a lista de usuarios"
+                title="Não foi possível carregar a lista de usuários"
                 onRetry={() => {
                   void refetchUsers();
                 }}
@@ -58,8 +58,8 @@ export default function AdminUsersPage() {
                 {usersError ? (
                   <QueryErrorState
                     error={usersError}
-                    title="Falha ao atualizar a lista de usuarios"
-                    description="Os dados em cache foram mantidos, mas a ultima consulta falhou."
+                    title="Falha ao atualizar a lista de usuários"
+                    description="Os dados em cache foram mantidos, mas a última consulta falhou."
                     onRetry={() => {
                       void refetchUsers();
                     }}

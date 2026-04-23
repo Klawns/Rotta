@@ -1,35 +1,35 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
-import type { BackupListItemViewModel } from '../_types/admin-backups.types';
+import { useMemo, useState } from "react";
+import type { BackupListItemViewModel } from "../_types/admin-backups.types";
 
 export const BACKUP_LIST_ITEMS_PER_PAGE = 8;
 
 export const backupStatusFilterOptions = [
-  { value: 'all', label: 'Todos os status' },
-  { value: 'success', label: 'Concluidos' },
-  { value: 'failed', label: 'Falhas' },
-  { value: 'pending', label: 'Na fila' },
-  { value: 'running', label: 'Em processamento' },
+  { value: "all", label: "Todos os status" },
+  { value: "success", label: "Concluídos" },
+  { value: "failed", label: "Falhas" },
+  { value: "pending", label: "Na fila" },
+  { value: "running", label: "Em processamento" },
 ] as const;
 
 export const backupSourceFilterOptions = [
-  { value: 'all', label: 'Todas as origens' },
-  { value: 'manual', label: 'Manual' },
-  { value: 'scheduled', label: 'Automatico' },
+  { value: "all", label: "Todas as origens" },
+  { value: "manual", label: "Manual" },
+  { value: "scheduled", label: "Automático" },
 ] as const;
 
 export type BackupStatusFilter =
-  (typeof backupStatusFilterOptions)[number]['value'];
+  (typeof backupStatusFilterOptions)[number]["value"];
 export type BackupSourceFilter =
-  (typeof backupSourceFilterOptions)[number]['value'];
+  (typeof backupSourceFilterOptions)[number]["value"];
 
 interface BackupListStateParams {
   backups: BackupListItemViewModel[];
   rawBackups: Array<{
     id: string;
-    status: 'pending' | 'running' | 'success' | 'failed';
-    trigger: 'manual' | 'scheduled' | 'pre_import';
+    status: "pending" | "running" | "success" | "failed";
+    trigger: "manual" | "scheduled" | "pre_import";
   }>;
 }
 
@@ -41,10 +41,13 @@ function isSourceFilter(value: string): value is BackupSourceFilter {
   return backupSourceFilterOptions.some((option) => option.value === value);
 }
 
-export function filterBackups(params: BackupListStateParams, filters: {
-  statusFilter: BackupStatusFilter;
-  sourceFilter: BackupSourceFilter;
-}) {
+export function filterBackups(
+  params: BackupListStateParams,
+  filters: {
+    statusFilter: BackupStatusFilter;
+    sourceFilter: BackupSourceFilter;
+  },
+) {
   return params.backups.filter((backup) => {
     const rawBackup = params.rawBackups.find((item) => item.id === backup.id);
 
@@ -53,15 +56,20 @@ export function filterBackups(params: BackupListStateParams, filters: {
     }
 
     const matchesStatus =
-      filters.statusFilter === 'all' || rawBackup.status === filters.statusFilter;
+      filters.statusFilter === "all" ||
+      rawBackup.status === filters.statusFilter;
     const matchesSource =
-      filters.sourceFilter === 'all' || rawBackup.trigger === filters.sourceFilter;
+      filters.sourceFilter === "all" ||
+      rawBackup.trigger === filters.sourceFilter;
 
     return matchesStatus && matchesSource;
   });
 }
 
-export function getTotalPages(totalItems: number, itemsPerPage = BACKUP_LIST_ITEMS_PER_PAGE) {
+export function getTotalPages(
+  totalItems: number,
+  itemsPerPage = BACKUP_LIST_ITEMS_PER_PAGE,
+) {
   if (totalItems <= 0) {
     return 1;
   }
@@ -88,9 +96,9 @@ export function paginateBackups(
 export function useBackupListState(params: BackupListStateParams) {
   const [rawPage, setRawPage] = useState(1);
   const [statusFilter, setStatusFilterValue] =
-    useState<BackupStatusFilter>('all');
+    useState<BackupStatusFilter>("all");
   const [sourceFilter, setSourceFilterValue] =
-    useState<BackupSourceFilter>('all');
+    useState<BackupSourceFilter>("all");
 
   const filteredBackups = useMemo(
     () => filterBackups(params, { statusFilter, sourceFilter }),
@@ -134,7 +142,8 @@ export function useBackupListState(params: BackupListStateParams) {
     sourceFilterOptions: backupSourceFilterOptions,
     setStatusFilter,
     setSourceFilter,
-    goToPreviousPage: () => setRawPage((page) => clampPage(page - 1, totalPages)),
+    goToPreviousPage: () =>
+      setRawPage((page) => clampPage(page - 1, totalPages)),
     goToNextPage: () => setRawPage((page) => clampPage(page + 1, totalPages)),
   };
 }

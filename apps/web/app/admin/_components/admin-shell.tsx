@@ -135,7 +135,7 @@ export function AdminShell({ children }: AdminShellProps) {
               onClick={logout}
             >
               <LogOut className="size-4" />
-              Encerrar sessao
+              Encerrar sessão
             </Button>
           </div>
         </aside>
@@ -159,7 +159,7 @@ export function AdminShell({ children }: AdminShellProps) {
                     className="rounded-2xl border-border bg-white/70 text-foreground hover:bg-white md:hidden"
                   >
                     <Menu className="size-4" />
-                    <span className="sr-only">Abrir navegacao administrativa</span>
+                    <span className="sr-only">Abrir navegação administrativa</span>
                   </Button>
                 </SheetTrigger>
                 <SheetContent
@@ -186,7 +186,7 @@ export function AdminShell({ children }: AdminShellProps) {
                       onClick={logout}
                     >
                       <LogOut className="size-4" />
-                      Encerrar sessao
+                      Encerrar sessão
                     </Button>
                   </div>
                 </SheetContent>

@@ -64,7 +64,7 @@ function PlanCardForm({ plan, isGlobalSaving, onSave }: PlanCardProps) {
   return (
     <>
       <div className="space-y-2">
-        <Label>Preco (centavos)</Label>
+        <Label>Preço (centavos)</Label>
         <Input
           type="number"
           value={edited.price ?? 0}
@@ -121,7 +121,7 @@ function PlanCardForm({ plan, isGlobalSaving, onSave }: PlanCardProps) {
           className="w-full bg-blue-600 text-white hover:bg-blue-500"
         >
           {isSaving ? <Loader2 className="mr-2 animate-spin" size={16} /> : null}
-          {isSaving ? 'Salvando...' : 'Salvar alteracoes'}
+          {isSaving ? 'Salvando...' : 'Salvar alterações'}
         </Button>
       </div>
     </>

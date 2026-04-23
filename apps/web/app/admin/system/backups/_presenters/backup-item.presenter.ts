@@ -1,22 +1,22 @@
-import { getBackupOriginLabel } from '@/lib/backup-history-presentation';
+import { getBackupOriginLabel } from "@/lib/backup-history-presentation";
 import {
   formatDisplayDateValue,
   formatRelativeDate,
   normalizeDateValue,
-} from '@/lib/date-utils';
+} from "@/lib/date-utils";
 import type {
   BackupJobSummaryDto,
   BackupListItemViewModel,
-} from '../_types/admin-backups.types';
+} from "../_types/admin-backups.types";
 
-const backupSizeFormatter = new Intl.NumberFormat('pt-BR', {
+const backupSizeFormatter = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
 function formatBackupSize(sizeBytes: number | null) {
   if (sizeBytes === null) {
-    return '--';
+    return "--";
   }
 
   return `${backupSizeFormatter.format(sizeBytes / 1024 / 1024)} MB`;
@@ -25,19 +25,19 @@ function formatBackupSize(sizeBytes: number | null) {
 function formatBackupTime(value: string | null) {
   const date = normalizeDateValue(value);
   if (!date) {
-    return '--';
+    return "--";
   }
 
-  return date.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
+  return date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 function formatChecksum(checksum: string | null) {
   if (!checksum) {
     return {
-      label: 'Checksum indisponivel',
+      label: "Checksum indisponível",
       title: null,
     };
   }
@@ -49,29 +49,29 @@ function formatChecksum(checksum: string | null) {
 }
 
 function getStatusViewModel(
-  status: BackupJobSummaryDto['status'],
-): BackupListItemViewModel['status'] {
+  status: BackupJobSummaryDto["status"],
+): BackupListItemViewModel["status"] {
   switch (status) {
-    case 'success':
+    case "success":
       return {
-        label: 'Concluido',
-        tone: 'success',
+        label: "Concluído",
+        tone: "success",
       };
-    case 'failed':
+    case "failed":
       return {
-        label: 'Falhou',
-        tone: 'danger',
+        label: "Falhou",
+        tone: "danger",
       };
-    case 'running':
+    case "running":
       return {
-        label: 'Em processamento',
-        tone: 'warning',
+        label: "Em processamento",
+        tone: "warning",
       };
-    case 'pending':
+    case "pending":
     default:
       return {
-        label: 'Na fila',
-        tone: 'muted',
+        label: "Na fila",
+        tone: "muted",
       };
   }
 }
@@ -87,7 +87,7 @@ export function getBackupItemViewModel(
     createdAtRelativeLabel: formatRelativeDate(backup.createdAt),
     sourceLabel: getBackupOriginLabel(backup.trigger),
     sizeLabel: formatBackupSize(backup.sizeBytes),
-    fileNameLabel: backup.displayName ?? 'Nome padrao',
+    fileNameLabel: backup.displayName ?? "Nome padrão",
     checksumLabel: checksum.label,
     checksumTitle: checksum.title,
     manifestLabel: `Manifest v${backup.manifestVersion}`,
@@ -96,6 +96,6 @@ export function getBackupItemViewModel(
     warningMessage: backup.warnings?.[0] ?? null,
     errorMessage: backup.errorMessage,
     status: getStatusViewModel(backup.status),
-    canDownload: backup.status === 'success',
+    canDownload: backup.status === "success",
   };
 }

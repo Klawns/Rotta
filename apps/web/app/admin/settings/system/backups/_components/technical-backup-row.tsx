@@ -62,8 +62,8 @@ export function TechnicalBackupRow({
               className="col-span-1 grid grid-cols-1 gap-4 text-left md:col-span-10 md:grid-cols-10"
               aria-label={
                 isExpanded
-                  ? 'Ocultar detalhes do backup tecnico'
-                  : 'Exibir detalhes do backup tecnico'
+                  ? 'Ocultar detalhes do backup técnico'
+                  : 'Exibir detalhes do backup técnico'
               }
             >
               <div className="md:col-span-3 flex items-start gap-3">

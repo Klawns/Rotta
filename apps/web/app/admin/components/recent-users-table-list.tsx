@@ -46,10 +46,10 @@ export function RecentUsersTableList({
     <table className="w-full text-left">
       <thead>
         <tr className="text-xs font-bold uppercase tracking-widest text-slate-500">
-          <th className="px-8 py-5">Usuario</th>
+          <th className="px-8 py-5">Usuário</th>
           <th className="px-8 py-5">Email</th>
           <th className="px-8 py-5">Plano</th>
-          <th className="px-8 py-5 text-right">Acao</th>
+          <th className="px-8 py-5 text-right">Ação</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-border/70">
@@ -62,7 +62,7 @@ export function RecentUsersTableList({
         ) : rows.length === 0 ? (
           <tr>
             <td colSpan={4} className="px-8 py-10 text-center italic text-slate-500">
-              Nenhum usuario encontrado.
+              Nenhum usuário encontrado.
             </td>
           </tr>
         ) : (

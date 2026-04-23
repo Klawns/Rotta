@@ -19,15 +19,15 @@ export default function AdminOverviewPage() {
     >
       <AdminPage>
         <AdminPageHeader
-          title="Visao geral administrativa"
-          description="Resumo operacional da base para acompanhar usuarios, assinaturas e receita recente."
+          title="Visão geral administrativa"
+          description="Resumo operacional da base para acompanhar usuários, assinaturas e receita recente."
         />
 
-        <QueryErrorBoundary message="Nao foi possivel carregar as estatisticas do painel.">
+        <QueryErrorBoundary message="Não foi possível carregar as estatísticas do painel.">
           {statsError && !stats ? (
             <QueryErrorState
               error={statsError}
-              title="Nao foi possivel carregar as estatisticas do painel"
+              title="Não foi possível carregar as estatísticas do painel"
               onRetry={() => {
                 void refetchStats();
               }}
@@ -37,8 +37,8 @@ export default function AdminOverviewPage() {
               {statsError ? (
                 <QueryErrorState
                   error={statsError}
-                  title="Falha ao atualizar as estatisticas"
-                  description="Os dados em cache foram mantidos, mas a ultima atualizacao falhou."
+                  title="Falha ao atualizar as estatísticas"
+                  description="Os dados em cache foram mantidos, mas a última atualização falhou."
                   onRetry={() => {
                     void refetchStats();
                   }}
