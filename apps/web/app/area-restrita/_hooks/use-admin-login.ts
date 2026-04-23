@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { parseApiError } from '@/lib/api-error';
 import { authService } from '@/services/auth-service';
+import { resolveLoginRedirect } from '@/features/auth/services/auth-redirect-service';
 import type { AdminLoginCredentials } from '../_lib/admin-auth.types';
-import { resolveAdminRedirect } from '../_lib/admin-auth.rules';
 import { cleanupUnauthorizedAdminLogin } from '../_lib/cleanup-unauthorized-admin-login';
 import {
   getAdminLoginPendingState,
   shouldRedirectWithAdminSessionGate,
 } from '../_lib/admin-login-navigation';
+import { persistAdminReauthSession } from '../_lib/admin-reauth-storage';
 import { syncAdminAuthQueryCache } from '../_lib/sync-admin-auth-query-cache';
 import { useAdminSessionGate } from './use-admin-session-gate';
 import {
@@ -36,6 +37,7 @@ function getAdminLoginErrorMessage(error: unknown) {
 
 export function useAdminLogin() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { redirectTo, isCheckingSession } = useAdminSessionGate();
   const [isRedirectingAfterSubmit, setIsRedirectingAfterSubmit] =
@@ -69,6 +71,7 @@ export function useAdminLogin() {
     },
     onSuccess: async (authenticatedUser) => {
       authService.resetRedirectLock();
+      persistAdminReauthSession();
       await syncAdminAuthQueryCache(queryClient, authenticatedUser);
     },
   });
@@ -84,7 +87,12 @@ export function useAdminLogin() {
       loginMutation.mutate(credentials, {
         onSuccess: (authenticatedUser) => {
           setIsRedirectingAfterSubmit(true);
-          router.replace(resolveAdminRedirect(authenticatedUser.role));
+          router.replace(
+            resolveLoginRedirect(
+              searchParams.get('redirect'),
+              authenticatedUser.role,
+            ),
+          );
         },
       });
     },

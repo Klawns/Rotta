@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   type ReactNode,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -18,6 +19,7 @@ import { syncAuthUserCache } from "@/hooks/auth/sync-auth-user-cache";
 import { useUnauthorizedRedirect } from "@/hooks/auth/use-unauthorized-redirect";
 import type { User } from "@/hooks/auth/auth.types";
 import { isApiErrorStatus } from "@/lib/api-error";
+import { clearAdminReauthSession } from "@/app/area-restrita/_lib/admin-reauth-storage";
 export type { User } from "@/hooks/auth/auth.types";
 
 interface AuthContextType {
@@ -39,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const previousPathnameRef = useRef<string | null>(null);
   const isPublicAuthRoute =
     pathname === '/login' ||
     pathname === '/register' ||
@@ -71,6 +74,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  useEffect(() => {
+    const previousPathname = previousPathnameRef.current;
+
+    if (
+      previousPathname?.startsWith('/admin') &&
+      !pathname?.startsWith('/admin')
+    ) {
+      clearAdminReauthSession();
+    }
+
+    previousPathnameRef.current = pathname ?? null;
+  }, [pathname]);
+
   useUnauthorizedRedirect({
     pathname,
     search: searchParams.toString(),
@@ -95,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
+    clearAdminReauthSession();
     logoutMutation.mutate();
   }, [logoutMutation]);
 

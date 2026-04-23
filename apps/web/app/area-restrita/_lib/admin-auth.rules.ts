@@ -9,3 +9,21 @@ export function isAdminRole(
 export function resolveAdminRedirect(role: User['role'] | undefined) {
   return isAdminRole(role) ? '/admin' : '/dashboard';
 }
+
+export function canAccessAdminRoute(
+  role: User['role'] | undefined,
+  hasAdminReauth: boolean,
+) {
+  return isAdminRole(role) && hasAdminReauth;
+}
+
+export function resolveAdminSessionGateRedirect(
+  role: User['role'] | undefined,
+  hasAdminReauth: boolean,
+) {
+  if (isAdminRole(role)) {
+    return hasAdminReauth ? '/admin' : null;
+  }
+
+  return resolveAdminRedirect(role);
+}
