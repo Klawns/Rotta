@@ -51,6 +51,7 @@ test("builds human-readable retention and health labels", () => {
       enabled: false,
       scheduler: {
         health: "disabled",
+        lastSyncedAt: null,
       },
     }),
     "Desativado por ambiente",

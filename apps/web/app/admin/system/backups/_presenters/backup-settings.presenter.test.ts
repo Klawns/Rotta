@@ -74,6 +74,7 @@ test('exposes the scheduler health helper for a failed scheduler', () => {
     enabled: true,
     scheduler: {
       health: 'failed',
+      lastSyncedAt: null,
     },
   });
 
