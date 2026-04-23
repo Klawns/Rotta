@@ -108,7 +108,7 @@ export function BackupImportCard({
               Restaurar sistema a partir de um backup
             </h3>
             <p className="mt-0.5 text-sm font-medium text-destructive/80">
-              Operacao de alto risco. Destroi os dados atuais.
+              Operação de alto risco. Destrói os dados atuais.
             </p>
           </div>
         </div>
@@ -130,12 +130,12 @@ export function BackupImportCard({
             <div className="border-t border-destructive/20 p-6 pt-2">
               <div className="mb-6 space-y-2">
                 <p className="max-w-3xl text-sm leading-6 text-foreground/80">
-                  A restauracao ira{' '}
+                  A restauração irá{' '}
                   <strong className="font-bold text-destructive">
-                    apagar todos os dados atuais da sua operacao
+                    apagar todos os dados atuais da sua operação
                   </strong>{' '}
-                  e substitui-los pelo conteudo do backup selecionado.
-                  Certifique-se de que ninguem esta utilizando o sistema
+                  e substituí-los pelo conteúdo do backup selecionado.
+                  Certifique-se de que ninguém está utilizando o sistema
                   durante este processo.
                 </p>
               </div>
@@ -165,15 +165,15 @@ export function BackupImportCard({
                   <>
                     <BackupImportProgressStep
                       stepNumber={3}
-                      title="3. Gerando backup de seguranca"
-                      description="O estado atual do sistema esta sendo salvo antes da restauracao."
+                      title="3. Gerando backup de segurança"
+                      description="O estado atual do sistema está sendo salvo antes da restauração."
                       executionPhase={presentation.executionPhase}
                     />
 
                     <BackupImportProgressStep
                       stepNumber={4}
                       title="4. Importando dados do backup"
-                      description="Depois do backup de seguranca, os dados do arquivo sao aplicados no sistema."
+                      description="Depois do backup de segurança, os dados do arquivo são aplicados no sistema."
                       executionPhase={presentation.executionPhase}
                     />
                   </>
@@ -190,7 +190,7 @@ export function BackupImportCard({
         onConfirm={handleConfirmRestore}
         isLoading={isExecuting}
         title="Restaurar Backup?"
-        description="Antes de restaurar, sera gerado um backup de seguranca do estado atual. Depois disso, os dados atuais serao apagados e substituidos pelo conteudo deste backup. Esta acao e irreversivel."
+        description="Antes de restaurar, será gerado um backup de segurança do estado atual. Depois disso, os dados atuais serão apagados e substituídos pelo conteúdo deste backup. Esta ação é irreversível."
         requiredText="RESTAURAR"
       />
     </div>

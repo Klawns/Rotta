@@ -139,7 +139,7 @@ export function useBackupImport() {
         title: 'Falha ao validar backup',
         description: parseApiError(
           error,
-          'Nao foi possivel validar o arquivo do backup. Tente novamente.',
+          'Não foi possível validar o arquivo do backup. Tente novamente.',
         ),
         variant: 'destructive',
       });
@@ -177,7 +177,7 @@ export function useBackupImport() {
     onError: (error) => {
       const description = parseApiError(
         error,
-        'Nao foi possivel concluir a importacao do backup. Tente novamente.',
+        'Não foi possível concluir a importação do backup. Tente novamente.',
       );
 
       setPersistedActiveImportJobId(null);

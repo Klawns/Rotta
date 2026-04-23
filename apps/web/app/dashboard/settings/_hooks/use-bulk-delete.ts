@@ -27,7 +27,7 @@ export function useBulkDelete() {
             ]);
 
             toast({
-                title: "Todos os clientes excluidos",
+                title: "Todos os clientes excluídos",
                 description: "Sua base de dados de clientes e todas as corridas associadas foram limpas.",
                 duration: 5000,
             });
@@ -35,7 +35,7 @@ export function useBulkDelete() {
         onError: () => {
             toast({
                 title: "Erro ao excluir clientes",
-                description: "Nao foi possivel realizar a exclusao em massa. Tente novamente.",
+                description: "Não foi possível realizar a exclusão em massa. Tente novamente.",
                 variant: "destructive",
             });
         },
@@ -53,15 +53,15 @@ export function useBulkDelete() {
             ]);
 
             toast({
-                title: "Todas as corridas excluidas",
-                description: "Seu historico de corridas foi limpo e o contador foi resetado.",
+                title: "Todas as corridas excluídas",
+                description: "Seu histórico de corridas foi limpo e o contador foi resetado.",
                 duration: 5000,
             });
         },
         onError: () => {
             toast({
                 title: "Erro ao excluir corridas",
-                description: "Nao foi possivel realizar a exclusao em massa. Tente novamente.",
+                description: "Não foi possível realizar a exclusão em massa. Tente novamente.",
                 variant: "destructive",
             });
         },

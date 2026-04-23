@@ -39,8 +39,8 @@ export function BackupSummaryCard({
             Backups
           </h3>
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-            Mantenha seus dados seguros. Seus backups sao gerados
-            automaticamente, mas voce pode criar copias manuais a qualquer
+            Mantenha seus dados seguros. Seus backups são gerados
+            automaticamente, mas você pode criar cópias manuais a qualquer
             momento.
           </p>
         </div>
@@ -62,7 +62,7 @@ export function BackupSummaryCard({
           </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
-              Ultimo Backup
+              Último Backup
             </div>
             <div className="mt-0.5 text-sm font-semibold text-foreground">
               {latestBackupAt
@@ -81,7 +81,7 @@ export function BackupSummaryCard({
           </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
-              Automacao
+              Automação
             </div>
             <div className="mt-0.5 text-sm font-semibold text-foreground">
               {isAutomationActive
@@ -97,7 +97,7 @@ export function BackupSummaryCard({
           </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
-              Retencao
+              Retenção
             </div>
             <div className="mt-0.5 text-sm font-semibold text-foreground">
               {retentionCount} dias

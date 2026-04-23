@@ -19,10 +19,10 @@ export function useBackups() {
     useBackupDownload({
       requestDownloadUrl: (backupId) => backupsService.getDownloadUrl(backupId),
       successTitle: 'Download iniciado',
-      successDescription: 'O navegador ja iniciou a transferencia do backup.',
+      successDescription: 'O navegador já iniciou a transferência do backup.',
       errorTitle: 'Falha ao baixar backup',
       errorDescription:
-        'Nao foi possivel preparar o download do backup. Tente novamente.',
+        'Não foi possível preparar o download do backup. Tente novamente.',
     });
 
   return {

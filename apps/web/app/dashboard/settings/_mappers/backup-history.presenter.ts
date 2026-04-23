@@ -5,14 +5,14 @@ import {
   Download,
   Loader2,
   type LucideIcon,
-} from 'lucide-react';
-import { getBackupOriginLabel } from '@/lib/backup-history-presentation';
-import { normalizeDateValue } from '@/lib/date-utils';
+} from "lucide-react";
+import { getBackupOriginLabel } from "@/lib/backup-history-presentation";
+import { normalizeDateValue } from "@/lib/date-utils";
 import type {
   BackupDownloadPhase,
   BackupDownloadState,
-} from '@/hooks/use-backup-download';
-import type { BackupJobSummary } from '@/types/backups';
+} from "@/hooks/use-backup-download";
+import type { BackupJobSummary } from "@/types/backups";
 
 interface BackupHistoryStatusPresentation {
   label: string;
@@ -46,32 +46,32 @@ interface BackupHistoryRowPresentationOptions {
 }
 
 const BACKUP_HISTORY_STATUS_MAP: Record<
-  BackupJobSummary['status'],
+  BackupJobSummary["status"],
   BackupHistoryStatusPresentation
 > = {
   success: {
-    label: 'Concluido',
+    label: "Concluído",
     icon: CheckCircle2,
-    className: 'text-success',
+    className: "text-success",
   },
   failed: {
-    label: 'Falhou',
+    label: "Falhou",
     icon: AlertCircle,
-    className: 'text-destructive',
+    className: "text-destructive",
   },
   running: {
-    label: 'Processando',
+    label: "Processando",
     icon: Clock3,
-    className: 'text-warning',
+    className: "text-warning",
   },
   pending: {
-    label: 'Na fila',
+    label: "Na fila",
     icon: Clock3,
-    className: 'text-warning',
+    className: "text-warning",
   },
 };
 
-const backupSizeFormatter = new Intl.NumberFormat('pt-BR', {
+const backupSizeFormatter = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -85,13 +85,13 @@ function isSameCalendarDay(left: Date, right: Date) {
 }
 
 export function getBackupHistoryPublicErrorMessage(job: BackupJobSummary) {
-  if (job.status !== 'failed') {
+  if (job.status !== "failed") {
     return null;
   }
 
-  return job.kind === 'technical_full'
-    ? 'Falha ao processar o backup tecnico. Revise a configuracao.'
-    : 'Falha ao processar o backup. Revise a configuracao.';
+  return job.kind === "technical_full"
+    ? "Falha ao processar o backup técnico. Revise a configuração."
+    : "Falha ao processar o backup. Revise a configuração.";
 }
 
 export function formatBackupHistoryRelativeDate(
@@ -101,13 +101,13 @@ export function formatBackupHistoryRelativeDate(
   const date = normalizeDateValue(value);
 
   if (!date) {
-    return 'Data indisponivel';
+    return "Data indisponível";
   }
 
   if (isSameCalendarDay(date, now)) {
-    return `Hoje, ${date.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
+    return `Hoje, ${date.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
     })}`;
   }
 
@@ -115,32 +115,32 @@ export function formatBackupHistoryRelativeDate(
   yesterday.setDate(now.getDate() - 1);
 
   if (isSameCalendarDay(date, yesterday)) {
-    return `Ontem, ${date.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
+    return `Ontem, ${date.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
     })}`;
   }
 
-  return date.toLocaleString('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
+  return date.toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
   });
 }
 
 function formatBackupHistorySize(sizeBytes: number | null) {
   if (sizeBytes === null) {
-    return '--';
+    return "--";
   }
 
   return `${backupSizeFormatter.format(sizeBytes / 1024 / 1024)} MB`;
 }
 
-function getBackupKindLabel(kind: BackupJobSummary['kind']) {
+function getBackupKindLabel(kind: BackupJobSummary["kind"]) {
   switch (kind) {
-    case 'functional_user':
-      return 'Backup funcional';
-    case 'technical_full':
-      return 'Backup tecnico';
+    case "functional_user":
+      return "Backup funcional";
+    case "technical_full":
+      return "Backup técnico";
     default:
       return kind;
   }
@@ -151,45 +151,45 @@ function getBackupHistoryDownloadPresentation(
   options: BackupHistoryRowPresentationOptions,
 ): BackupHistoryDownloadPresentation {
   const isCurrentDownload = options.downloadState.backupId === backup.id;
-  const phase = isCurrentDownload ? options.downloadState.phase : 'idle';
+  const phase = isCurrentDownload ? options.downloadState.phase : "idle";
 
   const rowToneClassName =
-    phase === 'requesting'
-      ? 'bg-info/5'
-      : phase === 'started'
-        ? 'bg-success/5'
-        : phase === 'failed'
-          ? 'bg-destructive/5'
-          : '';
+    phase === "requesting"
+      ? "bg-info/5"
+      : phase === "started"
+        ? "bg-success/5"
+        : phase === "failed"
+          ? "bg-destructive/5"
+          : "";
 
   return {
     phase,
     label:
-      phase === 'requesting'
-        ? 'Preparando...'
-        : phase === 'started'
-          ? 'Iniciado'
-          : phase === 'failed'
-            ? 'Tentar novamente'
-            : 'Baixar',
+      phase === "requesting"
+        ? "Preparando..."
+        : phase === "started"
+          ? "Iniciado"
+          : phase === "failed"
+            ? "Tentar novamente"
+            : "Baixar",
     icon:
-      phase === 'requesting'
+      phase === "requesting"
         ? Loader2
-        : phase === 'started'
+        : phase === "started"
           ? CheckCircle2
           : Download,
     iconClassName:
-      phase === 'requesting'
-        ? 'animate-spin'
-        : phase === 'started'
-          ? 'text-success'
+      phase === "requesting"
+        ? "animate-spin"
+        : phase === "started"
+          ? "text-success"
           : undefined,
     rowToneClassName,
     isDisabled:
-      backup.status !== 'success' ||
+      backup.status !== "success" ||
       options.isPreparingDownload ||
-      phase === 'started',
-    isFeedbackVisible: isCurrentDownload && phase !== 'idle',
+      phase === "started",
+    isFeedbackVisible: isCurrentDownload && phase !== "idle",
   };
 }
 

@@ -19,16 +19,16 @@ export function BackupsSettings() {
       {/* 1. Header e Metricas Atuais */}
       <BackupSummaryCard {...summaryCardProps} />
 
-      {/* 2. Historico Central */}
+      {/* 2. Histórico Central */}
       {historySection.isLoading ? (
         <div className="flex h-32 items-center justify-center rounded-[2rem] border border-border-subtle bg-card/70 text-sm font-medium text-muted-foreground shadow-sm backdrop-blur-xl animate-pulse">
-          Carregando historico...
+          Carregando histórico...
         </div>
       ) : (
         <BackupHistoryList {...historySection.listProps} />
       )}
 
-      {/* 3. Configuracoes e Avisos Secundarios */}
+      {/* 3. Configurações e Avisos Secundários */}
       <BackupAutomationNotice {...automationNoticeProps} />
 
       {/* 4. Zona de Risco */}

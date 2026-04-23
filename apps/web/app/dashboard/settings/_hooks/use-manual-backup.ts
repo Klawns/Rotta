@@ -21,7 +21,7 @@ export function useManualBackup() {
       ]);
       toast({
         title: 'Backup iniciado',
-        description: 'A geracao do arquivo foi colocada na fila.',
+        description: 'A geração do arquivo foi colocada na fila.',
       });
     },
     onError: (error) => {
@@ -29,7 +29,7 @@ export function useManualBackup() {
         title: 'Falha ao iniciar backup',
         description: parseApiError(
           error,
-          'Nao foi possivel iniciar o backup agora. Tente novamente em instantes.',
+          'Não foi possível iniciar o backup agora. Tente novamente em instantes.',
         ),
         variant: 'destructive',
       });

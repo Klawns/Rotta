@@ -138,7 +138,7 @@ export function DangerZone() {
                 }}
                 title="Limpar histórico?"
                 description="Deseja realmente apagar todo o histórico de corridas? Suas estatísticas e registros serão resetados permanentemente."
-                confirmText="Sim, limpar historico"
+                confirmText="Sim, limpar histórico"
                 variant="danger"
                 isLoading={isDeletingRides}
             />

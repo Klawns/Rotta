@@ -20,7 +20,7 @@ export function BackupAutomationNotice({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h4 className="font-semibold text-foreground">
-              Configuracoes de Automacao
+              Configurações de Automação
             </h4>
             {isLoading && (
               <span className="rounded-full border border-border-subtle bg-background/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">

@@ -36,7 +36,7 @@ export function BackupImportReviewStep({
 
         <div className="flex-1">
           <h4 className="mb-3 font-semibold text-foreground">
-            2. Revisao e Confirmacao
+            2. Revisão e Confirmação
           </h4>
 
           {preview && (

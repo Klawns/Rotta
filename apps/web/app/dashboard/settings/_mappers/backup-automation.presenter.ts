@@ -1,4 +1,4 @@
-import type { BackupAutomationStatus } from '@/types/backups';
+import type { BackupAutomationStatus } from "@/types/backups";
 
 interface BackupAutomationFrequencyPresentation {
   days: number;
@@ -11,16 +11,16 @@ function getDaysFromCron(cron: string | undefined | null): number {
     return 3;
   }
 
-  const parts = cron.split(' ');
+  const parts = cron.split(" ");
 
   if (parts.length >= 5) {
     const dayOfMonth = parts[2];
 
-    if (dayOfMonth.startsWith('*/')) {
-      return Number.parseInt(dayOfMonth.replace('*/', ''), 10) || 3;
+    if (dayOfMonth.startsWith("*/")) {
+      return Number.parseInt(dayOfMonth.replace("*/", ""), 10) || 3;
     }
 
-    if (dayOfMonth === '*') {
+    if (dayOfMonth === "*") {
       return 1;
     }
   }
@@ -35,21 +35,21 @@ export function getBackupAutomationFrequencyPresentation(
 
   return {
     days,
-    summaryLabel: days === 1 ? 'Diaria' : `De ${days} em ${days} dias`,
-    noticeText: days === 1 ? 'todos os dias' : `de ${days} em ${days} dias`,
+    summaryLabel: days === 1 ? "Diaria" : `De ${days} em ${days} dias`,
+    noticeText: days === 1 ? "todos os dias" : `de ${days} em ${days} dias`,
   };
 }
 
 export function getBackupAutomationNoticeDescription(
   status: BackupAutomationStatus | null,
 ) {
-  if (status?.automation.health === 'registered') {
+  if (status?.automation.health === "registered") {
     const frequency = getBackupAutomationFrequencyPresentation(
       status.automation.functionalCron,
     );
 
-    return `Fique tranquilo! Seus backups sao gerados automaticamente de forma segura ${frequency.noticeText}. Nos armazenamos os seus ultimos ${status.retentionCount} backups.`;
+    return `Fique tranquilo! Seus backups são gerados automaticamente de forma segura ${frequency.noticeText}. Nós armazenamos os seus últimos ${status.retentionCount} backups.`;
   }
 
-  return 'O agendamento automatico nao esta disponivel no momento. Recomendamos gerar backups manuais para sua seguranca.';
+  return "O agendamento automático não está disponível no momento. Recomendamos gerar backups manuais para sua segurança.";
 }

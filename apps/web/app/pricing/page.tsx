@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { ArrowLeft, LogOut, Rocket } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { CheckoutSelector } from '@/components/dashboard/checkout-selector';
-import { useAuth } from '@/hooks/use-auth';
-import { getFreeTrialState } from '@/services/free-trial-service';
+import { motion } from "framer-motion";
+import { ArrowLeft, LogOut, Rocket } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CheckoutSelector } from "@/components/dashboard/checkout-selector";
+import { useAuth } from "@/hooks/use-auth";
+import { getFreeTrialState } from "@/services/free-trial-service";
 
 export default function PricingGatePage() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const reason = searchParams.get('reason');
-  const isTrialExpired = reason === 'trial_expired';
+  const reason = searchParams.get("reason");
+  const isTrialExpired = reason === "trial_expired";
   const trial = getFreeTrialState(user);
 
   return (
@@ -25,7 +25,7 @@ export default function PricingGatePage() {
         >
           <div className="h-2 w-2 animate-pulse rounded-full bg-trial-expired" />
           <p className="text-sm font-bold text-trial-expired">
-            Seu periodo gratuito expirou. Assine para continuar usando o Rotta.
+            Seu período gratuito expirou. Assine para continuar usando o Rotta.
           </p>
         </motion.div>
       )}
@@ -65,14 +65,16 @@ export default function PricingGatePage() {
 
           <div className="flex flex-col items-center gap-6 sm:flex-row">
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push("/dashboard")}
               className="group flex items-center gap-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
             >
               <ArrowLeft
                 size={16}
                 className="transition-transform group-hover:-translate-x-1"
               />
-              {trial.isStarterExpired ? 'Voltar ao dashboard bloqueado' : 'Voltar ao dashboard'}
+              {trial.isStarterExpired
+                ? "Voltar ao dashboard bloqueado"
+                : "Voltar ao dashboard"}
             </button>
 
             <button
@@ -95,4 +97,3 @@ export default function PricingGatePage() {
     </div>
   );
 }
-

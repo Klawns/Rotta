@@ -30,7 +30,7 @@ export function BackupHistoryList({
 
       {backups.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border-subtle bg-card/40 px-6 py-12 text-center text-sm text-muted-foreground">
-          Voce ainda nao possui backups armazenados.
+          Você ainda não possui backups armazenados.
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-border-subtle bg-card/70 shadow-sm backdrop-blur-xl">
@@ -38,7 +38,7 @@ export function BackupHistoryList({
             <div className="col-span-3">Data</div>
             <div className="col-span-3">Origem e Tamanho</div>
             <div className="col-span-3">Status</div>
-            <div className="col-span-3 text-right">Acao</div>
+            <div className="col-span-3 text-right">Ação</div>
           </div>
 
           <InfiniteScrollContainer

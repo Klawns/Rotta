@@ -1,5 +1,5 @@
-import { formatDisplayDateValue } from '@/lib/date-utils';
-import type { BackupImportJobResponse } from '@/types/backups';
+import { formatDisplayDateValue } from "@/lib/date-utils";
+import type { BackupImportJobResponse } from "@/types/backups";
 
 interface BackupImportCardPresentationOptions {
   preview: BackupImportJobResponse | null;
@@ -15,7 +15,7 @@ export interface BackupImportCardPresentation {
   isExpanded: boolean;
   canToggle: boolean;
   displayedFileName: string | null;
-  executionPhase: BackupImportJobResponse['phase'] | null;
+  executionPhase: BackupImportJobResponse["phase"] | null;
   step: 1 | 2 | 3 | 4;
   executeButtonLabel: string;
   createdAtLabel: string | null;
@@ -29,7 +29,7 @@ function getOwnerDisplayName(
   return (
     preview.preview.ownerName?.trim() ||
     (preview.preview.ownerUserId === currentUserId ? currentUserName : null) ||
-    'Usuario nao identificado'
+    "Usuário não identificado"
   );
 }
 
@@ -40,11 +40,11 @@ function getImportExecutionStep(
     return 1;
   }
 
-  if (preview.status !== 'running') {
+  if (preview.status !== "running") {
     return 2;
   }
 
-  return preview.phase === 'backing_up' ? 3 : 4;
+  return preview.phase === "backing_up" ? 3 : 4;
 }
 
 export function getBackupImportCardPresentation({
@@ -55,22 +55,22 @@ export function getBackupImportCardPresentation({
   currentUserId,
   currentUserName,
 }: BackupImportCardPresentationOptions): BackupImportCardPresentation {
-  const executionPhase = preview?.status === 'running' ? preview.phase : null;
+  const executionPhase = preview?.status === "running" ? preview.phase : null;
 
   return {
     ownerDisplayName: preview
       ? getOwnerDisplayName(preview, currentUserId, currentUserName)
       : null,
-    isExpanded: preview?.status === 'running' ? true : isOpen,
-    canToggle: preview?.status !== 'running',
+    isExpanded: preview?.status === "running" ? true : isOpen,
+    canToggle: preview?.status !== "running",
     displayedFileName: preview ? selectedFileName : null,
     executionPhase,
     step: getImportExecutionStep(preview),
     executeButtonLabel: !isExecuting
-      ? 'Confirmar e Restaurar'
-      : executionPhase === 'backing_up'
-        ? 'Gerando backup de seguranca...'
-        : 'Importando dados...',
+      ? "Confirmar e Restaurar"
+      : executionPhase === "backing_up"
+        ? "Gerando backup de seguranca..."
+        : "Importando dados...",
     createdAtLabel: preview
       ? formatDisplayDateValue(preview.preview.createdAt)
       : null,
