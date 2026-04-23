@@ -168,7 +168,7 @@ describe('AuthController', () => {
 
     it('should throw UnauthorizedException when the session user does not exist', async () => {
       authServiceMock.getRequiredProfile.mockRejectedValue(
-        new UnauthorizedException('Usuario nao encontrado.'),
+        new UnauthorizedException('Usuário não encontrado.'),
       );
 
       await expect(

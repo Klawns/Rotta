@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { IClientsRepository } from '../../clients/interfaces/clients-repository.interface';
 import { IBalanceTransactionsRepository } from '../../clients/interfaces/balance-transactions-repository.interface';
+import { CLIENT_NOT_FOUND_MESSAGE } from '../../common/messages/domain-errors';
 
 interface ResolvePaymentSnapshotInput {
   value: number;
@@ -31,14 +32,19 @@ export class RideAccountingService {
       Math.min(
         Number(
           paidExternally ??
-            (paymentStatus === 'PAID' ? rideTotal - Number(paidWithBalance || 0) : 0),
+            (paymentStatus === 'PAID'
+              ? rideTotal - Number(paidWithBalance || 0)
+              : 0),
         ),
         rideTotal,
       ),
     );
     const normalizedPaidWithBalance = Math.max(
       0,
-      Math.min(Number(paidWithBalance || 0), rideTotal - normalizedPaidExternally),
+      Math.min(
+        Number(paidWithBalance || 0),
+        rideTotal - normalizedPaidExternally,
+      ),
     );
     const remainingAfterBalance = Math.max(
       0,
@@ -69,11 +75,15 @@ export class RideAccountingService {
     options?: { forUpdate?: boolean },
   ) {
     const client = options?.forUpdate
-      ? await this.clientsRepository.findOneForUpdate(userId, clientId, executor)
+      ? await this.clientsRepository.findOneForUpdate(
+          userId,
+          clientId,
+          executor,
+        )
       : await this.clientsRepository.findOne(userId, clientId, executor);
 
     if (!client) {
-      throw new NotFoundException('Cliente não encontrado.');
+      throw new NotFoundException(CLIENT_NOT_FOUND_MESSAGE);
     }
 
     return client;
@@ -85,9 +95,14 @@ export class RideAccountingService {
     rideValue: number,
     executor: unknown,
   ) {
-    const client = await this.getScopedClientOrThrow(userId, clientId, executor, {
-      forUpdate: true,
-    });
+    const client = await this.getScopedClientOrThrow(
+      userId,
+      clientId,
+      executor,
+      {
+        forUpdate: true,
+      },
+    );
     const currentBalance = Number(client.balance || 0);
     const amountToUse = Math.min(currentBalance, Number(rideValue));
 
@@ -103,7 +118,7 @@ export class RideAccountingService {
     );
 
     if (!updatedClient) {
-      throw new NotFoundException('Cliente nÃ£o encontrado.');
+      throw new NotFoundException(CLIENT_NOT_FOUND_MESSAGE);
     }
 
     await this.balanceTransactionsRepository.create(
@@ -141,7 +156,7 @@ export class RideAccountingService {
     );
 
     if (!updatedClient) {
-      throw new NotFoundException('Cliente nÃ£o encontrado.');
+      throw new NotFoundException(CLIENT_NOT_FOUND_MESSAGE);
     }
 
     await this.balanceTransactionsRepository.create(

@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const createUserSchema = z
   .object({
     name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-    email: z.string().email('Email invalido'),
+    email: z.string().email('Email inválido'),
     password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
     role: z.enum(['admin', 'user']).default('user'),
   })
@@ -11,7 +11,7 @@ export const createUserSchema = z
 
 export type CreateUserDto = z.infer<typeof createUserSchema>;
 
-export const adminEntityIdParamSchema = z.string().uuid('ID invalido');
+export const adminEntityIdParamSchema = z.string().uuid('ID inválido');
 
 export type AdminEntityIdParamDto = z.infer<typeof adminEntityIdParamSchema>;
 

@@ -16,7 +16,10 @@ jest.mock('sharp', () =>
   })),
 );
 
-import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { IStorageProvider } from '../storage/interfaces/storage-provider.interface';
 import type { UploadImageBufferFile } from './upload-image.types';
@@ -104,7 +107,7 @@ describe('UploadService', () => {
 
     await expect(service.uploadImage(file, 'user-1', 'rides')).rejects.toThrow(
       new BadRequestException(
-        'Arquivo invalido. A imagem precisa informar largura e altura validas.',
+        'Arquivo inválido. A imagem precisa informar largura e altura válidas.',
       ),
     );
     expect(storageProviderMock.uploadPrivateStream).not.toHaveBeenCalled();
@@ -118,7 +121,7 @@ describe('UploadService', () => {
 
     await expect(service.uploadImage(file, 'user-1', 'rides')).rejects.toThrow(
       new BadRequestException(
-        'Arquivo invalido. A imagem excede o limite de pixels permitido.',
+        'Arquivo inválido. A imagem excede o limite de pixels permitido.',
       ),
     );
     expect(storageProviderMock.uploadPrivateStream).not.toHaveBeenCalled();
@@ -133,7 +136,7 @@ describe('UploadService', () => {
 
     await expect(service.uploadImage(file, 'user-1', 'rides')).rejects.toThrow(
       new BadRequestException(
-        'Arquivo invalido. Envie apenas imagens JPG, PNG ou WEBP.',
+        'Arquivo inválido. Envie apenas imagens JPG, PNG ou WEBP.',
       ),
     );
     expect(storageProviderMock.uploadPrivateStream).not.toHaveBeenCalled();
@@ -145,7 +148,7 @@ describe('UploadService', () => {
 
     await expect(service.uploadImage(file, 'user-1', 'rides')).rejects.toThrow(
       new BadRequestException(
-        'Arquivo invalido. O conteudo nao e uma imagem suportada (JPG, PNG ou WEBP).',
+        'Arquivo inválido. O conteúdo não é uma imagem suportada (JPG, PNG ou WEBP).',
       ),
     );
     expect(storageProviderMock.uploadPrivateStream).not.toHaveBeenCalled();
@@ -159,7 +162,7 @@ describe('UploadService', () => {
 
     await expect(service.uploadImage(file, 'user-1', 'rides')).rejects.toThrow(
       new ServiceUnavailableException(
-        'Nao foi possivel concluir o upload da imagem no momento. Tente novamente em instantes.',
+        'Não foi possível concluir o upload da imagem no momento. Tente novamente em instantes.',
       ),
     );
   });

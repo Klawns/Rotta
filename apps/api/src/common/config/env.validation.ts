@@ -153,7 +153,7 @@ const envSchema = z
         .filter(Boolean);
 
       if (origins.length === 0) {
-        requireField(field, 'Informe ao menos uma URL valida.');
+        requireField(field, 'Informe ao menos uma URL válida.');
         return;
       }
 
@@ -161,7 +161,7 @@ const envSchema = z
         try {
           new URL(origin);
         } catch {
-          requireField(field, `URL invalida: ${origin}`);
+          requireField(field, `URL inválida: ${origin}`);
         }
       }
     };
@@ -170,7 +170,7 @@ const envSchema = z
       try {
         new URL(raw);
       } catch {
-        requireField(field, 'Informe uma URL valida.');
+        requireField(field, 'Informe uma URL válida.');
       }
     };
 
@@ -184,21 +184,21 @@ const envSchema = z
     if (env.JWT_SECRET_CURRENT_ID && !env.JWT_SECRET_CURRENT) {
       requireField(
         'JWT_SECRET_CURRENT',
-        'JWT_SECRET_CURRENT e obrigatorio quando JWT_SECRET_CURRENT_ID estiver definido.',
+        'JWT_SECRET_CURRENT é obrigatório quando JWT_SECRET_CURRENT_ID estiver definido.',
       );
     }
 
     if (env.JWT_SECRET_PREVIOUS_ID && !env.JWT_SECRET_PREVIOUS) {
       requireField(
         'JWT_SECRET_PREVIOUS',
-        'JWT_SECRET_PREVIOUS e obrigatorio quando JWT_SECRET_PREVIOUS_ID estiver definido.',
+        'JWT_SECRET_PREVIOUS é obrigatório quando JWT_SECRET_PREVIOUS_ID estiver definido.',
       );
     }
 
     if (env.FRONTEND_URL) {
       validateUrlList(env.FRONTEND_URL, 'FRONTEND_URL');
     } else if (env.NODE_ENV === 'production') {
-      requireField('FRONTEND_URL', 'FRONTEND_URL e obrigatorio em producao.');
+      requireField('FRONTEND_URL', 'FRONTEND_URL é obrigatório em produção.');
     }
 
     if (
@@ -210,7 +210,7 @@ const envSchema = z
     ) {
       requireField(
         'REDIS_URL',
-        'REDIS_URL ou REDIS_HOST e obrigatorio em producao.',
+        'REDIS_URL ou REDIS_HOST é obrigatório em produção.',
       );
     }
 
@@ -232,7 +232,7 @@ const envSchema = z
     ) {
       requireField(
         'DEBUG_IP_ALLOWLIST',
-        'DEBUG_IP_ALLOWLIST e obrigatorio quando ENABLE_DEBUG_ENDPOINTS=true em producao.',
+        'DEBUG_IP_ALLOWLIST é obrigatório quando ENABLE_DEBUG_ENDPOINTS=true em produção.',
       );
     }
 
@@ -302,28 +302,28 @@ const envSchema = z
     if (env.NODE_ENV === 'production' && sslEnabled && !rejectUnauthorized) {
       requireField(
         'POSTGRES_SSL_REJECT_UNAUTHORIZED',
-        'POSTGRES_SSL_REJECT_UNAUTHORIZED=false nao e permitido em producao.',
+        'POSTGRES_SSL_REJECT_UNAUTHORIZED=false não é permitido em produção.',
       );
     }
 
     if (env.POSTGRES_SSL_CA && env.POSTGRES_SSL_CA_BASE64) {
       requireField(
         'POSTGRES_SSL_CA_BASE64',
-        'Use POSTGRES_SSL_CA ou POSTGRES_SSL_CA_BASE64, nao ambos.',
+        'Use POSTGRES_SSL_CA ou POSTGRES_SSL_CA_BASE64, não ambos.',
       );
     }
 
     if (env.POSTGRES_SSL_CERT && env.POSTGRES_SSL_CERT_BASE64) {
       requireField(
         'POSTGRES_SSL_CERT_BASE64',
-        'Use POSTGRES_SSL_CERT ou POSTGRES_SSL_CERT_BASE64, nao ambos.',
+        'Use POSTGRES_SSL_CERT ou POSTGRES_SSL_CERT_BASE64, não ambos.',
       );
     }
 
     if (env.POSTGRES_SSL_KEY && env.POSTGRES_SSL_KEY_BASE64) {
       requireField(
         'POSTGRES_SSL_KEY_BASE64',
-        'Use POSTGRES_SSL_KEY ou POSTGRES_SSL_KEY_BASE64, nao ambos.',
+        'Use POSTGRES_SSL_KEY ou POSTGRES_SSL_KEY_BASE64, não ambos.',
       );
     }
 
@@ -333,7 +333,7 @@ const envSchema = z
     ) {
       requireField(
         'POSTGRES_SSL_KEY',
-        'POSTGRES_SSL_KEY e obrigatorio quando um certificado cliente for informado.',
+        'POSTGRES_SSL_KEY é obrigatório quando um certificado cliente for informado.',
       );
     }
 
@@ -343,7 +343,7 @@ const envSchema = z
     ) {
       requireField(
         'POSTGRES_SSL_CERT',
-        'POSTGRES_SSL_CERT e obrigatorio quando uma chave cliente for informada.',
+        'POSTGRES_SSL_CERT é obrigatório quando uma chave cliente for informada.',
       );
     }
 
@@ -358,7 +358,7 @@ const envSchema = z
 
       for (const field of requiredR2Fields) {
         if (!env[field]) {
-          requireField(field, `${field} e obrigatorio quando STORAGE_TYPE=R2.`);
+          requireField(field, `${field} é obrigatório quando STORAGE_TYPE=R2.`);
         }
       }
 
@@ -370,7 +370,7 @@ const envSchema = z
     if (env.SYSTEM_BACKUP_PROVIDER === 'rclone_drive' && !env.RCLONE_REMOTE) {
       requireField(
         'RCLONE_REMOTE',
-        'RCLONE_REMOTE e obrigatorio quando SYSTEM_BACKUP_PROVIDER=rclone_drive.',
+        'RCLONE_REMOTE é obrigatório quando SYSTEM_BACKUP_PROVIDER=rclone_drive.',
       );
     }
 
@@ -380,7 +380,7 @@ const envSchema = z
     ) {
       requireField(
         'SYSTEM_BACKUP_FALLBACK_PROVIDER',
-        'SYSTEM_BACKUP_FALLBACK_PROVIDER e obrigatorio quando SYSTEM_BACKUP_FAILOVER_ENABLED=true.',
+        'SYSTEM_BACKUP_FALLBACK_PROVIDER é obrigatório quando SYSTEM_BACKUP_FAILOVER_ENABLED=true.',
       );
     }
 
@@ -401,7 +401,7 @@ const envSchema = z
     ) {
       requireField(
         'RCLONE_REMOTE',
-        'RCLONE_REMOTE e obrigatorio quando o fallback do backup sistemico usar rclone_drive.',
+        'RCLONE_REMOTE é obrigatório quando o fallback do backup sistêmico usar rclone_drive.',
       );
     }
 
@@ -411,7 +411,7 @@ const envSchema = z
     ) {
       requireField(
         'PG_DUMP_DOCKER_COMPOSE_SERVICE',
-        'PG_DUMP_DOCKER_COMPOSE_SERVICE e obrigatorio quando PG_DUMP_EXECUTION_MODE=docker_compose.',
+        'PG_DUMP_DOCKER_COMPOSE_SERVICE é obrigatório quando PG_DUMP_EXECUTION_MODE=docker_compose.',
       );
     }
   });

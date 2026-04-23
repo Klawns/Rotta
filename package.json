@@ -1,28 +1,29 @@
 {
-    "name": "mdc-monorepo",
-    "private": true,
-    "engines": {
-        "node": ">=20"
-    },
-    "packageManager": "pnpm@10.30.3",
-    "pnpm": {
-        "overrides": {
-            "fast-xml-parser": "5.5.7",
-            "file-type": "21.3.2"
-        }
-    },
-    "scripts": {
-        "build": "turbo build",
-        "dev": "turbo dev",
-        "lint": "turbo lint",
-        "format": "prettier --write \"**/*.{ts,tsx,md}\""
-    },
-    "devDependencies": {
-        "prettier": "latest",
-        "turbo": "2.8.14"
-    },
-    "dependencies": {
-        "ts-node": "^10.9.2",
-        "tsx": "^4.21.0"
+  "name": "mdc-monorepo",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.30.3",
+  "pnpm": {
+    "overrides": {
+      "fast-xml-parser": "5.5.7",
+      "file-type": "21.3.2"
     }
+  },
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "check:pt-br": "node scripts/check-pt-br-text.mjs"
+  },
+  "devDependencies": {
+    "prettier": "latest",
+    "turbo": "2.8.14"
+  },
+  "dependencies": {
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0"
+  }
 }

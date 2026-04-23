@@ -7,8 +7,8 @@ import { InternalApiKeyGuard } from '../common/guards/internal-api-key.guard';
 import { ZodParam } from '../common/decorators/zod.decorator';
 import type { User } from '../users/interfaces/users-repository.interface';
 
-const debugEmailParamSchema = z.string().email('E-mail invalido');
-const debugUserIdParamSchema = z.string().uuid('ID invalido');
+const debugEmailParamSchema = z.string().email('E-mail inválido');
+const debugUserIdParamSchema = z.string().uuid('ID inválido');
 
 @Controller('debug')
 @UseGuards(IpAllowlistGuard, InternalApiKeyGuard)
@@ -34,7 +34,7 @@ export class DebugController {
   async findUser(@ZodParam('email', debugEmailParamSchema) email: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      return { message: 'Usuario nao encontrado via e-mail' };
+      return { message: 'Usuário não encontrado via e-mail' };
     }
 
     return this.sanitizeUser(user);
@@ -44,7 +44,7 @@ export class DebugController {
   async findUserById(@ZodParam('id', debugUserIdParamSchema) id: string) {
     const user = await this.usersService.findById(id);
     if (!user) {
-      return { message: 'Usuario nao encontrado via ID' };
+      return { message: 'Usuário não encontrado via ID' };
     }
 
     return this.sanitizeUser(user);

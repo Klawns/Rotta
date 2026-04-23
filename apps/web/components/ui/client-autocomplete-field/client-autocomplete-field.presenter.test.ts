@@ -1,13 +1,13 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
-import { buildClientAutocompletePresenter } from './use-client-autocomplete-presenter';
-import { type ClientAutocompleteState } from '@/hooks/use-client-autocomplete';
+import assert from "node:assert/strict";
+import test from "node:test";
+import { buildClientAutocompletePresenter } from "./use-client-autocomplete-presenter";
+import { type ClientAutocompleteState } from "@/hooks/use-client-autocomplete";
 
 function createAutocompleteState(
   overrides: Partial<ClientAutocompleteState> = {},
 ): ClientAutocompleteState {
   return {
-    searchText: '',
+    searchText: "",
     appliedClientId: undefined,
     appliedClientName: null,
     suggestions: [],
@@ -33,10 +33,10 @@ function createAutocompleteState(
   };
 }
 
-test('returns a minimum-length status when the typed search is still too short', () => {
+test("returns a minimum-length status when the typed search is still too short", () => {
   const presenter = buildClientAutocompletePresenter({
     autocomplete: createAutocompleteState({
-      searchText: 'A',
+      searchText: "A",
       hasSearchValue: true,
       minimumSearchLength: 3,
     }),
@@ -44,16 +44,16 @@ test('returns a minimum-length status when the typed search is still too short',
 
   assert.equal(
     presenter.statusMessage,
-    'Digite ao menos 3 letras para buscar clientes.',
+    "Digite ao menos 3 letras para buscar clientes.",
   );
   assert.equal(presenter.showCollapsedStatus, true);
-  assert.equal(presenter.panelState, 'hidden');
+  assert.equal(presenter.panelState, "hidden");
 });
 
-test('parses API errors outside the view and exposes retry-friendly panel state', () => {
+test("parses API errors outside the view and exposes retry-friendly panel state", () => {
   const presenter = buildClientAutocompletePresenter({
     autocomplete: createAutocompleteState({
-      searchText: 'Alice',
+      searchText: "Alice",
       hasSearchValue: true,
       hasMinimumSearchLength: true,
       isOpen: true,
@@ -61,38 +61,66 @@ test('parses API errors outside the view and exposes retry-friendly panel state'
       error: {
         response: {
           data: {
-            message: 'Unauthorized',
+            message: "Unauthorized",
           },
         },
       },
     }),
   });
 
-  assert.equal(presenter.panelState, 'error');
-  assert.equal(presenter.errorMessage, 'Sessao expirada. Faca login novamente.');
-  assert.equal(presenter.retryLabel, 'Tentar novamente');
+  assert.equal(presenter.panelState, "error");
+  assert.equal(
+    presenter.errorMessage,
+    "Sessão expirada. Faça login novamente.",
+  );
+  assert.equal(presenter.retryLabel, "Tentar novamente");
 });
 
-test('keeps pagination guidance in the presenter when the backend reports more matches', () => {
+test("normalizes legacy ASCII-only API messages before exposing them to the view", () => {
   const presenter = buildClientAutocompletePresenter({
     autocomplete: createAutocompleteState({
-      searchText: 'Ali',
+      searchText: "Alice",
       hasSearchValue: true,
       hasMinimumSearchLength: true,
       isOpen: true,
-      suggestions: [{ id: 'client-1', name: 'Alice', isPinned: false }],
-      meta: {
-        returned: 1,
-        limit: 8,
-        hasMore: true,
-        search: 'Ali',
+      isError: true,
+      error: {
+        response: {
+          data: {
+            message: "Sessao expirada. Faca login novamente.",
+          },
+        },
       },
     }),
   });
 
-  assert.equal(presenter.panelState, 'results');
+  assert.equal(presenter.panelState, "error");
+  assert.equal(
+    presenter.errorMessage,
+    "Sessão expirada. Faça login novamente.",
+  );
+});
+
+test("keeps pagination guidance in the presenter when the backend reports more matches", () => {
+  const presenter = buildClientAutocompletePresenter({
+    autocomplete: createAutocompleteState({
+      searchText: "Ali",
+      hasSearchValue: true,
+      hasMinimumSearchLength: true,
+      isOpen: true,
+      suggestions: [{ id: "client-1", name: "Alice", isPinned: false }],
+      meta: {
+        returned: 1,
+        limit: 8,
+        hasMore: true,
+        search: "Ali",
+      },
+    }),
+  });
+
+  assert.equal(presenter.panelState, "results");
   assert.equal(
     presenter.hasMoreMessage,
-    'Mostrando 1 clientes. Continue digitando para refinar.',
+    "Mostrando 1 clientes. Continue digitando para refinar.",
   );
 });

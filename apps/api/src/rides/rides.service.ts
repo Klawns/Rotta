@@ -32,6 +32,10 @@ import type {
   RideWithClient,
 } from './interfaces/rides-repository.interface';
 import { ClientPaymentReconciliationService } from '../clients/services/client-payment-reconciliation.service';
+import {
+  PLAN_NOT_FOUND_MESSAGE,
+  RIDE_NOT_FOUND_MESSAGE,
+} from '../common/messages/domain-errors';
 
 type TransactionRunner = {
   transaction<T>(callback: (tx: unknown) => Promise<T>): Promise<T>;
@@ -92,7 +96,7 @@ export class RidesService {
     const ride = await this.ridesRepository.findOne(userId, id, executor);
 
     if (!ride) {
-      throw new NotFoundException('Corrida não encontrada.');
+      throw new NotFoundException(RIDE_NOT_FOUND_MESSAGE);
     }
 
     return ride;
@@ -108,13 +112,8 @@ export class RidesService {
       id,
       executor,
     );
-
     if (!ride) {
-      throw new NotFoundException('Corrida nao encontrada.');
-    }
-
-    if (!ride) {
-      throw new NotFoundException('Corrida nÃ£o encontrada.');
+      throw new NotFoundException(RIDE_NOT_FOUND_MESSAGE);
     }
 
     return ride;
@@ -222,7 +221,7 @@ export class RidesService {
         `[RidesService] Plano não encontrado para usuário ${userId}`,
         'RidesService',
       );
-      throw new ForbiddenException('Plano não encontrado.');
+      throw new ForbiddenException(PLAN_NOT_FOUND_MESSAGE);
     }
 
     const result = await (this.drizzle.db as TransactionRunner).transaction(
@@ -331,7 +330,12 @@ export class RidesService {
           tx,
         );
 
-        const updatedRide = await this.ridesRepository.update(userId, id, updateData, tx);
+        const updatedRide = await this.ridesRepository.update(
+          userId,
+          id,
+          updateData,
+          tx,
+        );
 
         await this.reconcileClients(
           userId,
@@ -344,7 +348,7 @@ export class RidesService {
     );
 
     if (!result) {
-      throw new NotFoundException('Corrida não encontrada.');
+      throw new NotFoundException(RIDE_NOT_FOUND_MESSAGE);
     }
 
     const updatedRide = await this.getRideWithClientOrThrow(userId, id);
@@ -395,7 +399,7 @@ export class RidesService {
     timings.transactionMs = Date.now() - transactionStartedAt;
 
     if (!result) {
-      throw new NotFoundException('Corrida não encontrada.');
+      throw new NotFoundException(RIDE_NOT_FOUND_MESSAGE);
     }
 
     const cleanupStartedAt = Date.now();
@@ -595,7 +599,7 @@ export class RidesService {
     );
 
     if (!result) {
-      throw new NotFoundException('Corrida não encontrada.');
+      throw new NotFoundException(RIDE_NOT_FOUND_MESSAGE);
     }
 
     const updatedRide = await this.getRideWithClientOrThrow(userId, id);

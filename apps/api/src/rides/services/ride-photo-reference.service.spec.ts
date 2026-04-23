@@ -60,7 +60,7 @@ describe('RidePhotoReferenceService', () => {
       ),
     ).rejects.toThrow(
       new BadRequestException(
-        'Foto invalida. A referencia informada nao corresponde a um upload disponivel.',
+        'Foto inválida. A referência informada não corresponde a um upload disponível.',
       ),
     );
   });

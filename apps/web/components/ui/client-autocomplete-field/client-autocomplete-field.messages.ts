@@ -1,5 +1,5 @@
-import { parseApiError } from '@/lib/api-error';
-import { type ClientDirectoryMeta } from '@/services/clients-service';
+import { parseApiError } from "@/lib/api-error";
+import { type ClientDirectoryMeta } from "@/services/clients-service";
 
 export interface ClientAutocompleteFieldMessageOverrides {
   emptyMessage?: string;
@@ -25,12 +25,13 @@ export function resolveClientAutocompleteFieldMessages(
   return {
     emptyMessage:
       overrides.emptyMessage ??
-      'Nenhum cliente encontrado para a busca informada.',
-    loadingMessage: overrides.loadingMessage ?? 'Buscando clientes...',
-    fetchingMessage: overrides.fetchingMessage ?? 'Atualizando sugestoes...',
+      "Nenhum cliente encontrado para a busca informada.",
+    loadingMessage: overrides.loadingMessage ?? "Buscando clientes...",
+    fetchingMessage: overrides.fetchingMessage ?? "Atualizando sugestões...",
     errorFallbackMessage:
-      overrides.errorFallbackMessage ?? 'Nao foi possivel carregar os clientes.',
-    retryLabel: 'Tentar novamente',
+      overrides.errorFallbackMessage ??
+      "Não foi possível carregar os clientes.",
+    retryLabel: "Tentar novamente",
     minLengthMessage:
       overrides.minLengthMessage ??
       ((minimumLength) =>
@@ -42,7 +43,7 @@ export function resolveClientAutocompleteFieldMessages(
 
 export function getClientAutocompleteErrorMessage(
   error: unknown,
-  messages: Pick<ClientAutocompleteFieldMessages, 'errorFallbackMessage'>,
+  messages: Pick<ClientAutocompleteFieldMessages, "errorFallbackMessage">,
 ) {
   return parseApiError(error, messages.errorFallbackMessage);
 }

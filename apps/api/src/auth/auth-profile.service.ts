@@ -77,7 +77,7 @@ export class AuthProfileService {
     const profile = await this.getLatestProfile(userId);
 
     if (!profile) {
-      throw new UnauthorizedException('Usuario nao encontrado.');
+      throw new UnauthorizedException('Usuário não encontrado.');
     }
 
     return profile;

@@ -68,7 +68,7 @@ export async function parseUploadImageRequest(
       reject(
         toBadRequestException(
           error,
-          'Requisicao multipart invalida para upload de imagem.',
+          'Requisição multipart inválida para upload de imagem.',
         ),
       );
       return;
@@ -137,7 +137,7 @@ export async function parseUploadImageRequest(
         file.resume();
         fail(
           new BadRequestException(
-            'Apenas um arquivo de imagem e aceito por requisicao.',
+            'Apenas um arquivo de imagem é aceito por requisição.',
           ),
         );
         return;
@@ -149,7 +149,7 @@ export async function parseUploadImageRequest(
         file.resume();
         fail(
           new BadRequestException(
-            'Campo de upload invalido. Use o campo image.',
+            'Campo de upload inválido. Use o campo image.',
           ),
         );
         return;
@@ -162,7 +162,7 @@ export async function parseUploadImageRequest(
         file.resume();
         fail(
           new BadRequestException(
-            'Arquivo invalido. Envie apenas imagens JPG, PNG ou WEBP.',
+            'Arquivo inválido. Envie apenas imagens JPG, PNG ou WEBP.',
           ),
         );
         return;
@@ -208,7 +208,7 @@ export async function parseUploadImageRequest(
 
       fail(
         new BadRequestException(
-          'Campos adicionais nao sao permitidos neste endpoint.',
+          'Campos adicionais não são permitidos neste endpoint.',
         ),
       );
     });
@@ -216,7 +216,7 @@ export async function parseUploadImageRequest(
     parser.once('filesLimit', () => {
       fail(
         new BadRequestException(
-          'Apenas um arquivo de imagem e aceito por requisicao.',
+          'Apenas um arquivo de imagem é aceito por requisição.',
         ),
       );
     });
@@ -224,13 +224,15 @@ export async function parseUploadImageRequest(
     parser.once('fieldsLimit', () => {
       fail(
         new BadRequestException(
-          'Campos adicionais nao sao permitidos neste endpoint.',
+          'Campos adicionais não são permitidos neste endpoint.',
         ),
       );
     });
 
     parser.once('partsLimit', () => {
-      fail(new BadRequestException('A requisicao multipart contem partes demais.'));
+      fail(
+        new BadRequestException('A requisição multipart contém partes demais.'),
+      );
     });
 
     parser.once('error', (error) => {
@@ -243,7 +245,7 @@ export async function parseUploadImageRequest(
       }
 
       if (!fileSeen || !outerResolved) {
-        fail(new BadRequestException('Arquivo de imagem nao enviado.'));
+        fail(new BadRequestException('Arquivo de imagem não enviado.'));
         return;
       }
 

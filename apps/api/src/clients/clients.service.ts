@@ -14,6 +14,7 @@ import type { ICacheProvider } from '../cache/interfaces/cache-provider.interfac
 import { UserDashboardCacheService } from '../cache/user-dashboard-cache.service';
 import type { AddPartialPaymentDto } from './dto/clients.dto';
 import { ClientPaymentReconciliationService } from './services/client-payment-reconciliation.service';
+import { CLIENT_NOT_FOUND_MESSAGE } from '../common/messages/domain-errors';
 
 type TransactionRunner = {
   transaction<T>(callback: (tx: unknown) => Promise<T>): Promise<T>;
@@ -58,7 +59,11 @@ export class ClientsService {
     return limit ?? DEFAULT_CLIENT_DIRECTORY_LIMIT;
   }
 
-  private getDirectoryCacheKey(userId: string, search?: string, limit?: number) {
+  private getDirectoryCacheKey(
+    userId: string,
+    search?: string,
+    limit?: number,
+  ) {
     return `${this.getDirectoryCachePrefix(userId)}${this.normalizeDirectorySearch(search)}:${this.resolveDirectoryLimit(limit)}`;
   }
 
@@ -100,11 +105,15 @@ export class ClientsService {
     options?: { forUpdate?: boolean },
   ) {
     const client = options?.forUpdate
-      ? await this.clientsRepository.findOneForUpdate(userId, clientId, executor)
+      ? await this.clientsRepository.findOneForUpdate(
+          userId,
+          clientId,
+          executor,
+        )
       : await this.clientsRepository.findOne(userId, clientId, executor);
 
     if (!client) {
-      throw new NotFoundException('Cliente não encontrado.');
+      throw new NotFoundException(CLIENT_NOT_FOUND_MESSAGE);
     }
 
     return client;
@@ -122,9 +131,10 @@ export class ClientsService {
   async findDirectory(userId: string, search?: string, limit?: number) {
     const resolvedLimit = this.resolveDirectoryLimit(limit);
     const cacheKey = this.getDirectoryCacheKey(userId, search, limit);
-    const cachedDirectory = await this.cache.get<
-      Awaited<ReturnType<IClientsRepository['findDirectory']>>
-    >(cacheKey);
+    const cachedDirectory =
+      await this.cache.get<
+        Awaited<ReturnType<IClientsRepository['findDirectory']>>
+      >(cacheKey);
 
     if (cachedDirectory) {
       return cachedDirectory;
@@ -136,7 +146,11 @@ export class ClientsService {
       resolvedLimit,
     );
 
-    await this.cache.set(cacheKey, directory, CLIENT_DIRECTORY_CACHE_TTL_SECONDS);
+    await this.cache.set(
+      cacheKey,
+      directory,
+      CLIENT_DIRECTORY_CACHE_TTL_SECONDS,
+    );
 
     return directory;
   }
@@ -174,7 +188,7 @@ export class ClientsService {
     const updatedClient = await this.clientsRepository.update(userId, id, data);
 
     if (!updatedClient) {
-      throw new NotFoundException('Cliente não encontrado.');
+      throw new NotFoundException(CLIENT_NOT_FOUND_MESSAGE);
     }
 
     await this.invalidateCachesAfterWrite(userId, 'atualizacao de cliente', [
@@ -251,16 +265,20 @@ export class ClientsService {
       deletedCount = deletedClients.length;
     });
 
-    await this.invalidateCachesAfterWrite(userId, 'remocao em lote de clientes', [
-      {
-        cacheName: 'user dashboard',
-        execute: () => this.userDashboardCacheService.invalidate(userId),
-      },
-      {
-        cacheName: 'client directory',
-        execute: () => this.invalidateDirectoryCache(userId),
-      },
-    ]);
+    await this.invalidateCachesAfterWrite(
+      userId,
+      'remocao em lote de clientes',
+      [
+        {
+          cacheName: 'user dashboard',
+          execute: () => this.userDashboardCacheService.invalidate(userId),
+        },
+        {
+          cacheName: 'client directory',
+          execute: () => this.invalidateDirectoryCache(userId),
+        },
+      ],
+    );
 
     return {
       requestedCount: data.ids.length,
@@ -330,43 +348,17 @@ export class ClientsService {
     const { paymentId, reconciliation } = await (
       this.drizzle.db as TransactionRunner
     ).transaction(async (tx) => {
-        await this.getClientOrThrow(userId, clientId, tx, { forUpdate: true });
+      await this.getClientOrThrow(userId, clientId, tx, { forUpdate: true });
 
-        const existingPayment =
-          await this.clientPaymentsRepository.findByIdempotencyKey(
-            clientId,
-            userId,
-            data.idempotencyKey,
-            tx,
-          );
-
-        if (existingPayment) {
-          const reconciliation =
-            await this.clientPaymentReconciliationService.reconcileClientPayments(
-              userId,
-              clientId,
-              tx,
-            );
-
-          return {
-            paymentId: existingPayment.id,
-            reconciliation,
-          };
-        }
-
-        const createdPayment = await this.clientPaymentsRepository.create(
-          {
-            id: randomUUID(),
-            clientId,
-            userId,
-            amount: data.amount,
-            remainingAmount: data.amount,
-            idempotencyKey: data.idempotencyKey,
-            notes: data.notes || 'Pagamento parcial',
-          },
+      const existingPayment =
+        await this.clientPaymentsRepository.findByIdempotencyKey(
+          clientId,
+          userId,
+          data.idempotencyKey,
           tx,
         );
 
+      if (existingPayment) {
         const reconciliation =
           await this.clientPaymentReconciliationService.reconcileClientPayments(
             userId,
@@ -375,11 +367,40 @@ export class ClientsService {
           );
 
         return {
-          paymentId: createdPayment.id,
+          paymentId: existingPayment.id,
           reconciliation,
         };
-      });
-    const payment = await this.clientPaymentsRepository.findOne(paymentId, userId);
+      }
+
+      const createdPayment = await this.clientPaymentsRepository.create(
+        {
+          id: randomUUID(),
+          clientId,
+          userId,
+          amount: data.amount,
+          remainingAmount: data.amount,
+          idempotencyKey: data.idempotencyKey,
+          notes: data.notes || 'Pagamento parcial',
+        },
+        tx,
+      );
+
+      const reconciliation =
+        await this.clientPaymentReconciliationService.reconcileClientPayments(
+          userId,
+          clientId,
+          tx,
+        );
+
+      return {
+        paymentId: createdPayment.id,
+        reconciliation,
+      };
+    });
+    const payment = await this.clientPaymentsRepository.findOne(
+      paymentId,
+      userId,
+    );
 
     await this.invalidateCachesAfterWrite(
       userId,
@@ -415,7 +436,6 @@ export class ClientsService {
             tx,
           );
 
-
         /*
         return {
             userId,
@@ -425,7 +445,7 @@ export class ClientsService {
           );
 
           if (!updatedClient) {
-            throw new NotFoundException('Cliente nÃ£o encontrado.');
+            throw new NotFoundException(CLIENT_NOT_FOUND_MESSAGE);
           }
 
           await this.balanceTransactionsRepository.create(

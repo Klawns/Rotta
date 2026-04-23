@@ -39,7 +39,8 @@ function createFilePart(
     'utf8',
   );
   const footer = Buffer.from('\r\n', 'utf8');
-  const body = typeof content === 'string' ? Buffer.from(content, 'utf8') : content;
+  const body =
+    typeof content === 'string' ? Buffer.from(content, 'utf8') : content;
 
   return Buffer.concat([header, body, footer]);
 }
@@ -96,7 +97,7 @@ describe('parseUploadImageRequest', () => {
 
     await expect(parseUploadImageRequest(request)).rejects.toThrow(
       new BadRequestException(
-        'Campos adicionais nao sao permitidos neste endpoint.',
+        'Campos adicionais não são permitidos neste endpoint.',
       ),
     );
   });
@@ -113,7 +114,7 @@ describe('parseUploadImageRequest', () => {
     );
 
     await expect(parseUploadImageRequest(request)).rejects.toThrow(
-      new BadRequestException('Campo de upload invalido. Use o campo image.'),
+      new BadRequestException('Campo de upload inválido. Use o campo image.'),
     );
   });
 
@@ -132,7 +133,7 @@ describe('parseUploadImageRequest', () => {
 
     await expect(upload.completed).rejects.toThrow(
       new BadRequestException(
-        'Apenas um arquivo de imagem e aceito por requisicao.',
+        'Apenas um arquivo de imagem é aceito por requisição.',
       ),
     );
   });
@@ -173,7 +174,7 @@ describe('parseUploadImageRequest', () => {
 
     await expect(parseUploadImageRequest(request)).rejects.toThrow(
       new BadRequestException(
-        'Arquivo invalido. Envie apenas imagens JPG, PNG ou WEBP.',
+        'Arquivo inválido. Envie apenas imagens JPG, PNG ou WEBP.',
       ),
     );
   });

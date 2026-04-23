@@ -29,7 +29,7 @@ export const UPLOAD_IMAGE_ALLOWED_FOLDERS = [
 ] as const;
 export const DEFAULT_UPLOAD_IMAGE_FOLDER = 'images';
 export const INVALID_UPLOAD_IMAGE_FOLDER_MESSAGE =
-  'Pasta de upload invalida. Use images, avatars, posts, thumbnails ou rides.';
+  'Pasta de upload inválida. Use images, avatars, posts, thumbnails ou rides.';
 
 export const UPLOAD_IMAGE_FILE_TYPE_PATTERN = /^image\/(jpeg|png|webp)$/i;
 

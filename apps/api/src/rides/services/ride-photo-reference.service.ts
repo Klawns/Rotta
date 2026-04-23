@@ -46,7 +46,10 @@ export class RidePhotoReferenceService {
     return this.validateControlledReference(userId, nextPhoto);
   }
 
-  private async validateControlledReference(userId: string, photo: string | null) {
+  private async validateControlledReference(
+    userId: string,
+    photo: string | null,
+  ) {
     if (photo === null) {
       return null;
     }
@@ -75,7 +78,7 @@ export class RidePhotoReferenceService {
 
     if (!exists) {
       throw new BadRequestException(
-        'Foto invalida. A referencia informada nao corresponde a um upload disponivel.',
+        'Foto inválida. A referência informada não corresponde a um upload disponível.',
       );
     }
 
@@ -127,7 +130,7 @@ export class RidePhotoReferenceService {
 
     if (!exists) {
       this.logger.warn(
-        `Referencia de foto gerenciada sem objeto correspondente no storage: ${normalizedPhoto}`,
+        `Referência de foto gerenciada sem objeto correspondente no storage: ${normalizedPhoto}`,
       );
       return null;
     }

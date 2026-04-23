@@ -81,11 +81,11 @@ export class R2StorageProvider implements IStorageProvider {
         : null;
 
     if (errorName === 'AccessDenied') {
-      return `Falha no ${action} para o bucket "${bucket}" e chave "${key}": acesso negado no R2. Verifique se o token possui permissao Object Read e Object Write neste bucket e se a variavel de ambiente aponta para o bucket correto.`;
+      return `Falha no ${action} para o bucket "${bucket}" e chave "${key}": acesso negado no R2. Verifique se o token possui permissão Object Read e Object Write neste bucket e se a variável de ambiente aponta para o bucket correto.`;
     }
 
     if (errorName === 'NoSuchBucket') {
-      return `Falha no ${action}: o bucket "${bucket}" nao existe no R2.`;
+      return `Falha no ${action}: o bucket "${bucket}" não existe no R2.`;
     }
 
     if (error instanceof Error && error.message) {
@@ -149,7 +149,7 @@ export class R2StorageProvider implements IStorageProvider {
       return Buffer.concat(chunks);
     }
 
-    throw new Error('Resposta de download do storage nao suportada.');
+    throw new Error('Resposta de download do storage não suportada.');
   }
 
   private bodyToReadable(body: unknown): Readable {
@@ -169,7 +169,9 @@ export class R2StorageProvider implements IStorageProvider {
       return Readable.from(body as AsyncIterable<Buffer | Uint8Array>);
     }
 
-    throw new Error('Resposta de download por stream do storage nao suportada.');
+    throw new Error(
+      'Resposta de download por stream do storage não suportada.',
+    );
   }
 
   async upload(
@@ -194,7 +196,7 @@ export class R2StorageProvider implements IStorageProvider {
           ContentDisposition: 'inline',
         }),
       );
-      this.logger.log(`Upload concluido com sucesso: ${key}`);
+      this.logger.log(`Upload concluído com sucesso: ${key}`);
     } catch (error) {
       const message = this.buildOperationErrorMessage(
         'upload',
@@ -224,7 +226,9 @@ export class R2StorageProvider implements IStorageProvider {
     const key = path;
     const bucket = this.resolveBucket('public');
 
-    this.logger.log(`Iniciando upload por stream para R2: ${key} (${file.mimetype})`);
+    this.logger.log(
+      `Iniciando upload por stream para R2: ${key} (${file.mimetype})`,
+    );
 
     const upload = new Upload({
       client: this.client,
@@ -242,7 +246,7 @@ export class R2StorageProvider implements IStorageProvider {
 
     try {
       await upload.done();
-      this.logger.log(`Upload por stream concluido com sucesso: ${key}`);
+      this.logger.log(`Upload por stream concluído com sucesso: ${key}`);
     } catch (error) {
       const message = this.buildOperationErrorMessage(
         'upload',
@@ -287,7 +291,7 @@ export class R2StorageProvider implements IStorageProvider {
             `attachment; filename="${file.originalname}"`,
         }),
       );
-      this.logger.log(`Upload privado concluido com sucesso: ${key}`);
+      this.logger.log(`Upload privado concluído com sucesso: ${key}`);
     } catch (error) {
       const message = this.buildOperationErrorMessage(
         'upload privado',
@@ -333,7 +337,9 @@ export class R2StorageProvider implements IStorageProvider {
 
     try {
       await upload.done();
-      this.logger.log(`Upload privado por stream concluido com sucesso: ${key}`);
+      this.logger.log(
+        `Upload privado por stream concluído com sucesso: ${key}`,
+      );
     } catch (error) {
       const message = this.buildOperationErrorMessage(
         'upload privado',
@@ -367,7 +373,7 @@ export class R2StorageProvider implements IStorageProvider {
           Key: key,
         }),
       );
-      this.logger.log(`Objeto excluido com sucesso: ${key}`);
+      this.logger.log(`Objeto excluído com sucesso: ${key}`);
     } catch (error) {
       const message = this.buildOperationErrorMessage(
         'delete',

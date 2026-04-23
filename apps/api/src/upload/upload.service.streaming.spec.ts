@@ -158,7 +158,7 @@ describe('UploadService uploadImageStream', () => {
       service.uploadImageStream(upload, 'user-1', 'invalid-folder'),
     ).rejects.toThrow(
       new BadRequestException(
-        'Pasta de upload invalida. Use images, avatars, posts, thumbnails ou rides.',
+        'Pasta de upload inválida. Use images, avatars, posts, thumbnails ou rides.',
       ),
     );
     expect(storageProviderMock.uploadStream).not.toHaveBeenCalled();
@@ -174,7 +174,7 @@ describe('UploadService uploadImageStream', () => {
       service.uploadImageStream(upload, 'user-1', 'rides'),
     ).rejects.toThrow(
       new BadRequestException(
-        'Arquivo invalido. O conteudo nao e uma imagem suportada (JPG, PNG ou WEBP).',
+        'Arquivo inválido. O conteúdo não é uma imagem suportada (JPG, PNG ou WEBP).',
       ),
     );
     expect(storageProviderMock.uploadPrivateStream).not.toHaveBeenCalled();
@@ -210,7 +210,7 @@ describe('UploadService uploadImageStream', () => {
       service.uploadImageStream(upload, 'user-1', 'rides'),
     ).rejects.toThrow(
       new BadRequestException(
-        'Arquivo invalido. A imagem excede o limite de pixels permitido.',
+        'Arquivo inválido. A imagem excede o limite de pixels permitido.',
       ),
     );
     expect(upload.cancel).toHaveBeenCalled();
@@ -227,7 +227,7 @@ describe('UploadService uploadImageStream', () => {
       service.uploadImageStream(upload, 'user-1', 'rides'),
     ).rejects.toThrow(
       new ServiceUnavailableException(
-        'Nao foi possivel concluir o upload da imagem no momento. Tente novamente em instantes.',
+        'Não foi possível concluir o upload da imagem no momento. Tente novamente em instantes.',
       ),
     );
   });
@@ -253,9 +253,7 @@ describe('UploadService uploadImageStream', () => {
     await expect(
       service.uploadImageStream(upload, 'user-1', 'rides'),
     ).rejects.toThrow(
-      new BadRequestException(
-        'Arquivo de imagem excede o limite permitido.',
-      ),
+      new BadRequestException('Arquivo de imagem excede o limite permitido.'),
     );
   });
 
@@ -272,7 +270,7 @@ describe('UploadService uploadImageStream', () => {
 
     const completed = storageUploadFinished.promise.then(() => {
       throw new BadRequestException(
-        'Campos adicionais nao sao permitidos neste endpoint.',
+        'Campos adicionais não são permitidos neste endpoint.',
       );
     });
     void completed.catch(() => undefined);
@@ -285,7 +283,7 @@ describe('UploadService uploadImageStream', () => {
       service.uploadImageStream(upload, 'user-1', 'rides'),
     ).rejects.toThrow(
       new BadRequestException(
-        'Campos adicionais nao sao permitidos neste endpoint.',
+        'Campos adicionais não são permitidos neste endpoint.',
       ),
     );
 
@@ -299,11 +297,13 @@ describe('UploadService uploadImageStream', () => {
   it('rejects new uploads when the image processing pool is saturated', async () => {
     const releaseStorage = createDeferred<void>();
 
-    storageProviderMock.uploadPrivateStream.mockImplementation(async (file, path) => {
-      await releaseStorage.promise;
-      await readStream(file.stream as AsyncIterable<Buffer | Uint8Array>);
-      return { key: path };
-    });
+    storageProviderMock.uploadPrivateStream.mockImplementation(
+      async (file, path) => {
+        await releaseStorage.promise;
+        await readStream(file.stream as AsyncIterable<Buffer | Uint8Array>);
+        return { key: path };
+      },
+    );
 
     const inFlightUploads = Array.from(
       { length: UPLOAD_IMAGE_MAX_CONCURRENT_PROCESSING },
@@ -324,7 +324,7 @@ describe('UploadService uploadImageStream', () => {
       service.uploadImageStream(rejectedUpload, 'user-1', 'rides'),
     ).rejects.toThrow(
       new ServiceUnavailableException(
-        'Muitos uploads de imagem estao em processamento no momento. Tente novamente em instantes.',
+        'Muitos uploads de imagem estão em processamento no momento. Tente novamente em instantes.',
       ),
     );
     expect(rejectedUpload.cancel).toHaveBeenCalled();

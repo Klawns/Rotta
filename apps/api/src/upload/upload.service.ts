@@ -73,13 +73,15 @@ export class UploadService {
     return `${folder}/${fileName}`;
   }
 
-  private resolveUploadVisibility(folder: UploadImageFolder): StorageVisibility {
+  private resolveUploadVisibility(
+    folder: UploadImageFolder,
+  ): StorageVisibility {
     return folder === 'rides' ? 'private' : 'public';
   }
 
   private ensureUploadFile(file: UploadImageBufferFile | undefined) {
     if (!file || !file.buffer || file.buffer.length === 0) {
-      throw new BadRequestException('Arquivo de imagem nao enviado.');
+      throw new BadRequestException('Arquivo de imagem não enviado.');
     }
   }
 
@@ -89,10 +91,10 @@ export class UploadService {
     }
 
     this.logger.warn(
-      `Tentativa de upload com extensao invalida: ${file.originalname}`,
+      `Tentativa de upload com extensão inválida: ${file.originalname}`,
     );
     throw new BadRequestException(
-      'Arquivo invalido. Envie apenas imagens JPG, PNG ou WEBP.',
+      'Arquivo inválido. Envie apenas imagens JPG, PNG ou WEBP.',
     );
   }
 
@@ -111,9 +113,9 @@ export class UploadService {
     },
   ) {
     if (!metadata.width || !metadata.height) {
-      this.logger.warn(`Imagem sem dimensoes validas: ${file.originalname}`);
+      this.logger.warn(`Imagem sem dimensões válidas: ${file.originalname}`);
       throw new BadRequestException(
-        'Arquivo invalido. A imagem precisa informar largura e altura validas.',
+        'Arquivo inválido. A imagem precisa informar largura e altura válidas.',
       );
     }
 
@@ -122,7 +124,7 @@ export class UploadService {
         `Imagem excede limite de pixels: ${file.originalname} (${metadata.width}x${metadata.height})`,
       );
       throw new BadRequestException(
-        'Arquivo invalido. A imagem excede o limite de pixels permitido.',
+        'Arquivo inválido. A imagem excede o limite de pixels permitido.',
       );
     }
   }
@@ -142,7 +144,7 @@ export class UploadService {
       return error instanceof BadRequestException
         ? error
         : new BadRequestException(
-            'Arquivo invalido. O conteudo nao e uma imagem suportada (JPG, PNG ou WEBP).',
+            'Arquivo inválido. O conteúdo não é uma imagem suportada (JPG, PNG ou WEBP).',
           );
     }
 
@@ -151,7 +153,7 @@ export class UploadService {
     );
 
     return new BadRequestException(
-      'Arquivo invalido. A imagem excede o limite de pixels permitido.',
+      'Arquivo inválido. A imagem excede o limite de pixels permitido.',
     );
   }
 
@@ -172,7 +174,7 @@ export class UploadService {
     );
 
     return new ServiceUnavailableException(
-      'Nao foi possivel concluir o upload da imagem no momento. Tente novamente em instantes.',
+      'Não foi possível concluir o upload da imagem no momento. Tente novamente em instantes.',
     );
   }
 
@@ -184,7 +186,7 @@ export class UploadService {
 
       if (!isAllowedUploadImageFormat(metadata.format)) {
         throw new BadRequestException(
-          'Arquivo invalido. O conteudo nao e uma imagem suportada (JPG, PNG ou WEBP).',
+          'Arquivo inválido. O conteúdo não é uma imagem suportada (JPG, PNG ou WEBP).',
         );
       }
 
@@ -204,7 +206,7 @@ export class UploadService {
         });
     } catch (error) {
       this.logger.warn(
-        `Falha ao validar o conteudo da imagem ${file.originalname}: ${error instanceof Error ? error.message : 'erro desconhecido'}`,
+        `Falha ao validar o conteúdo da imagem ${file.originalname}: ${error instanceof Error ? error.message : 'erro desconhecido'}`,
       );
       throw this.buildInvalidImageError(file, error, 'validar');
     }
@@ -218,15 +220,19 @@ export class UploadService {
   }
 
   private createProcessedImageStream(inputImage: Sharp) {
-    return inputImage.clone().rotate().resize({
-      width: 1200,
-      height: 1200,
-      fit: 'inside',
-      withoutEnlargement: true,
-    }).webp({
-      quality: 80,
-      effort: 4,
-    });
+    return inputImage
+      .clone()
+      .rotate()
+      .resize({
+        width: 1200,
+        height: 1200,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({
+        quality: 80,
+        effort: 4,
+      });
   }
 
   private abortStreamUpload(
@@ -256,8 +262,7 @@ export class UploadService {
           context: 'cleanupUploadedImage',
           key,
           visibility,
-          message:
-            error instanceof Error ? error.message : 'Erro desconhecido',
+          message: error instanceof Error ? error.message : 'Erro desconhecido',
         },
         error instanceof Error ? error.stack : undefined,
       );
@@ -266,14 +271,13 @@ export class UploadService {
 
   private acquireUploadProcessingSlot(file: UploadImageNamedFile) {
     if (
-      this.activeUploadProcessingCount >=
-      UPLOAD_IMAGE_MAX_CONCURRENT_PROCESSING
+      this.activeUploadProcessingCount >= UPLOAD_IMAGE_MAX_CONCURRENT_PROCESSING
     ) {
       this.logger.warn(
-        `Upload rejeitado por saturacao de processamento: ${file.originalname}. Em andamento: ${this.activeUploadProcessingCount}. Limite: ${UPLOAD_IMAGE_MAX_CONCURRENT_PROCESSING}.`,
+        `Upload rejeitado por saturação de processamento: ${file.originalname}. Em andamento: ${this.activeUploadProcessingCount}. Limite: ${UPLOAD_IMAGE_MAX_CONCURRENT_PROCESSING}.`,
       );
       throw new ServiceUnavailableException(
-        'Muitos uploads de imagem estao em processamento no momento. Tente novamente em instantes.',
+        'Muitos uploads de imagem estão em processamento no momento. Tente novamente em instantes.',
       );
     }
 
@@ -308,13 +312,13 @@ export class UploadService {
       upload.cancel(
         error instanceof Error
           ? error
-          : new Error('Upload rejeitado por saturacao de processamento.'),
+          : new Error('Upload rejeitado por saturação de processamento.'),
       );
       throw error;
     }
 
     this.logger.log(
-      `Recebendo solicitacao de upload por stream: ${upload.originalname} para pasta ${normalizedFolder}`,
+      `Recebendo solicitação de upload por stream: ${upload.originalname} para pasta ${normalizedFolder}`,
     );
 
     const inputImage = this.createInputImageStream();
@@ -329,7 +333,10 @@ export class UploadService {
       processedImageSizeBytes = info.size;
     });
     processedImage.once('error', (error) => {
-      if (streamLifecycleClosed && error.message === 'The operation was aborted') {
+      if (
+        streamLifecycleClosed &&
+        error.message === 'The operation was aborted'
+      ) {
         return;
       }
 
@@ -348,14 +355,14 @@ export class UploadService {
 
       if (!isAllowedUploadImageFormat(metadata.format)) {
         throw new BadRequestException(
-          'Arquivo invalido. O conteudo nao e uma imagem suportada (JPG, PNG ou WEBP).',
+          'Arquivo inválido. O conteúdo não é uma imagem suportada (JPG, PNG ou WEBP).',
         );
       }
 
       this.ensureValidImageDimensions(upload, metadata);
     } catch (error) {
       this.logger.warn(
-        `Falha ao validar o conteudo da imagem ${upload.originalname}: ${error instanceof Error ? error.message : 'erro desconhecido'}`,
+        `Falha ao validar o conteúdo da imagem ${upload.originalname}: ${error instanceof Error ? error.message : 'erro desconhecido'}`,
       );
       streamLifecycleClosed = true;
       this.abortStreamUpload(upload, inputImage, processedImage, error);
@@ -460,10 +467,10 @@ export class UploadService {
 
     try {
       this.logger.log(
-        `Recebendo solicitacao de upload: ${file.originalname} (Tamanho original: ${file.size} bytes) para pasta ${normalizedFolder}`,
+        `Recebendo solicitação de upload: ${file.originalname} (Tamanho original: ${file.size} bytes) para pasta ${normalizedFolder}`,
       );
 
-      // 1. Validacao real do conteudo da imagem antes do processamento.
+      // 1. Validação real do conteúdo da imagem antes do processamento.
       const processedImage = await this.createProcessedImage(file);
 
       // 2. Processamento com Sharp
@@ -530,7 +537,11 @@ export class UploadService {
                     return processedBuffer;
                   } catch (error) {
                     if (this.isSharpPixelLimitError(error)) {
-                      throw this.buildInvalidImageError(file, error, 'processar');
+                      throw this.buildInvalidImageError(
+                        file,
+                        error,
+                        'processar',
+                      );
                     }
 
                     throw error;
