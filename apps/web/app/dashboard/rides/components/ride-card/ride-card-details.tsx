@@ -40,7 +40,7 @@ export function RideCardDetails({ presentation }: RideCardDetailsProps) {
       {presentation.notes ? (
         <div className="mt-3 rounded-2xl bg-secondary/5 px-4 py-3">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary/70">
-            Observacoes
+            Observações
           </p>
           <p className="mt-1 whitespace-pre-wrap text-sm text-text-primary">
             {presentation.notes}

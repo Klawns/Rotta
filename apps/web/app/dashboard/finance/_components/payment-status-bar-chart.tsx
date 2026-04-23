@@ -49,7 +49,7 @@ export function PaymentStatusBarChart({
   }
 
   if (!hasData) {
-    return <EmptyChartState message="Nenhum status financeiro no periodo" />;
+    return <EmptyChartState message="Nenhum status financeiro no período" />;
   }
 
   return (
@@ -58,8 +58,8 @@ export function PaymentStatusBarChart({
         <h3 className="text-xl font-black text-foreground">Status Financeiro</h3>
         <p className="text-xs font-medium text-muted-foreground">
           {paymentStatusFilter === 'all'
-            ? 'Valores pagos e pendentes no periodo selecionado'
-            : `Valores de corridas ${paymentStatusFilter === 'PAID' ? 'pagas' : 'pendentes'} no periodo selecionado`}
+            ? 'Valores pagos e pendentes no período selecionado'
+            : `Valores de corridas ${paymentStatusFilter === 'PAID' ? 'pagas' : 'pendentes'} no período selecionado`}
         </p>
       </div>
 

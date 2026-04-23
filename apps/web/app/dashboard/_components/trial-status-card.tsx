@@ -1,49 +1,46 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { CalendarClock, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { FreeTrialState } from '@/services/free-trial-service';
+import Link from "next/link";
+import { CalendarClock, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { FreeTrialState } from "@/services/free-trial-service";
 
 interface TrialStatusCardProps {
   trial: FreeTrialState;
   className?: string;
 }
 
-export function TrialStatusCard({
-  trial,
-  className,
-}: TrialStatusCardProps) {
+export function TrialStatusCard({ trial, className }: TrialStatusCardProps) {
   if (!trial.shouldShowTrialStatus) {
     return null;
   }
 
   const toneClass = trial.isStarterExpired
-    ? 'border-trial-expired/30 bg-trial-expired/10'
+    ? "border-trial-expired/30 bg-trial-expired/10"
     : trial.isExpiringSoon
-      ? 'border-trial-warning/30 bg-trial-warning/10'
-      : 'border-trial-active/30 bg-trial-active/10';
+      ? "border-trial-warning/30 bg-trial-warning/10"
+      : "border-trial-active/30 bg-trial-active/10";
 
   const iconToneClass = trial.isStarterExpired
-    ? 'bg-trial-expired/15 text-trial-expired'
+    ? "bg-trial-expired/15 text-trial-expired"
     : trial.isExpiringSoon
-      ? 'bg-trial-warning/15 text-trial-warning'
-      : 'bg-trial-active/15 text-trial-active';
+      ? "bg-trial-warning/15 text-trial-warning"
+      : "bg-trial-active/15 text-trial-active";
 
   const title = trial.isStarterExpired
-    ? 'Seu trial expirou'
-    : `Voce tem ${trial.daysRemaining} ${trial.daysRemaining === 1 ? 'dia restante' : 'dias restantes'}`;
+    ? "Seu trial expirou"
+    : `Você tem ${trial.daysRemaining} ${trial.daysRemaining === 1 ? "dia restante" : "dias restantes"}`;
 
   const description = trial.isStarterExpired
-    ? 'As funcionalidades principais permanecem visiveis, mas estao bloqueadas ate a ativacao de um plano pago.'
+    ? "As funcionalidades principais permanecem visíveis, mas estão bloqueadas até a ativação de um plano pago."
     : trial.isExpiringSoon
-      ? 'Seu periodo gratuito esta perto do fim. Garanta a continuidade antes do bloqueio.'
-      : 'Seu acesso gratuito esta ativo. Aproveite este periodo para configurar sua operacao.';
+      ? "Seu período gratuito está perto do fim. Garanta a continuidade antes do bloqueio."
+      : "Seu acesso gratuito está ativo. Aproveite este período para configurar sua operação.";
 
   return (
     <section
       className={cn(
-        'rounded-[2rem] border px-5 py-5 shadow-sm backdrop-blur-sm md:px-6',
+        "rounded-[2rem] border px-5 py-5 shadow-sm backdrop-blur-sm md:px-6",
         toneClass,
         className,
       )}
@@ -52,7 +49,7 @@ export function TrialStatusCard({
         <div className="flex items-start gap-4">
           <div
             className={cn(
-              'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl',
+              "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
               iconToneClass,
             )}
           >
@@ -85,4 +82,3 @@ export function TrialStatusCard({
     </section>
   );
 }
-

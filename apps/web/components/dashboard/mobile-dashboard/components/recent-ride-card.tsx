@@ -55,8 +55,8 @@ export function RecentRideCard({
                                     event.stopPropagation();
                                 }}
                                 className="flex h-9 w-9 items-center justify-center rounded-2xl border border-border-subtle bg-secondary/10 text-text-secondary transition-all hover:bg-secondary/20 hover:text-text-primary active:scale-90"
-                                title="Abrir acoes da corrida"
-                                aria-label="Abrir menu de acoes da corrida"
+                                title="Abrir ações da corrida"
+                                aria-label="Abrir menu de ações da corrida"
                             >
                                 <ChevronDown size={16} />
                             </button>

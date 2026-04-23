@@ -48,7 +48,12 @@ function SummaryMetric({
       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary">
         {label}
       </p>
-      <p className={cn('mt-2 text-base font-bold tracking-tight', toneClasses[tone])}>
+      <p
+        className={cn(
+          'mt-2 text-base font-bold tracking-tight',
+          toneClasses[tone],
+        )}
+      >
         {value}
       </p>
     </div>
@@ -102,7 +107,9 @@ export function ClientFinancePanel({
   clientExport,
   drawerPortalContainer,
 }: ClientFinancePanelProps) {
-  const remainingBalance = balance ? formatCurrency(balance.remainingBalance) : '---';
+  const remainingBalance = balance
+    ? formatCurrency(balance.remainingBalance)
+    : '---';
   const totalDebt = balance ? formatCurrency(balance.totalDebt) : '---';
   const unappliedPaymentAmount = balance
     ? formatCurrency(balance.unappliedPaymentAmount)
@@ -133,7 +140,11 @@ export function ClientFinancePanel({
             value={unappliedPaymentAmount}
             tone="brand"
           />
-          <SummaryMetric label="Credito disponivel" value={clientBalance} tone="success" />
+          <SummaryMetric
+            label="Crédito disponível"
+            value={clientBalance}
+            tone="success"
+          />
           <SummaryMetric label="Corridas pendentes" value={pendingRides} />
         </div>
 
@@ -143,9 +154,9 @@ export function ClientFinancePanel({
               Valor pendente de complemento
             </p>
             <p className="mt-2 text-sm font-semibold text-text-primary">
-              Já recebemos {formatCurrency(balance.unappliedPaymentAmount)}. Faltam{' '}
-              {formatCurrency(balance.nextRideShortfall ?? 0)} para quitar a próxima
-              corrida.
+              Já recebemos {formatCurrency(balance.unappliedPaymentAmount)}.
+              Faltam {formatCurrency(balance.nextRideShortfall ?? 0)} para
+              quitar a próxima corrida.
             </p>
           </div>
         ) : null}
@@ -156,7 +167,7 @@ export function ClientFinancePanel({
               <div className="grid grid-cols-2 gap-3">
                 <ActionButton
                   icon={Banknote}
-                  label={isSettling ? 'Quitando...' : 'Quitar divida'}
+                  label={isSettling ? 'Quitando...' : 'Quitar dívida'}
                   onClick={onCloseDebt}
                   disabled={isSettling}
                   variant="ghost"
@@ -199,7 +210,7 @@ export function ClientFinancePanel({
                 Documentos
               </p>
               <p className="text-sm text-text-secondary">
-                Exporte corridas por status com periodo personalizado.
+                Exporte corridas por status com período personalizado.
               </p>
             </div>
 

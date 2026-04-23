@@ -21,19 +21,19 @@ export function ClientHighlightsCard({ data }: ClientHighlightsCardProps) {
           Clientes em destaque
         </h3>
         <p className="text-xs font-medium text-muted-foreground">
-          Ranking rapido para complementar a distribuicao por cliente.
+          Ranking rápido para complementar a distribuição por cliente.
         </p>
       </div>
 
       {!sortedClients.length ? (
         <div className="rounded-[1.75rem] border border-dashed border-border-subtle bg-muted/20 py-10 text-center text-sm font-medium text-text-muted">
-          Nenhum cliente com receita neste periodo.
+          Nenhum cliente com receita neste período.
         </div>
       ) : (
         <div className="space-y-5">
           <div className="rounded-[1.75rem] border border-border-subtle bg-background/80 p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              Lider de receita
+              Líder de receita
             </p>
             <div className="mt-3 flex items-end justify-between gap-4">
               <div>
@@ -41,7 +41,7 @@ export function ClientHighlightsCard({ data }: ClientHighlightsCardProps) {
                   {topClient?.clientName || 'Cliente'}
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">
-                  {formatCurrency(topClient?.value || 0)} no periodo
+                  {formatCurrency(topClient?.value || 0)} no período
                 </p>
               </div>
               <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">

@@ -39,8 +39,8 @@ export function RideCardActions({
             event.stopPropagation();
           }}
           className="flex h-8 w-8 items-center justify-center rounded-full border border-border-subtle bg-card-background text-text-secondary transition-colors hover:border-border hover:bg-hover-accent hover:text-text-primary sm:h-9 sm:w-9"
-          title="Abrir acoes da corrida"
-          aria-label="Abrir menu de acoes da corrida"
+          title="Abrir ações da corrida"
+          aria-label="Abrir menu de ações da corrida"
         >
           <MoreHorizontal className="size-4" />
         </button>

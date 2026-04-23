@@ -14,7 +14,7 @@ export default function DashboardPage() {
         : null;
 
     return (
-        <QueryErrorBoundary message="Nao foi possivel carregar seu dashboard. Por favor, tente novamente.">
+        <QueryErrorBoundary message="Não foi possível carregar seu dashboard. Por favor, tente novamente.">
             <div className="relative flex min-h-0 flex-1 flex-col">
                 <div
                     className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide"
@@ -24,8 +24,8 @@ export default function DashboardPage() {
                         {statsError ? (
                             <QueryErrorState
                                 error={statsError}
-                                title="Nao foi possivel atualizar os indicadores do dashboard"
-                                description="As metricas nao foram carregadas. Os demais dados da tela continuam disponiveis."
+                                title="Não foi possível atualizar os indicadores do dashboard"
+                                description="As métricas não foram carregadas. Os demais dados da tela continuam disponíveis."
                                 onRetry={() => {
                                     void dashboard.desktopStats.refetch();
                                 }}

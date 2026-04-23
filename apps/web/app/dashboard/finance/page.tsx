@@ -78,7 +78,7 @@ export default function FinancePage() {
     return (
       <QueryErrorState
         error={error}
-        title="Nao foi possivel carregar o painel financeiro"
+        title="Não foi possível carregar o painel financeiro"
         description="A consulta do financeiro falhou. Nenhum resumo foi substituido por valores zerados."
         onRetry={() => {
           void refetch();
@@ -99,7 +99,7 @@ export default function FinancePage() {
             <QueryErrorState
               error={error}
               title="Falha ao atualizar o financeiro"
-              description="Os dados em cache foram mantidos, mas a ultima atualizacao da API falhou."
+              description="Os dados em cache foram mantidos, mas a última atualização da API falhou."
               onRetry={() => {
                 void refetch();
               }}
@@ -230,8 +230,8 @@ export default function FinancePage() {
                     </h2>
                     <p className="text-sm font-medium text-text-secondary">
                       {isClientView
-                        ? 'Abra historico, pagamentos e comportamento sob demanda.'
-                        : 'Abra graficos e indicadores avancados quando precisar.'}
+                        ? 'Abra histórico, pagamentos e comportamento sob demanda.'
+                        : 'Abra gráficos e indicadores avançados quando precisar.'}
                     </p>
                   </div>
 

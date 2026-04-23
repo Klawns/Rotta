@@ -176,7 +176,7 @@ export function RideValueSection({
                             className="space-y-2 scroll-mt-6 sm:scroll-mt-8"
                         >
                             <label className="pl-1 text-[10px] font-bold uppercase tracking-widest text-text-muted">
-                                Localizacao da Corrida
+                                Localização da Corrida
                             </label>
                             <div className="flex items-center gap-2">
                                 <div className="group relative flex-1">

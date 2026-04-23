@@ -66,10 +66,10 @@ export function buildRidesListPresenter({
       : "Nenhuma corrida registrada",
     emptyDescription: hasActiveFilters
       ? "Ajuste os filtros para ampliar a busca ou limpar o recorte atual."
-      : "As novas corridas aparecerao aqui assim que forem registradas.",
+      : "As novas corridas aparecerão aqui assim que forem registradas.",
     errorMessage:
       contentState === "error"
-        ? parseApiError(error, "Nao foi possivel carregar o historico agora.")
+        ? parseApiError(error, "Não foi possível carregar o histórico agora.")
         : null,
   };
 }

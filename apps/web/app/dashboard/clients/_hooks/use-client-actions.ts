@@ -36,7 +36,7 @@ export function useClientActions() {
       toast.success('Cliente fixado/desfixado!');
     },
     onError: (error) => {
-      toast.error(parseApiError(error, 'Erro ao alterar fixacao do cliente.'));
+      toast.error(parseApiError(error, 'Erro ao alterar fixação do cliente.'));
     },
   });
 
@@ -54,8 +54,8 @@ export function useClientActions() {
 
       toast.success(
         result.generatedBalance > 0
-          ? `Divida fechada. ${result.settledRides} corridas quitadas e ${formatCurrency(result.generatedBalance)} em saldo.`
-          : `Divida fechada. ${result.settledRides} corridas quitadas.`,
+          ? `Dívida fechada. ${result.settledRides} corridas quitadas e ${formatCurrency(result.generatedBalance)} em saldo.`
+          : `Dívida fechada. ${result.settledRides} corridas quitadas.`,
       );
     },
   });
@@ -74,16 +74,16 @@ export function useClientActions() {
         queryClient.invalidateQueries({ queryKey: financeKeys.all }),
       ]);
 
-      toast.success('Cliente excluido com sucesso.');
+      toast.success('Cliente excluído com sucesso.');
     },
     onError: (error) => {
-      toast.error(parseApiError(error, 'Erro ao excluir cliente. Verifique pendencias.'));
+      toast.error(parseApiError(error, 'Erro ao excluir cliente. Verifique pendências.'));
     },
   });
 
   const deleteRideMutation = useDeleteRideMutation({
     onSuccess: async () => {
-      toast.success('Corrida excluida com sucesso.');
+      toast.success('Corrida excluída com sucesso.');
     },
     onError: async (error) => {
       toast.error(parseApiError(error, 'Erro ao excluir corrida.'));
@@ -119,7 +119,7 @@ export function useClientActions() {
           return { success: false, reason: 'missing-client' };
         }
 
-        toast.error(parseApiError(error, 'Erro ao fechar divida.'));
+        toast.error(parseApiError(error, 'Erro ao fechar dívida.'));
         return { success: false, reason: 'error' };
       }
     },

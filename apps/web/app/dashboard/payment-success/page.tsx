@@ -35,7 +35,7 @@ export default function PaymentSuccessPage() {
                 </AnimatePresence>
 
                 <p className="mt-10 text-[10px] text-slate-600 uppercase tracking-[0.2em] font-medium">
-                    Suporte Rotta | ID Transacao: {user?.id?.slice(0, 8)}
+                    Suporte Rotta | ID Transação: {user?.id?.slice(0, 8)}
                 </p>
             </motion.div>
         </div>

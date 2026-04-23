@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { toast } from 'sonner';
-import { useAuth } from '@/hooks/use-auth';
-import { toLocalInputValue } from '@/lib/date-utils';
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
+import { toLocalInputValue } from "@/lib/date-utils";
 import {
   createNewRidePhotoState,
   createRidePhotoState,
   getRidePhotoPreviewUrl,
   hasRidePhoto,
-} from '@/lib/ride-photo';
-import { getUploadImageValidationError } from '@/lib/upload-image';
-import { type RideModalProps } from '@/types/rides';
-import { useRideClientCreation } from './use-ride-client-creation';
-import { useRideFormData } from './use-ride-form-data';
-import { useRideFormState } from './use-ride-form-state';
-import { useRideFormSubmit } from './use-ride-form-submit';
+} from "@/lib/ride-photo";
+import { getUploadImageValidationError } from "@/lib/upload-image";
+import { type RideModalProps } from "@/types/rides";
+import { useRideClientCreation } from "./use-ride-client-creation";
+import { useRideFormData } from "./use-ride-form-data";
+import { useRideFormState } from "./use-ride-form-state";
+import { useRideFormSubmit } from "./use-ride-form-submit";
 
 export function useRideForm({
   isOpen,
@@ -26,7 +26,7 @@ export function useRideForm({
 }: Partial<RideModalProps>) {
   const { user } = useAuth();
   const form = useRideFormState({ clientId });
-  const originalRideClientId = rideToEdit?.clientId || clientId || '';
+  const originalRideClientId = rideToEdit?.clientId || clientId || "";
   const hasShownFinancialImpactWarningRef = useRef(false);
   const shouldLoadClientDirectory = !clientId || Boolean(rideToEdit);
   const {
@@ -81,12 +81,12 @@ export function useRideForm({
     if (rideToEdit) {
       setSelectedClientId(originalRideClientId);
       setValue(rideToEdit.value.toString());
-      setLocation(rideToEdit.location || '');
-      setNotes(rideToEdit.notes || '');
-      setRideDate(toLocalInputValue(rideToEdit.rideDate || ''));
-      setPaymentStatus(rideToEdit.paymentStatus || 'PAID');
+      setLocation(rideToEdit.location || "");
+      setNotes(rideToEdit.notes || "");
+      setRideDate(toLocalInputValue(rideToEdit.rideDate || ""));
+      setPaymentStatus(rideToEdit.paymentStatus || "PAID");
       setPhoto(createRidePhotoState(rideToEdit.photo));
-      setValueSelectionMode(rideToEdit.value ? 'summary' : 'picker');
+      setValueSelectionMode(rideToEdit.value ? "summary" : "picker");
       setCurrentStep(2);
       return;
     }
@@ -116,19 +116,22 @@ export function useRideForm({
 
     const rideValue = Number(value);
     const debt = Math.max(0, rideValue - data.clientBalance);
-    setPaymentStatus(debt > 0 ? 'PENDING' : 'PAID');
+    setPaymentStatus(debt > 0 ? "PENDING" : "PAID");
   }, [data.clientBalance, setPaymentStatus, useBalance, value]);
 
   const previousPaidWithBalance = Number(rideToEdit?.paidWithBalance ?? 0);
   const previousDebtValue = Number(rideToEdit?.debtValue ?? 0);
   const previousPaidExternally = rideToEdit
-    ? Math.max(0, Number(rideToEdit.value) - previousPaidWithBalance - previousDebtValue)
+    ? Math.max(
+        0,
+        Number(rideToEdit.value) - previousPaidWithBalance - previousDebtValue,
+      )
     : 0;
   const nextRideValue = Number(value) || 0;
   const didPaymentInputsChange = Boolean(
     rideToEdit &&
-      (selectedClientId !== originalRideClientId ||
-        nextRideValue !== Number(rideToEdit.value)),
+    (selectedClientId !== originalRideClientId ||
+      nextRideValue !== Number(rideToEdit.value)),
   );
   const nextPaidWithBalance = rideToEdit
     ? selectedClientId === originalRideClientId
@@ -151,7 +154,7 @@ export function useRideForm({
       return;
     }
 
-    setPaymentStatus('PENDING');
+    setPaymentStatus("PENDING");
   }, [setPaymentStatus, willReopenDebtOnSave]);
 
   useEffect(() => {
@@ -165,13 +168,18 @@ export function useRideForm({
     }
 
     hasShownFinancialImpactWarningRef.current = true;
-    toast.warning('Essa edicao reabre a pendencia. A corrida sera salva como pendente.', {
-      duration: 10000,
-      closeButton: true,
-    });
+    toast.warning(
+      "Essa edição reabre a pendência. A corrida será salva como pendente.",
+      {
+        duration: 10000,
+        closeButton: true,
+      },
+    );
   }, [didPaymentInputsChange, willReopenDebtOnSave]);
 
-  const effectivePaymentStatus = willReopenDebtOnSave ? 'PENDING' : paymentStatus;
+  const effectivePaymentStatus = willReopenDebtOnSave
+    ? "PENDING"
+    : paymentStatus;
 
   const clientCreation = useRideClientCreation({
     newClientName,
@@ -208,13 +216,13 @@ export function useRideForm({
     const validationError = getUploadImageValidationError(file);
 
     if (validationError) {
-      input.value = '';
+      input.value = "";
       toast.error(validationError);
       return;
     }
 
     setPhoto(createNewRidePhotoState(file));
-    input.value = '';
+    input.value = "";
   };
 
   const nextStep = () => {
@@ -222,22 +230,23 @@ export function useRideForm({
       return;
     }
 
-    if (currentStep === 2 && (!value || valueSelectionMode !== 'summary')) {
+    if (currentStep === 2 && (!value || valueSelectionMode !== "summary")) {
       return;
     }
 
     setCurrentStep((previous) => Math.min(previous + 1, 5));
   };
 
-  const prevStep = () => setCurrentStep((previous) => Math.max(previous - 1, 1));
+  const prevStep = () =>
+    setCurrentStep((previous) => Math.max(previous - 1, 1));
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key !== 'Enter') {
+    if (event.key !== "Enter") {
       return;
     }
 
     const target = event.target as HTMLElement;
-    if (target.tagName.toLowerCase() === 'textarea') {
+    if (target.tagName.toLowerCase() === "textarea") {
       return;
     }
 
@@ -248,14 +257,14 @@ export function useRideForm({
       return;
     }
 
-    if (currentStep === 2 && valueSelectionMode === 'custom-edit') {
+    if (currentStep === 2 && valueSelectionMode === "custom-edit") {
       confirmCustomValue();
       return;
     }
 
     const canAdvance =
       (currentStep === 1 && !!selectedClientId) ||
-      (currentStep === 2 && !!value && valueSelectionMode === 'summary') ||
+      (currentStep === 2 && !!value && valueSelectionMode === "summary") ||
       currentStep > 2;
 
     if (!canAdvance) {
@@ -271,7 +280,9 @@ export function useRideForm({
   };
 
   const rideValue = Number(value) || 0;
-  const paidWithBalance = useBalance ? Math.min(data.clientBalance, rideValue) : 0;
+  const paidWithBalance = useBalance
+    ? Math.min(data.clientBalance, rideValue)
+    : 0;
   const debtValue = Math.max(0, rideValue - paidWithBalance);
   const photoPreviewUrl = getRidePhotoPreviewUrl(photo);
   const hasPhoto = hasRidePhoto(photo);

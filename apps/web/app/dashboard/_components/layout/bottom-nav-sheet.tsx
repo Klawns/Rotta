@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { LogOut, Sparkles } from 'lucide-react';
-import { type User } from '@/hooks/use-auth';
+import Link from "next/link";
+import { LogOut, Sparkles } from "lucide-react";
+import { type User } from "@/hooks/use-auth";
 import {
   CHECKOUT_CTA_HREF,
   getFreeTrialState,
-} from '@/services/free-trial-service';
+} from "@/services/free-trial-service";
 import {
   isDashboardNavItemActive,
   DASHBOARD_MOBILE_SHEET_OFFSET,
   type DashboardNavItem,
-} from '../../_lib/dashboard-navigation';
+} from "../../_lib/dashboard-navigation";
 import {
   Drawer,
   DrawerContent,
@@ -19,8 +19,8 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
-} from '@/components/ui/drawer';
-import { BottomNavItem } from './bottom-nav-item';
+} from "@/components/ui/drawer";
+import { BottomNavItem } from "./bottom-nav-item";
 
 interface BottomNavSheetProps {
   items: DashboardNavItem[];
@@ -61,7 +61,8 @@ export function BottomNavSheet({
             Mais atalhos
           </DrawerTitle>
           <DrawerDescription>
-            Acesse rotas secundarias e acoes da sua conta sem voltar para o menu lateral.
+            Acesse rotas secundárias e ações da sua conta sem voltar para o menu
+            lateral.
           </DrawerDescription>
         </DrawerHeader>
 
@@ -94,14 +95,14 @@ export function BottomNavSheet({
         <DrawerFooter className="gap-3 border-t border-border-subtle px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4">
           <div className="flex items-center gap-3 rounded-[1.6rem] border border-border-subtle bg-card-background px-4 py-3 shadow-sm">
             <div className="flex size-11 shrink-0 items-center justify-center rounded-full border border-icon-brand/20 bg-icon-brand/10 text-sm font-bold text-icon-brand">
-              {user?.name?.charAt(0).toUpperCase() || 'U'}
+              {user?.name?.charAt(0).toUpperCase() || "U"}
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-text-primary">
-                {user?.name || 'Usuario'}
+                {user?.name || "Usuário"}
               </p>
               <p className="truncate text-xs text-text-secondary">
-                {user?.email || 'Sem email cadastrado'}
+                {user?.email || "Sem email cadastrado"}
               </p>
             </div>
           </div>

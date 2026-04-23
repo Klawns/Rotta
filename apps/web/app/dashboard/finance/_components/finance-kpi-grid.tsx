@@ -30,7 +30,7 @@ export function FinanceKpiGrid({
           {
             label: 'Corridas',
             value: String(summary?.count || 0),
-            helper: 'No periodo',
+            helper: 'No período',
             icon: CarFront,
           },
           {
@@ -62,7 +62,7 @@ export function FinanceKpiGrid({
           {
             label: 'Corridas',
             value: String(summary?.count || 0),
-            helper: 'No periodo',
+            helper: 'No período',
             icon: CarFront,
           },
           {

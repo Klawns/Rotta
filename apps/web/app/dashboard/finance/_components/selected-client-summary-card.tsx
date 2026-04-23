@@ -1,30 +1,30 @@
-import { format, isValid, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { MapPin } from 'lucide-react';
-import { RidePaymentAction } from '@/components/ui/ride-payment-action';
-import { formatCurrency } from '@/lib/utils';
-import type { RecentRide } from '@/services/finance-service';
-import { getLatestRide, getTopLocation } from '../_lib/finance-metrics';
+import { format, isValid, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { MapPin } from "lucide-react";
+import { RidePaymentAction } from "@/components/ui/ride-payment-action";
+import { formatCurrency } from "@/lib/utils";
+import type { RecentRide } from "@/services/finance-service";
+import { getLatestRide, getTopLocation } from "../_lib/finance-metrics";
 
 interface SelectedClientSummaryCardProps {
   clientName: string;
   rides: RecentRide[];
   onChangePaymentStatus?: (
     ride: RecentRide,
-    status: 'PAID' | 'PENDING',
+    status: "PAID" | "PENDING",
   ) => void | Promise<unknown>;
   isPaymentUpdating?: (rideId: string) => boolean;
 }
 
 function formatRideDate(value?: string) {
   if (!value) {
-    return 'Data indisponivel';
+    return "Data indisponível";
   }
 
   const parsedDate = parseISO(value);
 
   if (!isValid(parsedDate)) {
-    return 'Data indisponivel';
+    return "Data indisponível";
   }
 
   return format(parsedDate, "dd 'de' MMM", { locale: ptBR });
@@ -43,10 +43,10 @@ export function SelectedClientSummaryCard({
     <section className="rounded-[3rem] border border-border bg-card/40 p-8 backdrop-blur-xl">
       <div className="mb-8">
         <h3 className="text-xl font-black text-foreground">
-          Historico do cliente
+          Histórico do cliente
         </h3>
         <p className="text-xs font-medium text-muted-foreground">
-          Contexto rapido para {clientName.toLowerCase()} neste recorte.
+          Contexto rápido para {clientName.toLowerCase()} neste recorte.
         </p>
       </div>
 
@@ -58,7 +58,7 @@ export function SelectedClientSummaryCard({
         <div className="space-y-5">
           <div className="rounded-[1.75rem] border border-border-subtle bg-background/80 p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              Ultima corrida
+              Última corrida
             </p>
             <div className="mt-3 flex items-start justify-between gap-4">
               <div className="space-y-1">
@@ -87,7 +87,7 @@ export function SelectedClientSummaryCard({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-[1.5rem] border border-border-subtle bg-background/70 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                Historico recente
+                Histórico recente
               </p>
               <p className="mt-2 text-2xl font-display font-extrabold text-text-primary">
                 {rides.length}
@@ -105,10 +105,10 @@ export function SelectedClientSummaryCard({
                 </p>
               </div>
               <p className="mt-2 text-lg font-display font-extrabold text-text-primary">
-                {topLocation || 'Nao informado'}
+                {topLocation || "Não informado"}
               </p>
               <p className="text-sm text-text-secondary">
-                baseado nas ultimas movimentacoes
+                baseado nas últimas movimentações
               </p>
             </div>
           </div>

@@ -60,7 +60,7 @@ export function PDFExportView({
       <div className="bg-icon-warning/5 border border-icon-warning/20 rounded-2xl p-4 flex items-start gap-3 mb-4">
         <Info size={16} className="text-icon-warning shrink-0 mt-0.5" />
         <p className="text-[11px] text-icon-warning font-semibold leading-relaxed">
-          Para exportacoes detalhadas por cliente ou periodos customizados,
+          Para exportações detalhadas por cliente ou períodos customizados,
           acesse o painel financeiro.
         </p>
       </div>

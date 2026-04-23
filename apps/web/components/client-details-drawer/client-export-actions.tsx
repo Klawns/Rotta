@@ -1,19 +1,23 @@
-'use client';
+"use client";
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { createPortal } from 'react-dom';
-import { FileDown } from 'lucide-react';
-import type { ClientExportController } from '@/app/dashboard/clients/_hooks/use-client-export';
-import { DateRangePicker } from '@/components/date-range-picker';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { buttonVariants } from '@/components/ui/button';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
+import { AnimatePresence, motion } from "framer-motion";
+import { createPortal } from "react-dom";
+import { FileDown } from "lucide-react";
+import type { ClientExportController } from "@/app/dashboard/clients/_hooks/use-client-export";
+import { DateRangePicker } from "@/components/date-range-picker";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { buttonVariants } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import {
   CLIENT_EXPORT_OPTIONS,
   getClientExportTypeLabel,
   type ClientExportType,
-} from '@/services/client-export.types';
+} from "@/services/client-export.types";
 
 interface ClientExportActionsProps {
   controller: ClientExportController;
@@ -56,11 +60,11 @@ export function ClientExportActions({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
               >
                 <button
                   type="button"
-                  aria-label="Fechar seletor de periodo"
+                  aria-label="Fechar seletor de período"
                   onClick={controller.closeExport}
                   className="absolute inset-0"
                 />
@@ -69,7 +73,7 @@ export function ClientExportActions({
                   initial={{ opacity: 0, scale: 0.96, y: 12 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98, y: 8 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
                   onClick={(event) => event.stopPropagation()}
                 >
                   {renderPicker(controller.selectedType)}
@@ -85,7 +89,8 @@ export function ClientExportActions({
     <>
       <div className="grid grid-cols-3 gap-2">
         {CLIENT_EXPORT_OPTIONS.map((option) => {
-          const isOpen = controller.isOpen && controller.selectedType === option.value;
+          const isOpen =
+            controller.isOpen && controller.selectedType === option.value;
 
           if (isMobile) {
             return (
@@ -95,8 +100,8 @@ export function ClientExportActions({
                 onClick={() => controller.openExport(option.value)}
                 disabled={controller.isTriggerDisabled}
                 className={cn(
-                  buttonVariants({ variant: 'ghost' }),
-                  'h-auto min-w-0 rounded-2xl border border-border-subtle bg-secondary/10 px-3 py-3 text-sm font-semibold text-text-secondary hover:bg-secondary/15 hover:text-text-primary',
+                  buttonVariants({ variant: "ghost" }),
+                  "h-auto min-w-0 rounded-2xl border border-border-subtle bg-secondary/10 px-3 py-3 text-sm font-semibold text-text-secondary hover:bg-secondary/15 hover:text-text-primary",
                 )}
               >
                 <FileDown size={16} />
@@ -123,8 +128,8 @@ export function ClientExportActions({
                   type="button"
                   disabled={controller.isTriggerDisabled}
                   className={cn(
-                    buttonVariants({ variant: 'ghost' }),
-                    'h-auto min-w-0 rounded-2xl border border-border-subtle bg-secondary/10 px-3 py-3 text-sm font-semibold text-text-secondary hover:bg-secondary/15 hover:text-text-primary',
+                    buttonVariants({ variant: "ghost" }),
+                    "h-auto min-w-0 rounded-2xl border border-border-subtle bg-secondary/10 px-3 py-3 text-sm font-semibold text-text-secondary hover:bg-secondary/15 hover:text-text-primary",
                   )}
                 >
                   <FileDown size={16} />

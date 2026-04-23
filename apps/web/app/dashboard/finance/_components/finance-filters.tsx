@@ -257,7 +257,7 @@ export function FinanceFilters({
               Ajustar filtros
             </DrawerTitle>
             <DrawerDescription>
-              Escolha o periodo, o status e o cliente do recorte financeiro.
+              Escolha o período, o status e o cliente do recorte financeiro.
             </DrawerDescription>
           </DrawerHeader>
 
@@ -265,7 +265,7 @@ export function FinanceFilters({
             <section className="space-y-3">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
-                  Periodo
+                  Período
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">
                   Defina a janela principal do resumo.

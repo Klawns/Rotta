@@ -77,10 +77,10 @@ function EmptyState() {
     <div className="flex flex-1 items-center justify-center rounded-[1.75rem] border border-dashed border-border-subtle bg-card-background/40 p-8 text-center">
       <div className="max-w-xs space-y-2">
         <p className="text-base font-semibold text-text-primary">
-          O historico ainda esta vazio.
+          O histórico ainda está vazio.
         </p>
         <p className="text-sm text-text-secondary">
-          Use a acao Nova corrida para adicionar o primeiro registro deste
+          Use a ação Nova corrida para adicionar o primeiro registro deste
           cliente.
         </p>
       </div>
@@ -160,7 +160,9 @@ export function ClientRidesHistory({
                 selectedCount={selectedCount}
                 totalVisible={totalLoaded}
                 onCancel={onExitSelectionMode}
-                onToggleSelectAll={() => onToggleSelectAllLoaded(!isAllLoadedSelected)}
+                onToggleSelectAll={() =>
+                  onToggleSelectAllLoaded(!isAllLoadedSelected)
+                }
                 isAllVisibleSelected={isAllLoadedSelected}
                 onDeleteSelected={onDeleteSelected}
                 isDeleting={isDeletingSelected}
@@ -179,7 +181,7 @@ export function ClientRidesHistory({
             >
               <div>
                 <h3 className="text-xl font-bold text-text-primary">
-                  Historico de corridas
+                  Histórico de corridas
                 </h3>
                 <p className="mt-1 text-sm text-text-secondary">
                   {rideCardItems.length === 0 && !isLoading
@@ -243,7 +245,7 @@ export function ClientRidesHistory({
               </label>
               {isSelectionIndeterminate && !isAllLoadedSelected ? (
                 <p className="mt-2 text-xs text-text-secondary">
-                  Parte das corridas carregadas esta selecionada.
+                  Parte das corridas carregadas está selecionada.
                 </p>
               ) : null}
             </div>

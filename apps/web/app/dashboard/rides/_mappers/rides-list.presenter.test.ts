@@ -56,7 +56,7 @@ test("builds an error state message outside the view when the query fails withou
   assert.equal(presenter.contentState, "error");
   assert.equal(
     presenter.errorMessage,
-    "Sessao expirada. Faca login novamente.",
+    "Sessão expirada. Faça login novamente.",
   );
 });
 

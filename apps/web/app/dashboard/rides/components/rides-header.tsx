@@ -18,7 +18,7 @@ export function RidesHeader({
       ? "Nenhuma corrida neste recorte."
       : `${totalCount} ${
           totalCount === 1 ? "corrida encontrada" : "corridas encontradas"
-        }${hasActiveFilters ? " no recorte atual." : " no historico atual."}`;
+        }${hasActiveFilters ? " no recorte atual." : " no histórico atual."}`;
 
   return (
     <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -26,10 +26,11 @@ export function RidesHeader({
         <div className="flex items-start justify-between gap-3 md:block">
           <div className="min-w-0">
             <h1 className="hidden text-[1.75rem] font-display font-extrabold tracking-tight text-text-primary md:block md:text-3xl">
-              Historico de Corridas
+              Histórico de Corridas
             </h1>
             <p className="mt-1 hidden text-base text-text-secondary md:block">
-              Veja todas as corridas registradas e acompanhe pendencias com mais rapidez.
+              Veja todas as corridas registradas e acompanhe pendências com mais
+              rapidez.
             </p>
           </div>
 

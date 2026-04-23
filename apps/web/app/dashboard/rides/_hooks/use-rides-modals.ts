@@ -18,7 +18,7 @@ export function useRidesModals() {
     const deleteRideMutation = useDeleteRideMutation({
         onSuccess: async () => {
             toast({
-                title: 'Corrida excluida',
+                title: 'Corrida excluída',
                 description: 'A corrida foi removida com sucesso.',
             });
             setRideToDelete(null);
@@ -28,7 +28,7 @@ export function useRidesModals() {
                 title: 'Erro ao excluir',
                 description: parseApiError(
                     error,
-                    'Nao foi possivel excluir a corrida. Tente novamente.',
+                    'Não foi possível excluir a corrida. Tente novamente.',
                 ),
                 variant: 'destructive',
             });

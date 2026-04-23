@@ -59,7 +59,7 @@ export function useClientModalController({
     description: isEditing
       ? "Altere os dados do cliente."
       : "Adicione um novo cliente a sua base.",
-    submitLabel: isEditing ? "Salvar Alteracoes" : "Cadastrar Cliente",
+    submitLabel: isEditing ? "Salvar Alterações" : "Cadastrar Cliente",
     handleClose: onClose,
     handleFieldChange: (field) => (event) => {
       const nextValue = event.target.value;

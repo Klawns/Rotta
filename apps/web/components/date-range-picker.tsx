@@ -129,7 +129,7 @@ export function DateRangePicker({
 
       <div className="rounded-[1.5rem] border border-border-subtle bg-background/80 px-4 py-3">
         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary">
-          Periodo selecionado
+          Período selecionado
         </p>
         <p className="mt-2 text-sm font-semibold tracking-tight text-text-primary">
           {formatDateLabel(value.startDate)} ate {formatDateLabel(value.endDate)}

@@ -41,7 +41,7 @@ function getPeriodChipLabel({
   }
 
   if (endDate) {
-    return `Ate ${formatDateValue(endDate, 'dd/MM')}`;
+    return `Até ${formatDateValue(endDate, 'dd/MM')}`;
   }
 
   return periodLabel;

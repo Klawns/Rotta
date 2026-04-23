@@ -53,7 +53,7 @@ export default function RidesPage() {
         onClose={page.deleteDialog.onClose}
         onConfirm={page.deleteDialog.onConfirm}
         title="Excluir Corrida"
-        description="Tem certeza que deseja excluir esta corrida? Esta acao e irreversivel."
+        description="Tem certeza que deseja excluir esta corrida? Esta ação é irreversível."
         variant="danger"
         isLoading={page.deleteDialog.isLoading}
       />
@@ -65,8 +65,8 @@ export default function RidesPage() {
         title="Excluir corridas selecionadas"
         description={
           page.bulkDeleteDialog.selectedCount === 1
-            ? "Deseja realmente excluir a corrida selecionada? Esta acao e irreversivel."
-            : `Deseja realmente excluir as ${page.bulkDeleteDialog.selectedCount} corridas selecionadas? Esta acao e irreversivel.`
+            ? "Deseja realmente excluir a corrida selecionada? Esta ação é irreversível."
+            : `Deseja realmente excluir as ${page.bulkDeleteDialog.selectedCount} corridas selecionadas? Esta ação é irreversível.`
         }
         confirmText="Excluir selecionadas"
         variant="danger"

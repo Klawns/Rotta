@@ -1,15 +1,15 @@
-import { resolveRideDateValue } from '@/lib/date-utils';
-import { formatCurrency } from '@/lib/utils';
-import type { RideViewModel } from '@/types/rides';
+import { resolveRideDateValue } from "@/lib/date-utils";
+import { formatCurrency } from "@/lib/utils";
+import type { RideViewModel } from "@/types/rides";
 import type {
   RideCardDetailItem,
   RideCardFinancialState,
   RideCardPresentation,
-} from './ride-card.types';
+} from "./ride-card.types";
 
-const FALLBACK_CLIENT_NAME = 'Passageiro';
-const FALLBACK_DATE = 'Data indisponivel';
-const FALLBACK_LOCATION = 'Local nao informado';
+const FALLBACK_CLIENT_NAME = "Passageiro";
+const FALLBACK_DATE = "Data indisponível";
+const FALLBACK_LOCATION = "Local não informado";
 
 function normalizeMoneyValue(value?: number | null) {
   const amount = Number(value ?? 0);
@@ -17,7 +17,7 @@ function normalizeMoneyValue(value?: number | null) {
 }
 
 function formatRideShortLabel(id: string) {
-  const shortId = id.split('-')[0]?.toUpperCase() || id.toUpperCase();
+  const shortId = id.split("-")[0]?.toUpperCase() || id.toUpperCase();
   return `Corrida #${shortId}`;
 }
 
@@ -26,9 +26,9 @@ function formatShortDate(date: Date | null) {
     return FALLBACK_DATE;
   }
 
-  return date.toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'short',
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
   });
 }
 
@@ -37,12 +37,12 @@ function formatLongDate(date: Date | null) {
     return FALLBACK_DATE;
   }
 
-  return date.toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -51,52 +51,55 @@ function getFinancialState(ride: RideViewModel): RideCardFinancialState {
   const paidWithBalance = normalizeMoneyValue(ride.paidWithBalance);
 
   if (debtValue > 0 && paidWithBalance > 0) {
-    return 'partial';
+    return "partial";
   }
 
   if (debtValue > 0) {
-    return 'debt';
+    return "debt";
   }
 
-  if (ride.paymentStatus === 'PENDING') {
-    return 'pending';
+  if (ride.paymentStatus === "PENDING") {
+    return "pending";
   }
 
-  return 'paid';
+  return "paid";
 }
 
-function getFinancialCopy(ride: RideViewModel, financialState: RideCardFinancialState) {
+function getFinancialCopy(
+  ride: RideViewModel,
+  financialState: RideCardFinancialState,
+) {
   const paidWithBalance = normalizeMoneyValue(ride.paidWithBalance);
   const debtValue = normalizeMoneyValue(ride.debtValue);
 
   switch (financialState) {
-    case 'partial':
+    case "partial":
       return {
-        financialLabel: 'Parcial',
+        financialLabel: "Parcial",
         financialHelper: `${formatCurrency(debtValue)} em aberto`,
-        paymentActionLabel: 'Marcar como pago',
+        paymentActionLabel: "Marcar como pago",
       };
-    case 'debt':
+    case "debt":
       return {
-        financialLabel: 'Em aberto',
+        financialLabel: "Em aberto",
         financialHelper: `${formatCurrency(debtValue)} em aberto`,
-        paymentActionLabel: 'Marcar como pago',
+        paymentActionLabel: "Marcar como pago",
       };
-    case 'pending':
+    case "pending":
       return {
-        financialLabel: 'Pendente',
-        financialHelper: 'Aguardando quitacao',
-        paymentActionLabel: 'Marcar como pago',
+        financialLabel: "Pendente",
+        financialHelper: "Aguardando quitação",
+        paymentActionLabel: "Marcar como pago",
       };
-    case 'paid':
+    case "paid":
     default:
       return {
-        financialLabel: 'Pago',
+        financialLabel: "Pago",
         financialHelper:
           paidWithBalance > 0
             ? `Saldo aplicado ${formatCurrency(paidWithBalance)}`
             : null,
-        paymentActionLabel: 'Marcar como pendente',
+        paymentActionLabel: "Marcar como pendente",
       };
   }
 }
@@ -111,49 +114,51 @@ function buildDetails(
   const paidWithBalance = normalizeMoneyValue(ride.paidWithBalance);
   const details: RideCardDetailItem[] = [
     {
-      label: 'Status',
+      label: "Status",
       value: financialLabel,
       tone:
-        financialState === 'paid'
-          ? 'positive'
-          : financialState === 'debt'
-            ? 'danger'
-            : 'warning',
+        financialState === "paid"
+          ? "positive"
+          : financialState === "debt"
+            ? "danger"
+            : "warning",
     },
     {
-      label: 'Data',
+      label: "Data",
       value: formatLongDate(rideDate),
     },
     {
-      label: 'Local',
+      label: "Local",
       value: ride.location?.trim() || FALLBACK_LOCATION,
     },
     {
-      label: 'ID completo',
+      label: "ID completo",
       value: ride.id,
     },
   ];
 
   if (paidWithBalance > 0) {
     details.push({
-      label: 'Saldo usado',
+      label: "Saldo usado",
       value: formatCurrency(paidWithBalance),
-      tone: 'positive',
+      tone: "positive",
     });
   }
 
   if (debtValue > 0) {
     details.push({
-      label: 'Valor pendente',
+      label: "Valor pendente",
       value: formatCurrency(debtValue),
-      tone: 'danger',
+      tone: "danger",
     });
   }
 
   return details;
 }
 
-export function getRideCardPresentation(ride: RideViewModel): RideCardPresentation {
+export function getRideCardPresentation(
+  ride: RideViewModel,
+): RideCardPresentation {
   const rideDate = resolveRideDateValue(ride.rideDate, ride.createdAt);
   const financialState = getFinancialState(ride);
   const financialCopy = getFinancialCopy(ride, financialState);

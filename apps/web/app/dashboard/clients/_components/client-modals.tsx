@@ -98,7 +98,7 @@ export function ClientModals({
         onClose={onCloseDeleteConfirm}
         onConfirm={onConfirmDeleteClient}
         title="Excluir Cliente"
-        description={`Deseja realmente excluir o cliente "${clientToDelete?.name}"? Esta acao e irreversivel. Ao apagar este cliente, corridas, pagamentos e outras informacoes relacionadas tambem serao removidas permanentemente.`}
+        description={`Deseja realmente excluir o cliente "${clientToDelete?.name}"? Esta ação é irreversível. Ao apagar este cliente, corridas, pagamentos e outras informações relacionadas também serão removidas permanentemente.`}
         confirmText="Excluir"
         variant="danger"
         isLoading={isDeleting}
@@ -108,9 +108,9 @@ export function ClientModals({
         isOpen={isCloseDebtConfirmOpen}
         onClose={onCloseCloseDebtConfirm}
         onConfirm={onConfirmCloseDebt}
-        title="Fechar Divida"
-        description={`Deseja realmente fechar a divida de ${selectedClient?.name}? Isso marcara as corridas como pagas e os adiantamentos como usados.`}
-        confirmText="Fechar Divida"
+        title="Fechar Dívida"
+        description={`Deseja realmente fechar a dívida de ${selectedClient?.name}? Isso marcará as corridas como pagas e os adiantamentos como usados.`}
+        confirmText="Fechar Dívida"
         isLoading={isSettling}
       />
 

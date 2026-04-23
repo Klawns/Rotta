@@ -37,10 +37,10 @@ export function FinanceHero({
     {
       label: 'Corridas',
       value: String(summary?.count || 0),
-      helper: 'No periodo',
+      helper: 'No período',
     },
     {
-      label: 'Media',
+      label: 'Média',
       value: formatCurrency(summary?.ticketMedio || 0),
       helper: 'Por corrida',
     },
@@ -95,10 +95,10 @@ export function FinanceHero({
   }>;
   const subtitle = paymentStatusFilter === 'all'
     ? isClientView
-      ? 'Total do cliente no periodo selecionado'
-      : 'Total no periodo selecionado'
-    : `${statusContextLabel} no periodo selecionado`;
-  const emptyStateCopy = 'Ajuste periodo, status ou cliente para visualizar movimentacoes.';
+      ? 'Total do cliente no período selecionado'
+      : 'Total no período selecionado'
+    : `${statusContextLabel} no período selecionado`;
+  const emptyStateCopy = 'Ajuste período, status ou cliente para visualizar movimentações.';
 
   return (
     <section

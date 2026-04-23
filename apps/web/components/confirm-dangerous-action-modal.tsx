@@ -84,7 +84,7 @@ export function ConfirmDangerousActionModal({
             <span className="underline decoration-2 underline-offset-4 decoration-destructive">
               &quot;{requiredText}&quot;
             </span>{" "}
-            para confirmar a operacao:
+            para confirmar a operação:
           </p>
           <Input
             value={inputValue}

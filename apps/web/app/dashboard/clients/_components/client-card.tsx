@@ -203,8 +203,8 @@ export const ClientCard = React.memo(function ClientCard({
                               event.stopPropagation();
                             }}
                             className="flex h-9 w-9 items-center justify-center rounded-full border border-border-subtle bg-background text-text-secondary transition-colors hover:border-border hover:bg-hover-accent hover:text-text-primary"
-                            title="Abrir acoes do cliente"
-                            aria-label={`Abrir menu de acoes para ${clientName}`}
+                            title="Abrir ações do cliente"
+                            aria-label={`Abrir menu de ações para ${clientName}`}
                           >
                             <MoreHorizontal className="size-4" />
                           </button>

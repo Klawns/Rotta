@@ -47,7 +47,7 @@ function EmptyChartState({ message }: { message: string }) {
 
 function formatChartDateLabel(value: unknown, pattern: string) {
   const date = normalizeDateValue(value);
-  return date ? format(date, pattern, { locale: ptBR }) : 'Data indisponivel';
+  return date ? format(date, pattern, { locale: ptBR }) : 'Data indisponível';
 }
 
 function RevenueDot({
@@ -98,7 +98,10 @@ export function RevenueTrendChart({
 
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <AreaChart
+            data={data}
+            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+          >
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={color} stopOpacity={0.3} />
@@ -135,7 +138,11 @@ export function RevenueTrendChart({
                 padding: '12px 16px',
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
               }}
-              itemStyle={{ color: '#fff', fontSize: '14px', fontWeight: 'bold' }}
+              itemStyle={{
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 'bold',
+              }}
               labelStyle={{
                 color: '#94a3b8',
                 fontSize: '12px',
@@ -144,7 +151,9 @@ export function RevenueTrendChart({
                 fontWeight: 'black',
               }}
               formatter={(value: number) => [formatCurrency(value), 'Ganhos']}
-              labelFormatter={(label) => formatChartDateLabel(label, 'dd/MM/yyyy')}
+              labelFormatter={(label) =>
+                formatChartDateLabel(label, 'dd/MM/yyyy')
+              }
             />
             <Area
               type="monotone"
@@ -240,14 +249,21 @@ export function ClientDistributionChart({
                 fontSize: '14px',
                 fontWeight: 'bold',
               }}
-              labelStyle={{ color: 'var(--muted-foreground)', fontSize: '12px' }}
+              labelStyle={{
+                color: 'var(--muted-foreground)',
+                fontSize: '12px',
+              }}
               formatter={(value: number) => [formatCurrency(value), 'Total']}
             />
             <Legend
               verticalAlign="bottom"
               align="center"
               iconType="circle"
-              wrapperStyle={{ paddingTop: '20px', fontSize: '12px', fontWeight: 'bold' }}
+              wrapperStyle={{
+                paddingTop: '20px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+              }}
               className="text-foreground"
             />
           </PieChart>

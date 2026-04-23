@@ -59,12 +59,12 @@ export function useExportPdf({
 
       if (!result.ok && result.reason === 'missing-filtered-rides') {
         toast.error(
-          'Nao foi possivel montar o PDF com as corridas do filtro atual.',
+          'Não foi possível montar o PDF com as corridas do filtro atual.',
         );
       }
 
       if (!result.ok && result.reason === 'empty') {
-        toast.error('Sem dados para exportar no periodo selecionado.');
+        toast.error('Sem dados para exportar no período selecionado.');
       }
     } catch {
       return;

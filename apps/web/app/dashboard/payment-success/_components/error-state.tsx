@@ -21,7 +21,7 @@ export function ErrorState({ onRetry }: ErrorStateProps) {
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Ops! Algo deu errado</h1>
             <p className="text-slate-400">
-                Tivemos um problema tecnico ao atualizar sua conta. Nao se preocupe, seu pagamento esta seguro.
+                Tivemos um problema técnico ao atualizar sua conta. Não se preocupe, seu pagamento está seguro.
             </p>
             <div className="mt-4 flex w-full flex-col gap-3">
                 <button

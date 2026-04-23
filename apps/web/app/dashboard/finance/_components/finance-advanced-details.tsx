@@ -1,25 +1,25 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
   FinanceDashboardData,
   FinancePaymentStatusFilter,
-} from '@/services/finance-service';
-import { PERIODS, type FinanceDashboardTab, type Period } from '../_types';
-import { ClientHighlightsCard } from './client-highlights-card';
-import { ClientDistributionChart, RevenueTrendChart } from './finance-charts';
-import { FinanceKpiGrid } from './finance-kpi-grid';
-import { PaymentStatusBarChart } from './payment-status-bar-chart';
-import { PaymentSummaryCard } from './payment-summary-card';
-import { RecentActivity } from './recent-activity';
-import { SelectedClientSummaryCard } from './selected-client-summary-card';
+} from "@/services/finance-service";
+import { PERIODS, type FinanceDashboardTab, type Period } from "../_types";
+import { ClientHighlightsCard } from "./client-highlights-card";
+import { ClientDistributionChart, RevenueTrendChart } from "./finance-charts";
+import { FinanceKpiGrid } from "./finance-kpi-grid";
+import { PaymentStatusBarChart } from "./payment-status-bar-chart";
+import { PaymentSummaryCard } from "./payment-summary-card";
+import { RecentActivity } from "./recent-activity";
+import { SelectedClientSummaryCard } from "./selected-client-summary-card";
 
 interface FinanceAdvancedDetailsProps {
   data: FinanceDashboardData | null;
@@ -29,8 +29,8 @@ interface FinanceAdvancedDetailsProps {
   currentPeriod: Period;
   paymentStatusFilter: FinancePaymentStatusFilter;
   onChangePaymentStatus: (
-    ride: FinanceDashboardData['recentRides'][number],
-    status: 'PAID' | 'PENDING',
+    ride: FinanceDashboardData["recentRides"][number],
+    status: "PAID" | "PENDING",
   ) => void | Promise<unknown>;
   isPaymentUpdating: (rideId: string) => boolean;
 }
@@ -45,19 +45,18 @@ export function FinanceAdvancedDetails({
   onChangePaymentStatus,
   isPaymentUpdating,
 }: FinanceAdvancedDetailsProps) {
-  const [activeTab, setActiveTab] =
-    useState<FinanceDashboardTab>('overview');
+  const [activeTab, setActiveTab] = useState<FinanceDashboardTab>("overview");
   const resolvedActiveTab: FinanceDashboardTab = isClientView
-    ? activeTab === 'clients' || activeTab === 'rides'
-      ? 'overview'
+    ? activeTab === "clients" || activeTab === "rides"
+      ? "overview"
       : activeTab
-    : activeTab === 'history'
-      ? 'overview'
+    : activeTab === "history"
+      ? "overview"
       : activeTab;
 
   const chartColor =
     PERIODS.find((period) => period.id === currentPeriod.id)?.chartColor ||
-    'var(--color-primary)';
+    "var(--color-primary)";
 
   return (
     <Tabs
@@ -68,12 +67,12 @@ export function FinanceAdvancedDetails({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-xl font-display font-extrabold tracking-tight text-text-primary md:text-2xl">
-            {isClientView ? 'Perfil financeiro' : 'Detalhes'}
+            {isClientView ? "Perfil financeiro" : "Detalhes"}
           </h2>
           <p className="text-sm font-medium text-text-secondary">
             {isClientView
-              ? 'Historico e cobranca de um unico cliente.'
-              : 'Graficos e listas por contexto.'}
+              ? "Histórico e cobrança de um único cliente."
+              : "Gráficos e listas por contexto."}
           </p>
         </div>
 
@@ -89,7 +88,7 @@ export function FinanceAdvancedDetails({
               className="rounded-xl px-4 py-2 whitespace-nowrap"
               value="history"
             >
-              Historico
+              Histórico
             </TabsTrigger>
           ) : (
             <TabsTrigger
@@ -126,7 +125,7 @@ export function FinanceAdvancedDetails({
                 color={chartColor}
               />
               <SelectedClientSummaryCard
-                clientName={selectedClientName || 'Cliente'}
+                clientName={selectedClientName || "Cliente"}
                 rides={data?.recentRides || []}
                 onChangePaymentStatus={onChangePaymentStatus}
                 isPaymentUpdating={isPaymentUpdating}
@@ -143,10 +142,10 @@ export function FinanceAdvancedDetails({
                   <AccordionTrigger className="py-5 hover:no-underline">
                     <div>
                       <h3 className="text-left text-lg font-display font-extrabold text-text-primary">
-                        Ultimas movimentacoes
+                        Últimas movimentações
                       </h3>
                       <p className="mt-1 text-left text-sm font-medium text-text-secondary">
-                        Historico recente de {selectedClientName || 'cliente'}.
+                        Histórico recente de {selectedClientName || "cliente"}.
                       </p>
                     </div>
                   </AccordionTrigger>
@@ -167,10 +166,10 @@ export function FinanceAdvancedDetails({
             <section className="rounded-[2rem] border border-border-subtle bg-card-background p-5 shadow-sm backdrop-blur-xl md:rounded-[3rem] md:p-8">
               <div className="mb-6 md:mb-8">
                 <h2 className="text-xl font-display font-extrabold tracking-tight text-text-primary md:text-2xl">
-                  Historico completo
+                  Histórico completo
                 </h2>
                 <p className="text-sm font-medium text-text-secondary">
-                  Ultimas corridas do cliente no periodo filtrado.
+                  Últimas corridas do cliente no período filtrado.
                 </p>
               </div>
               <RecentActivity
@@ -227,7 +226,7 @@ export function FinanceAdvancedDetails({
                         Atividade recente
                       </h3>
                       <p className="mt-1 text-left text-sm font-medium text-text-secondary">
-                        Ultimas corridas do periodo.
+                        Últimas corridas do período.
                       </p>
                     </div>
                   </AccordionTrigger>
@@ -279,7 +278,7 @@ export function FinanceAdvancedDetails({
                 Atividade recente
               </h2>
               <p className="text-sm font-medium text-text-secondary">
-                Ultimas 10 corridas
+                Últimas 10 corridas
               </p>
             </div>
             <RecentActivity

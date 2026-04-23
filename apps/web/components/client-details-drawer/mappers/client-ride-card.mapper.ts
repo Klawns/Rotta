@@ -1,7 +1,7 @@
-import { resolveRideDateValue } from '@/lib/date-utils';
-import type { PaymentStatus, RideViewModel } from '@/types/rides';
+import { resolveRideDateValue } from "@/lib/date-utils";
+import type { PaymentStatus, RideViewModel } from "@/types/rides";
 
-const FALLBACK_DATE = 'Data indisponivel';
+const FALLBACK_DATE = "Data indisponível";
 
 export interface ClientRideCardItem {
   id: string;
@@ -24,28 +24,28 @@ function formatRideDate(date: Date | null) {
   }
 
   return {
-    formattedDate: date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
+    formattedDate: date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
     }),
-    formattedTime: date.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
+    formattedTime: date.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
     }),
   };
 }
 
 function formatRideShortId(id: string) {
-  return id.split('-')[0] || id;
+  return id.split("-")[0] || id;
 }
 
 function formatRideSubtitle(formattedTime: string | null, shortId: string) {
-  return `${formattedTime ? `${formattedTime} - ` : ''}ID ${shortId}`;
+  return `${formattedTime ? `${formattedTime} - ` : ""}ID ${shortId}`;
 }
 
 export function getClientRidesCountLabel(count: number) {
-  return count === 1 ? '1 corrida carregada' : `${count} corridas carregadas`;
+  return count === 1 ? "1 corrida carregada" : `${count} corridas carregadas`;
 }
 
 export function toClientRideCardItem(ride: RideViewModel): ClientRideCardItem {

@@ -102,7 +102,7 @@ export function ClientsListContainer({
               Erro ao carregar clientes
             </h3>
             <p className="max-w-md text-sm text-text-secondary">
-              {parseApiError(error, 'Nao foi possivel carregar a lista agora.')}
+              {parseApiError(error, 'Não foi possível carregar a lista agora.')}
             </p>
           </div>
 
@@ -132,7 +132,7 @@ export function ClientsListContainer({
             <p className="max-w-sm text-sm text-text-secondary">
               {hasActiveSearch
                 ? 'Ajuste a busca para ampliar o resultado atual.'
-                : 'Os novos clientes aparecerao aqui assim que forem cadastrados.'}
+                : 'Os novos clientes aparecerão aqui assim que forem cadastrados.'}
             </p>
           </div>
 
@@ -231,7 +231,7 @@ export function ClientsListContainer({
                 }
                 summaryLabel={
                   selection.selectedCount > 0
-                    ? `${selection.selectedCount} de ${selection.totalVisible} visiveis`
+                    ? `${selection.selectedCount} de ${selection.totalVisible} visíveis`
                     : `${selection.totalVisible} clientes carregados`
                 }
               />
@@ -298,7 +298,7 @@ export function ClientsListContainer({
                     onToggle={() =>
                       selection.onToggleSelectAllVisible(!selection.isAllVisibleSelected)
                     }
-                    ariaLabel="Selecionar todos os clientes visiveis"
+                    ariaLabel="Selecionar todos os clientes visíveis"
                     disabled={selection.isDeletingSelected}
                   />
                   <span>

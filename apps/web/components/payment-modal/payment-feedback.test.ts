@@ -1,9 +1,9 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
-import { buildPaymentSuccessMessage } from './payment-feedback';
-import { formatCurrency } from '@/lib/utils';
+import assert from "node:assert/strict";
+import test from "node:test";
+import { buildPaymentSuccessMessage } from "./payment-feedback";
+import { formatCurrency } from "@/lib/utils";
 
-test('descreve a sobra aguardando complemento depois de quitar corridas', () => {
+test("descreve a sobra aguardando complemento depois de quitar corridas", () => {
   const message = buildPaymentSuccessMessage({
     settledRides: 1,
     unappliedAmount: 25,
@@ -18,7 +18,7 @@ test('descreve a sobra aguardando complemento depois de quitar corridas', () => 
   );
 });
 
-test('descreve quando o valor ainda nao quita nenhuma corrida', () => {
+test("descreve quando o valor ainda não quita nenhuma corrida", () => {
   const message = buildPaymentSuccessMessage({
     settledRides: 0,
     unappliedAmount: 25,
@@ -33,7 +33,7 @@ test('descreve quando o valor ainda nao quita nenhuma corrida', () => {
   );
 });
 
-test('descreve saldo gerado por excedente', () => {
+test("descreve saldo gerado por excedente", () => {
   const message = buildPaymentSuccessMessage({
     settledRides: 2,
     unappliedAmount: 0,
@@ -48,7 +48,7 @@ test('descreve saldo gerado por excedente', () => {
   );
 });
 
-test('mantem a mensagem curta quando o pagamento fecha exatamente as corridas', () => {
+test("mantém a mensagem curta quando o pagamento fecha exatamente as corridas", () => {
   const message = buildPaymentSuccessMessage({
     settledRides: 3,
     unappliedAmount: 0,
@@ -57,5 +57,5 @@ test('mantem a mensagem curta quando o pagamento fecha exatamente as corridas', 
     generatedBalance: 0,
   });
 
-  assert.equal(message, 'Pagamento registrado. 3 corridas quitadas.');
+  assert.equal(message, "Pagamento registrado. 3 corridas quitadas.");
 });

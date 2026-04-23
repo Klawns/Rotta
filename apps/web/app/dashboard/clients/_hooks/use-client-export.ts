@@ -144,7 +144,7 @@ export function useClientExport({
       isClientExportDateRangeRequired(selectedType) &&
       (!dateRange.startDate || !dateRange.endDate)
     ) {
-      return 'Defina um periodo para exportar o PDF.';
+      return 'Defina um período para exportar o PDF.';
     }
 
     return null;

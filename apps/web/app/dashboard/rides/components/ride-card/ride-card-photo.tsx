@@ -26,7 +26,7 @@ export function RideCardPhoto({ photoUrl, clientName }: RideCardPhotoProps) {
     return (
       <div className="mt-3 flex aspect-video items-center justify-center overflow-hidden rounded-[1.5rem] border border-border-subtle bg-secondary/5 px-4 text-center">
         <p className="text-sm font-medium text-text-secondary">
-          Foto indisponivel
+          Foto indisponível
         </p>
       </div>
     );
@@ -60,14 +60,14 @@ export function RideCardPhoto({ photoUrl, clientName }: RideCardPhotoProps) {
         <DialogHeader className="sr-only">
           <DialogTitle>Foto da corrida</DialogTitle>
           <DialogDescription>
-            Visualizacao ampliada da foto anexada a corrida de {clientName}.
+            Visualização ampliada da foto anexada à corrida de {clientName}.
           </DialogDescription>
         </DialogHeader>
 
         <div className="relative flex max-h-[85vh] min-h-[16rem] items-center justify-center overflow-hidden rounded-[1.75rem] bg-black/5">
           {hasExpandedImageError ? (
             <p className="px-4 text-center text-sm font-medium text-text-secondary">
-              Foto indisponivel
+              Foto indisponível
             </p>
           ) : (
             <Image

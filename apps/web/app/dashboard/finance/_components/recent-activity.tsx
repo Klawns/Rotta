@@ -13,7 +13,7 @@ interface RecentActivityProps {
   isLoading: boolean;
   onChangePaymentStatus?: (
     ride: RecentRide,
-    status: 'PAID' | 'PENDING',
+    status: "PAID" | "PENDING",
   ) => void | Promise<unknown>;
   isPaymentUpdating?: (rideId: string) => boolean;
 }
@@ -29,7 +29,7 @@ function getRideDateLabel(value: unknown) {
           : null;
 
   if (!parsedDate || !isValid(parsedDate)) {
-    return "Data indisponivel";
+    return "Data indisponível";
   }
 
   return format(parsedDate, "dd 'de' MMMM 'às' HH:mm", { locale: ptBR });

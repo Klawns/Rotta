@@ -22,7 +22,7 @@ export interface RidesFilterChip {
 
 export const RIDE_PAYMENT_FILTER_OPTIONS: readonly RideFilterOption<RidePaymentFilter>[] = [
   { value: 'all', label: 'Todas' },
-  { value: 'PENDING', label: 'Com pendencia' },
+  { value: 'PENDING', label: 'Com pendência' },
   { value: 'PAID', label: 'Pagas' },
 ] as const;
 
@@ -30,7 +30,7 @@ export const RIDE_PERIOD_PRESET_OPTIONS: readonly RideFilterOption<RidePeriodPre
   { value: 'today', label: 'Hoje' },
   { value: '7d', label: '7 dias' },
   { value: '30d', label: '30 dias' },
-  { value: 'month', label: 'Mes' },
+  { value: 'month', label: 'Mês' },
   { value: 'custom', label: 'Personalizado' },
 ] as const;
 
@@ -51,7 +51,7 @@ function compactFilterLabel(value: string, maxLength: number = 36) {
     return value;
   }
 
-  return `${value.slice(0, maxLength - 1)}…`;
+  return `${value.slice(0, maxLength - 3)}...`;
 }
 
 export function getDateRangeForRidePreset(
@@ -108,8 +108,9 @@ export function normalizeRideDateRange(
 }
 
 function getPaymentFilterLabel(paymentFilter: RidePaymentFilter) {
-  return RIDE_PAYMENT_FILTER_OPTIONS.find((option) => option.value === paymentFilter)
-    ?.label;
+  return RIDE_PAYMENT_FILTER_OPTIONS.find(
+    (option) => option.value === paymentFilter,
+  )?.label;
 }
 
 function getPeriodFilterLabel(filters: RidesFilterState) {
@@ -119,12 +120,12 @@ function getPeriodFilterLabel(filters: RidesFilterState) {
     );
 
     if (periodOption && filters.periodPreset !== 'custom') {
-      return `Periodo: ${periodOption.label}`;
+      return `Período: ${periodOption.label}`;
     }
   }
 
   if (filters.startDate && filters.endDate) {
-    return `Periodo: ${formatShortInputDate(filters.startDate)} - ${formatShortInputDate(filters.endDate)}`;
+    return `Período: ${formatShortInputDate(filters.startDate)} - ${formatShortInputDate(filters.endDate)}`;
   }
 
   if (filters.startDate) {
@@ -132,7 +133,7 @@ function getPeriodFilterLabel(filters: RidesFilterState) {
   }
 
   if (filters.endDate) {
-    return `Ate ${formatShortInputDate(filters.endDate)}`;
+    return `Até ${formatShortInputDate(filters.endDate)}`;
   }
 
   return null;

@@ -258,7 +258,7 @@ export function RidesFilters({
                         Cliente
                       </p>
                       <p className="mt-1 text-sm text-text-secondary">
-                        Selecione um cliente especifico quando quiser reduzir a lista.
+                        Selecione um cliente específico quando quiser reduzir a lista.
                       </p>
                     </div>
 
@@ -279,11 +279,11 @@ export function RidesFilters({
                       <div className="flex items-center gap-2">
                         <CalendarRange size={16} className="text-text-secondary" />
                         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-secondary/70">
-                          Periodo
+                          Período
                         </p>
                       </div>
                       <p className="mt-1 text-sm text-text-secondary">
-                        Use atalhos rapidos ou ajuste um intervalo manual.
+                        Use atalhos rápidos ou ajuste um intervalo manual.
                       </p>
                     </div>
 
@@ -308,7 +308,7 @@ export function RidesFilters({
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-2">
                         <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-secondary/70">
-                          Inicio
+                          Início
                         </label>
                         <Input
                           type="date"
@@ -345,7 +345,7 @@ export function RidesFilters({
               Ajustar filtros
             </DrawerTitle>
             <DrawerDescription>
-              Refine cliente e periodo sem ocupar o topo da lista.
+              Refine cliente e período sem ocupar o topo da lista.
             </DrawerDescription>
           </DrawerHeader>
 
@@ -356,7 +356,7 @@ export function RidesFilters({
                   Cliente
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">
-                  Selecione um cliente especifico quando quiser reduzir a lista.
+                  Selecione um cliente específico quando quiser reduzir a lista.
                 </p>
               </div>
 
@@ -377,11 +377,11 @@ export function RidesFilters({
                 <div className="flex items-center gap-2">
                   <CalendarRange size={16} className="text-text-secondary" />
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
-                    Periodo
+                    Período
                   </p>
                 </div>
                 <p className="mt-1 text-sm text-text-secondary">
-                  Use atalhos rapidos ou ajuste um intervalo manual.
+                  Use atalhos rápidos ou ajuste um intervalo manual.
                 </p>
               </div>
 
@@ -406,7 +406,7 @@ export function RidesFilters({
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-secondary/70">
-                    Inicio
+                    Início
                   </label>
                   <Input
                     type="date"

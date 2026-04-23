@@ -31,7 +31,7 @@ export function PaymentSummaryCard({
             Recorte de pagamentos
           </h3>
           <p className="text-xs font-medium text-muted-foreground">
-            Resumo das corridas {isPaidFilter ? 'pagas' : 'pendentes'} no periodo selecionado.
+            Resumo das corridas {isPaidFilter ? 'pagas' : 'pendentes'} no período selecionado.
           </p>
         </div>
 
@@ -67,7 +67,7 @@ export function PaymentSummaryCard({
     <section className="rounded-[3rem] border border-border bg-card/40 p-8 backdrop-blur-xl">
       <div className="mb-8">
         <h3 className="text-xl font-black text-foreground">
-          Saude dos recebimentos
+          Saúde dos recebimentos
         </h3>
         <p className="text-xs font-medium text-muted-foreground">
           Percentual recebido e saldo que ainda depende de pagamento.
