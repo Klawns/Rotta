@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldAlert, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/confirm-modal";
@@ -24,15 +24,10 @@ export function DangerZone() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8"
     >
-      <div className="space-y-2">
-        <h3 className="flex items-center gap-2 text-2xl font-display font-bold tracking-tight text-destructive">
-          <ShieldAlert size={24} />
+      <div>
+        <h3 className="text-2xl font-display font-bold tracking-tight text-destructive">
           Limpeza de dados
         </h3>
-        <p className="max-w-2xl text-sm font-medium leading-6 text-text-secondary">
-          Ações irreversíveis para remover dados críticos do sistema com
-          segurança e clareza.
-        </p>
       </div>
 
       <div className="grid gap-6">
@@ -43,23 +38,9 @@ export function DangerZone() {
                 Excluir todos os clientes
               </h4>
               <p className="text-sm font-medium leading-7 text-text-secondary">
-                Remove permanentemente todos os clientes cadastrados, incluindo
-                vínculos operacionais e financeiros.{" "}
-                <span className="font-semibold text-destructive">
-                  Essa ação não pode ser desfeita.
-                </span>
+                Apaga todos os clientes e os dados vinculados de forma
+                permanente.
               </p>
-
-              <div className="flex max-w-md items-start gap-3 rounded-[1.25rem] border border-destructive/10 bg-destructive/5 p-4">
-                <AlertTriangle
-                  size={16}
-                  className="mt-0.5 shrink-0 text-destructive"
-                />
-                <p className="text-[12px] font-medium leading-5 text-destructive/85">
-                  Ao excluir os clientes, corridas e pagamentos vinculados a
-                  eles também serão apagados permanentemente.
-                </p>
-              </div>
             </div>
 
             <Button
@@ -98,11 +79,8 @@ export function DangerZone() {
                 Limpar histórico de corridas
               </h4>
               <p className="text-sm font-medium leading-7 text-text-secondary">
-                Apaga os registros e estatísticas de corridas do sistema de
-                forma definitiva.{" "}
-                <span className="font-semibold text-destructive">
-                  Essa ação é irreversível.
-                </span>
+                Remove todo o histórico de corridas e estatísticas de forma
+                permanente.
               </p>
             </div>
 
@@ -134,13 +112,6 @@ export function DangerZone() {
             )}
           </AnimatePresence>
         </div>
-      </div>
-
-      <div className="rounded-3xl border border-dashed border-destructive/20 bg-destructive/5 p-6">
-        <p className="text-center text-sm font-semibold leading-6 text-destructive/80">
-          As ações acima são permanentes e não podem ser recuperadas depois da
-          confirmação.
-        </p>
       </div>
 
       <ConfirmModal
