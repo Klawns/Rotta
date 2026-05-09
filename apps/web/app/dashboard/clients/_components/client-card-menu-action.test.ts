@@ -19,7 +19,7 @@ test('runs immediate actions right after closing the menu', () => {
 
 test('defers after-close actions until the scheduler runs', () => {
   const events: string[] = [];
-  let scheduledAction: (() => void) | null = null;
+  const scheduledAction: { current?: () => void } = {};
 
   runClientCardMenuAction({
     closeMenu: () => {
@@ -31,14 +31,15 @@ test('defers after-close actions until the scheduler runs', () => {
     mode: 'after-close',
     schedule: (action) => {
       events.push('scheduled');
-      scheduledAction = action;
+      scheduledAction.current = action;
     },
   });
 
   assert.deepEqual(events, ['close', 'scheduled']);
-  assert.equal(typeof scheduledAction, 'function');
+  assert.equal(typeof scheduledAction.current, 'function');
 
-  scheduledAction?.();
+  assert.ok(scheduledAction.current);
+  scheduledAction.current();
 
   assert.deepEqual(events, ['close', 'scheduled', 'action']);
 });

@@ -23,6 +23,7 @@ test('shares PDF files without url or text payload fields', async () => {
       return true;
     },
     share: async (data) => {
+      assert.ok(data);
       sharePayload = data;
     },
   });
