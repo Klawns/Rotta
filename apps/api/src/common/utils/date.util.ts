@@ -1,18 +1,150 @@
-/**
- * Transforms a period string into explicit Start and End dates.
- */
-function parseDateOnly(value: string): Date {
-  const [year, month, day] = value.split('-').map(Number);
+const BUSINESS_TIME_ZONE = 'America/Sao_Paulo';
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-  if (
-    Number.isInteger(year) &&
-    Number.isInteger(month) &&
-    Number.isInteger(day)
-  ) {
-    return new Date(year, month - 1, day);
+interface CalendarDateParts {
+  year: number;
+  month: number;
+  day: number;
+}
+
+interface CalendarDateTimeParts extends CalendarDateParts {
+  hour: number;
+  minute: number;
+  second: number;
+  millisecond: number;
+}
+
+const saoPauloDateTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: BUSINESS_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+});
+
+function getSaoPauloParts(date: Date): CalendarDateTimeParts {
+  const parts = Object.fromEntries(
+    saoPauloDateTimeFormatter
+      .formatToParts(date)
+      .filter(({ type }) => type !== 'literal')
+      .map(({ type, value }) => [type, Number(value)]),
+  ) as Record<string, number>;
+
+  return {
+    year: parts.year,
+    month: parts.month,
+    day: parts.day,
+    hour: parts.hour,
+    minute: parts.minute,
+    second: parts.second,
+    millisecond: date.getMilliseconds(),
+  };
+}
+
+function saoPauloCalendarDateToUtc(parts: CalendarDateTimeParts): Date {
+  const utcGuess = new Date(
+    Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
+      parts.millisecond,
+    ),
+  );
+  const zonedGuessParts = getSaoPauloParts(utcGuess);
+  const zonedGuessAsUtc = Date.UTC(
+    zonedGuessParts.year,
+    zonedGuessParts.month - 1,
+    zonedGuessParts.day,
+    zonedGuessParts.hour,
+    zonedGuessParts.minute,
+    zonedGuessParts.second,
+    zonedGuessParts.millisecond,
+  );
+  const offset = zonedGuessAsUtc - utcGuess.getTime();
+
+  return new Date(utcGuess.getTime() - offset);
+}
+
+function parseDateOnlyParts(value: string): CalendarDateParts | null {
+  if (!DATE_ONLY_PATTERN.test(value)) {
+    return null;
   }
 
-  return new Date(value);
+  const [year, month, day] = value.split('-').map(Number);
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return { year, month, day };
+}
+
+export function startOfSaoPauloCalendarDay(value: string): Date {
+  const parts = parseDateOnlyParts(value);
+
+  if (!parts) {
+    return new Date(value);
+  }
+
+  return saoPauloCalendarDateToUtc({
+    ...parts,
+    hour: 0,
+    minute: 0,
+    second: 0,
+    millisecond: 0,
+  });
+}
+
+export function endOfSaoPauloCalendarDay(value: string): Date {
+  const parts = parseDateOnlyParts(value);
+
+  if (!parts) {
+    return new Date(value);
+  }
+
+  return saoPauloCalendarDateToUtc({
+    ...parts,
+    hour: 23,
+    minute: 59,
+    second: 59,
+    millisecond: 999,
+  });
+}
+
+function startOfSaoPauloDayFromParts(parts: CalendarDateParts): Date {
+  return saoPauloCalendarDateToUtc({
+    ...parts,
+    hour: 0,
+    minute: 0,
+    second: 0,
+    millisecond: 0,
+  });
+}
+
+function endOfSaoPauloDayFromParts(parts: CalendarDateParts): Date {
+  return saoPauloCalendarDateToUtc({
+    ...parts,
+    hour: 23,
+    minute: 59,
+    second: 59,
+    millisecond: 999,
+  });
+}
+
+function addCalendarDays(parts: CalendarDateParts, amount: number) {
+  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + amount));
+
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+  };
 }
 
 export function getDatesFromPeriod(
@@ -20,37 +152,30 @@ export function getDatesFromPeriod(
   start?: string,
   end?: string,
 ): { startDate: Date; endDate: Date } {
-  let startDate = new Date();
-  let endDate = new Date();
+  const today = getSaoPauloParts(new Date());
+  let startParts: CalendarDateParts = today;
+  let endParts: CalendarDateParts = today;
 
   if (period === 'today') {
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(23, 59, 59, 999);
+    startParts = today;
   } else if (period === 'week') {
-    const day = startDate.getDay();
-    startDate.setDate(startDate.getDate() - day);
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(23, 59, 59, 999);
+    const day = startOfSaoPauloDayFromParts(today).getUTCDay();
+    startParts = addCalendarDays(today, -day);
   } else if (period === 'month') {
-    startDate.setDate(1);
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(23, 59, 59, 999);
+    startParts = { ...today, day: 1 };
   } else if (period === 'year') {
-    startDate.setMonth(0, 1);
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(23, 59, 59, 999);
+    startParts = { year: today.year, month: 1, day: 1 };
   } else if (period === 'custom' && start && end) {
-    startDate = parseDateOnly(start);
-    startDate.setHours(0, 0, 0, 0);
-    endDate = parseDateOnly(end);
-    endDate.setHours(23, 59, 59, 999);
-  } else {
-    // Fallback default
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(23, 59, 59, 999);
+    return {
+      startDate: startOfSaoPauloCalendarDay(start),
+      endDate: endOfSaoPauloCalendarDay(end),
+    };
   }
 
-  return { startDate, endDate };
+  return {
+    startDate: startOfSaoPauloDayFromParts(startParts),
+    endDate: endOfSaoPauloDayFromParts(endParts),
+  };
 }
 
 export function getDaysArray(start: Date, end: Date): string[] {

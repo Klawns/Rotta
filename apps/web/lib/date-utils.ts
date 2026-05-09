@@ -12,6 +12,19 @@ function isValidDateInstance(value: Date) {
   return !Number.isNaN(value.getTime());
 }
 
+function parseDateOnlyValue(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+
+  return isValidDateInstance(date) ? date : null;
+}
+
 export function normalizeDateValue(value: unknown): Date | null {
   if (!value) return null;
 
@@ -31,7 +44,7 @@ export function normalizeDateValue(value: unknown): Date | null {
       return null;
     }
 
-    const date = new Date(normalizedValue);
+    const date = parseDateOnlyValue(normalizedValue) ?? new Date(normalizedValue);
     return isValidDateInstance(date) ? date : null;
   }
 

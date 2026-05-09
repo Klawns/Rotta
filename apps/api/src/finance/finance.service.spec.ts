@@ -191,14 +191,24 @@ describe('FinanceService', () => {
     expect(userId).toBe('user-1');
     expect(clientId).toBe('client-1');
     expect(paymentStatus).toBe('PAID');
-    expect(startDate.toISOString()).toBe(
-      new Date(2026, 2, 1, 0, 0, 0, 0).toISOString(),
-    );
-    expect(endDate.toISOString()).toBe(
-      new Date(2026, 2, 31, 23, 59, 59, 999).toISOString(),
-    );
+    expect(startDate.toISOString()).toBe('2026-03-01T03:00:00.000Z');
+    expect(endDate.toISOString()).toBe('2026-04-01T02:59:59.999Z');
     expect(result.rides).toEqual([{ id: 'ride-2', value: 84 }]);
     expect(result.period.start).toBe(startDate.toISOString());
     expect(result.period.end).toBe(endDate.toISOString());
+  });
+
+  it('should resolve custom dashboard ranges through inclusive Sao Paulo calendar days', async () => {
+    await service.getDashboard('user-1', {
+      period: 'custom',
+      start: '2026-04-01',
+      end: '2026-04-08',
+      clientId: 'all',
+    });
+
+    const [, startDate, endDate] = summaryServiceMock.getSummary.mock.calls[0];
+
+    expect(startDate.toISOString()).toBe('2026-04-01T03:00:00.000Z');
+    expect(endDate.toISOString()).toBe('2026-04-09T02:59:59.999Z');
   });
 });

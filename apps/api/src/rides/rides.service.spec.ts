@@ -295,6 +295,31 @@ describe('RidesService', () => {
     expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
   });
 
+
+  it('should pass ride list date filters as inclusive Sao Paulo calendar days', async () => {
+    await service.findAll('user-1', 20, undefined, {
+      startDate: '2026-04-01',
+      endDate: '2026-04-08',
+    });
+
+    const filters = repoMock.findAll.mock.calls[0][3];
+
+    expect(filters.startDate.toISOString()).toBe('2026-04-01T03:00:00.000Z');
+    expect(filters.endDate.toISOString()).toBe('2026-04-09T02:59:59.999Z');
+  });
+
+  it('should pass client ride date filters as inclusive Sao Paulo calendar days', async () => {
+    await service.findByClient('user-1', 'client-2', 20, undefined, {
+      startDate: '2026-04-01',
+      endDate: '2026-04-08',
+    });
+
+    const filters = repoMock.findByClient.mock.calls[0][4];
+
+    expect(filters.startDate.toISOString()).toBe('2026-04-01T03:00:00.000Z');
+    expect(filters.endDate.toISOString()).toBe('2026-04-09T02:59:59.999Z');
+  });
+
   it('should allow creation if starter plan is active', async () => {
     subsMock.findByUserId.mockResolvedValueOnce({
       plan: 'starter',

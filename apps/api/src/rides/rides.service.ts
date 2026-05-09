@@ -11,7 +11,11 @@ import { eq } from 'drizzle-orm';
 import { ProfileCacheService } from '../cache/profile-cache.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { IRidesRepository } from './interfaces/rides-repository.interface';
-import { getDatesFromPeriod } from '../common/utils/date.util';
+import {
+  endOfSaoPauloCalendarDay,
+  getDatesFromPeriod,
+  startOfSaoPauloCalendarDay,
+} from '../common/utils/date.util';
 import { RideMapper } from './mappers/ride.mapper';
 import { DRIZZLE } from '../database/database.provider';
 import type { DrizzleClient } from '../database/database.provider';
@@ -71,6 +75,19 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'erro desconhecido';
 }
 
+function parseRideDateFilters<
+  TFilters extends { startDate?: string; endDate?: string },
+>(filters?: TFilters) {
+  return {
+    ...filters,
+    startDate: filters?.startDate
+      ? startOfSaoPauloCalendarDay(filters.startDate)
+      : undefined,
+    endDate: filters?.endDate
+      ? endOfSaoPauloCalendarDay(filters.endDate)
+      : undefined,
+  };
+}
 @Injectable()
 export class RidesService {
   private readonly logger = new Logger(RidesService.name);
@@ -195,11 +212,7 @@ export class RidesService {
       search?: string;
     },
   ) {
-    const parsedFilters = {
-      ...filters,
-      startDate: filters?.startDate ? new Date(filters.startDate) : undefined,
-      endDate: filters?.endDate ? new Date(filters.endDate) : undefined,
-    };
+    const parsedFilters = parseRideDateFilters(filters);
 
     return this.ridesRepository.findAll(userId, limit, cursor, parsedFilters);
   }
@@ -646,11 +659,7 @@ export class RidesService {
       search?: string;
     },
   ) {
-    const parsedFilters = {
-      ...filters,
-      startDate: filters?.startDate ? new Date(filters.startDate) : undefined,
-      endDate: filters?.endDate ? new Date(filters.endDate) : undefined,
-    };
+    const parsedFilters = parseRideDateFilters(filters);
 
     return this.ridesRepository.findByClient(
       userId,
