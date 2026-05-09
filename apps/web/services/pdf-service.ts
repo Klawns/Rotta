@@ -21,10 +21,7 @@ import {
   drawClientExportSummary,
   drawRevenueSummary,
 } from './pdf-service/summaries';
-import {
-  drawClientExportTable,
-  drawRidesTable,
-} from './pdf-service/tables';
+import { drawClientExportTable, drawRidesTable } from './pdf-service/tables';
 import {
   type AutoTableDoc,
   type ClientReportOptions,
@@ -35,7 +32,7 @@ import {
 export type { ExportOptions, PDFReportRide } from './pdf-service/types';
 
 export class PDFService {
-  static async generateReport(
+  private static async buildFinancialReport(
     rides: PDFReportRide[],
     options: ExportOptions,
   ) {
@@ -61,7 +58,11 @@ export class PDFService {
       currentY,
     );
     currentY += 5;
-    doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, currentY);
+    doc.text(
+      `Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`,
+      14,
+      currentY,
+    );
     currentY += 8;
 
     if (pixKey) {
@@ -73,10 +74,45 @@ export class PDFService {
     drawRidesTable(doc, currentY, rides);
     drawFooter(doc);
 
-    doc.save(getFinancialReportFileName(period, dateRange, paymentStatus));
+    return doc;
   }
 
-  static async generateClientRidesReport(
+  static async createFinancialReportFile(
+    rides: PDFReportRide[],
+    options: ExportOptions,
+  ) {
+    const doc = await this.buildFinancialReport(rides, options);
+    const fileName = getFinancialReportFileName(
+      options.period,
+      options.dateRange,
+      options.paymentStatus,
+    );
+
+    return new File([doc.output('blob')], fileName, {
+      type: 'application/pdf',
+    });
+  }
+
+  static async downloadFinancialReport(
+    rides: PDFReportRide[],
+    options: ExportOptions,
+  ) {
+    const doc = await this.buildFinancialReport(rides, options);
+
+    doc.save(
+      getFinancialReportFileName(
+        options.period,
+        options.dateRange,
+        options.paymentStatus,
+      ),
+    );
+  }
+
+  static async generateReport(rides: PDFReportRide[], options: ExportOptions) {
+    await this.downloadFinancialReport(rides, options);
+  }
+
+  private static async buildClientRidesReport(
     client: Client,
     rides: PDFReportRide[],
     summary: {
@@ -110,7 +146,11 @@ export class PDFService {
     currentY += 5;
     doc.text(`Corridas exportadas: ${rides.length}`, 14, currentY);
     currentY += 5;
-    doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, currentY);
+    doc.text(
+      `Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`,
+      14,
+      currentY,
+    );
     currentY += 8;
 
     currentY = drawDivider(doc, currentY);
@@ -122,6 +162,71 @@ export class PDFService {
     drawClientExportTable(doc, currentY, rides, type);
 
     drawFooter(doc);
-    doc.save(getClientReportFileName(client.name, type, dateRange));
+    return doc;
+  }
+
+  static async createClientRidesReportFile(
+    client: Client,
+    rides: PDFReportRide[],
+    summary: {
+      totalRides: number;
+      pendingRides: number;
+      totalValue: number;
+      totalPaid: number;
+      totalPending: number;
+    },
+    options: ClientReportOptions,
+  ) {
+    const doc = await this.buildClientRidesReport(
+      client,
+      rides,
+      summary,
+      options,
+    );
+
+    return new File(
+      [doc.output('blob')],
+      getClientReportFileName(client.name, options.type, options.dateRange),
+      { type: 'application/pdf' },
+    );
+  }
+
+  static async downloadClientRidesReport(
+    client: Client,
+    rides: PDFReportRide[],
+    summary: {
+      totalRides: number;
+      pendingRides: number;
+      totalValue: number;
+      totalPaid: number;
+      totalPending: number;
+    },
+    options: ClientReportOptions,
+  ) {
+    const doc = await this.buildClientRidesReport(
+      client,
+      rides,
+      summary,
+      options,
+    );
+
+    doc.save(
+      getClientReportFileName(client.name, options.type, options.dateRange),
+    );
+  }
+
+  static async generateClientRidesReport(
+    client: Client,
+    rides: PDFReportRide[],
+    summary: {
+      totalRides: number;
+      pendingRides: number;
+      totalValue: number;
+      totalPaid: number;
+      totalPending: number;
+    },
+    options: ClientReportOptions,
+  ) {
+    await this.downloadClientRidesReport(client, rides, summary, options);
   }
 }

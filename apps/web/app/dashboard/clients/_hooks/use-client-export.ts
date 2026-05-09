@@ -15,8 +15,11 @@ import {
   isClientExportDateRangeRequired,
   type ClientExportType,
 } from '@/services/client-export.types';
+import { sharePdfFile } from '@/services/pdf-file-share.service';
 import { PDFService } from '@/services/pdf-service';
 import type { Client } from '@/types/rides';
+
+type PdfExportMode = 'download' | 'share';
 
 interface UseClientExportProps {
   client: Client | null;
@@ -41,7 +44,7 @@ export interface ClientExportController {
   setDateRange: (nextRange: ClientExportDateRangeState) => void;
   applyPreset: (preset: 'today' | '7d' | '30d' | 'month') => void;
   clearDateRange: () => void;
-  submitExport: () => Promise<void>;
+  submitExport: (mode?: PdfExportMode) => Promise<void>;
 }
 
 function getEmptyExportMessage(type: ClientExportType) {
@@ -61,13 +64,17 @@ export function useClientExport({
   isDetailsPending,
 }: UseClientExportProps): ClientExportController {
   const { user } = useAuth();
+  const userName = user?.name || 'Motorista';
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedType, setSelectedTypeState] = useState<ClientExportType>('all');
+  const [selectedType, setSelectedTypeState] =
+    useState<ClientExportType>('all');
   const [dateRange, setDateRangeState] = useState<ClientExportDateRangeState>({
     startDate: '',
     endDate: '',
   });
-  const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const [validationMessage, setValidationMessage] = useState<string | null>(
+    null,
+  );
 
   const mutation = useMutation({
     mutationFn: async ({
@@ -77,6 +84,7 @@ export function useClientExport({
       startDate,
       endDate,
       userName,
+      mode,
     }: {
       clientId: string;
       clientName: string;
@@ -84,6 +92,7 @@ export function useClientExport({
       startDate?: string;
       endDate?: string;
       userName: string;
+      mode: PdfExportMode;
     }) => {
       const report = await clientExportService.exportClientRides({
         clientId,
@@ -96,18 +105,33 @@ export function useClientExport({
         return report;
       }
 
-      await PDFService.generateClientRidesReport(
-        {
-          id: clientId,
-          name: clientName,
-        },
+      const reportClient = {
+        id: clientId,
+        name: clientName,
+      };
+      const reportOptions = {
+        userName,
+        type,
+        dateRange: report.dateRange,
+      };
+
+      if (mode === 'share') {
+        const file = await PDFService.createClientRidesReportFile(
+          reportClient,
+          report.rides,
+          report.summary,
+          reportOptions,
+        );
+
+        await sharePdfFile(file);
+        return report;
+      }
+
+      await PDFService.downloadClientRidesReport(
+        reportClient,
         report.rides,
         report.summary,
-        {
-          userName,
-          type,
-          dateRange: report.dateRange,
-        },
+        reportOptions,
       );
 
       return report;
@@ -116,16 +140,30 @@ export function useClientExport({
       toast.error(parseApiError(error, 'Erro ao exportar PDF.'));
     },
   });
+  const resetClientExportMutation = mutation.reset;
 
   useEffect(() => {
-    setIsOpen(false);
-    setSelectedTypeState('all');
-    setDateRangeState({ startDate: '', endDate: '' });
-    setValidationMessage(null);
-    mutation.reset();
-  }, [client?.id]);
+    let isActive = true;
 
-  const hasPartialDate = Boolean(dateRange.startDate) !== Boolean(dateRange.endDate);
+    queueMicrotask(() => {
+      if (!isActive) {
+        return;
+      }
+
+      setIsOpen(false);
+      setSelectedTypeState('all');
+      setDateRangeState({ startDate: '', endDate: '' });
+      setValidationMessage(null);
+      resetClientExportMutation();
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [client?.id, resetClientExportMutation]);
+
+  const hasPartialDate =
+    Boolean(dateRange.startDate) !== Boolean(dateRange.endDate);
 
   const getValidationMessage = useCallback(() => {
     if (!client) {
@@ -170,11 +208,7 @@ export function useClientExport({
       }
 
       setDateRangeState(
-        normalizeRideDateRange(
-          nextRange.startDate,
-          nextRange.endDate,
-          'end',
-        ),
+        normalizeRideDateRange(nextRange.startDate, nextRange.endDate, 'end'),
       );
       resetValidation();
     },
@@ -204,62 +238,71 @@ export function useClientExport({
     mutation.reset();
   }, [mutation, resetValidation]);
 
-  const openExport = useCallback((type: ClientExportType) => {
-    if (!client || isDetailsPending || mutation.isPending) {
-      return;
-    }
-
-    setSelectedTypeState(type);
-    setIsOpen(true);
-    resetValidation();
-  }, [client, isDetailsPending, mutation.isPending, resetValidation]);
-
-  const submitExport = useCallback(async () => {
-    const nextValidationMessage = getValidationMessage();
-
-    if (nextValidationMessage) {
-      setValidationMessage(nextValidationMessage);
-      toast.error(nextValidationMessage);
-      return;
-    }
-
-    if (!client) {
-      return;
-    }
-
-    setValidationMessage(null);
-
-    try {
-      const result = await mutation.mutateAsync({
-        clientId: client.id,
-        clientName: client.name || 'Sem nome',
-        type: selectedType,
-        startDate: dateRange.startDate || undefined,
-        endDate: dateRange.endDate || undefined,
-        userName: user?.name || 'Motorista',
-      });
-
-      if (result.rides.length === 0) {
-        toast.error(getEmptyExportMessage(selectedType));
+  const openExport = useCallback(
+    (type: ClientExportType) => {
+      if (!client || isDetailsPending || mutation.isPending) {
         return;
       }
 
-      toast.success(
-        `PDF de ${getClientExportTypeLabel(selectedType).toLowerCase()} pronto. O download deve iniciar em instantes.`,
-      );
-      setIsOpen(false);
-    } catch {
-      return;
-    }
-  }, [
-    client,
-    dateRange.endDate,
-    dateRange.startDate,
-    getValidationMessage,
-    mutation,
-    selectedType,
-    user?.name,
-  ]);
+      setSelectedTypeState(type);
+      setIsOpen(true);
+      resetValidation();
+    },
+    [client, isDetailsPending, mutation.isPending, resetValidation],
+  );
+
+  const submitExport = useCallback(
+    async (mode: PdfExportMode = 'download') => {
+      const nextValidationMessage = getValidationMessage();
+
+      if (nextValidationMessage) {
+        setValidationMessage(nextValidationMessage);
+        toast.error(nextValidationMessage);
+        return;
+      }
+
+      if (!client) {
+        return;
+      }
+
+      setValidationMessage(null);
+
+      try {
+        const result = await mutation.mutateAsync({
+          clientId: client.id,
+          clientName: client.name || 'Sem nome',
+          type: selectedType,
+          startDate: dateRange.startDate || undefined,
+          endDate: dateRange.endDate || undefined,
+          userName,
+          mode,
+        });
+
+        if (result.rides.length === 0) {
+          toast.error(getEmptyExportMessage(selectedType));
+          return;
+        }
+
+        toast.success(
+          mode === 'share'
+            ? `PDF de ${getClientExportTypeLabel(selectedType).toLowerCase()} pronto para compartilhar.`
+            : `PDF de ${getClientExportTypeLabel(selectedType).toLowerCase()} pronto. O download deve iniciar em instantes.`,
+        );
+        setIsOpen(false);
+      } catch {
+        return;
+      }
+    },
+    [
+      client,
+      dateRange.endDate,
+      dateRange.startDate,
+      getValidationMessage,
+      mutation,
+      selectedType,
+      userName,
+    ],
+  );
 
   const errorMessage = useMemo(() => {
     if (validationMessage) {

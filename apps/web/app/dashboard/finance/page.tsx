@@ -62,12 +62,13 @@ export default function FinancePage() {
     startDate: filters.startDate,
     endDate: filters.endDate,
   });
-  const { isExportingPdf, handleExportPDF } = useExportPdf({
-    dashboardParams,
-    expectedRideCount: financeData?.summary?.count || 0,
-    isFinanceDataPending: isPending || isFetching,
-    userName: user?.name || 'Motorista',
-  });
+  const { isExportingPdf, downloadFinancialReport, shareFinancialReport } =
+    useExportPdf({
+      dashboardParams,
+      expectedRideCount: financeData?.summary?.count || 0,
+      isFinanceDataPending: isPending || isFetching,
+      userName: user?.name || 'Motorista',
+    });
   const { exportToCSV } = useExportFinance();
 
   if (isInitialLoading) {
@@ -194,10 +195,10 @@ export default function FinancePage() {
                   isFetching={isTransitioningData}
                   isExportingPdf={isExportingPdf}
                   hasData={
-                    !areActionsBlocked &&
-                    Boolean(financeData?.summary?.count)
+                    !areActionsBlocked && Boolean(financeData?.summary?.count)
                   }
-                  onExport={handleExportPDF}
+                  onExport={downloadFinancialReport}
+                  onShare={shareFinancialReport}
                   onExportCSV={() =>
                     financeData &&
                     exportToCSV(
@@ -238,7 +239,9 @@ export default function FinancePage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowAdvancedDetails((current) => !current)}
+                    onClick={() =>
+                      setShowAdvancedDetails((current) => !current)
+                    }
                     className="h-11 rounded-2xl border-border-subtle bg-background px-5 font-bold text-text-primary"
                   >
                     {showAdvancedDetails ? (

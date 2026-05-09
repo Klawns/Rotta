@@ -26,6 +26,7 @@ export function useExportRidesPdf({ userName }: UseExportRidesPdfParams) {
       return exportRidesPdf({
         rides: response.data.rides,
         expectedRideCount: response.data.count,
+        mode: 'share',
         period,
         userName: userName || 'Motorista',
       });
@@ -50,7 +51,8 @@ export function useExportRidesPdf({ userName }: UseExportRidesPdfParams) {
       if (!result.ok && result.reason === 'missing-filtered-rides') {
         toast({
           title: 'Erro ao exportar',
-          description: 'Nao foi possivel montar o PDF com as corridas do periodo.',
+          description:
+            'Nao foi possivel montar o PDF com as corridas do periodo.',
           variant: 'destructive',
         });
       }

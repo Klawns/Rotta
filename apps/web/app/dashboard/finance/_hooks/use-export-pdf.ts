@@ -7,7 +7,10 @@ import {
   financeService,
   type FinanceDashboardParams,
 } from '@/services/finance-service';
-import { exportRidesPdf } from '@/services/pdf-export.service';
+import {
+  exportRidesPdf,
+  type PdfExportMode,
+} from '@/services/pdf-export.service';
 
 interface UseExportPdfParams {
   dashboardParams: FinanceDashboardParams | null;
@@ -26,15 +29,18 @@ export function useExportPdf({
     mutationFn: async ({
       currentDashboardParams,
       currentExpectedRideCount,
+      mode,
     }: {
       currentDashboardParams: FinanceDashboardParams;
       currentExpectedRideCount: number;
+      mode: PdfExportMode;
     }) => {
       const report = await financeService.getReport(currentDashboardParams);
 
       return exportRidesPdf({
         rides: report.rides,
         expectedRideCount: currentExpectedRideCount,
+        mode,
         period: currentDashboardParams.period,
         paymentStatus: currentDashboardParams.paymentStatus,
         userName,
@@ -46,7 +52,7 @@ export function useExportPdf({
     },
   });
 
-  const handleExportPDF = async () => {
+  const exportFinancialReport = async (mode: PdfExportMode) => {
     if (isFinanceDataPending || mutation.isPending || !dashboardParams) {
       return;
     }
@@ -55,6 +61,7 @@ export function useExportPdf({
       const result = await mutation.mutateAsync({
         currentDashboardParams: dashboardParams,
         currentExpectedRideCount: expectedRideCount,
+        mode,
       });
 
       if (!result.ok && result.reason === 'missing-filtered-rides') {
@@ -71,8 +78,13 @@ export function useExportPdf({
     }
   };
 
+  const downloadFinancialReport = () => exportFinancialReport('download');
+  const shareFinancialReport = () => exportFinancialReport('share');
+
   return {
     isExportingPdf: mutation.isPending,
-    handleExportPDF,
+    downloadFinancialReport,
+    shareFinancialReport,
+    handleExportPDF: downloadFinancialReport,
   };
 }

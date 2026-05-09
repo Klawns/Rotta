@@ -1,4 +1,4 @@
-import { Download, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { Download, FileSpreadsheet, Loader2, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { FinanceFilterChip } from '../_lib/finance-filter-chips';
@@ -13,6 +13,7 @@ interface FinanceActionBarProps {
   isExportingPdf: boolean;
   hasData: boolean;
   onExport: () => void;
+  onShare: () => void;
   onExportCSV: () => void;
 }
 
@@ -24,6 +25,7 @@ export function FinanceActionBar({
   isExportingPdf,
   hasData,
   onExport,
+  onShare,
   onExportCSV,
 }: FinanceActionBarProps) {
   const accent = getPeriodAccent(currentPeriod.id);
@@ -59,7 +61,7 @@ export function FinanceActionBar({
           ))}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-3">
           <Button
             onClick={onExport}
             disabled={isPdfDisabled}
@@ -74,7 +76,21 @@ export function FinanceActionBar({
             ) : (
               <Download className="mr-2 size-4" />
             )}
-            {isExportingPdf ? 'Gerando PDF...' : 'Exportar PDF'}
+            {isExportingPdf ? 'Gerando PDF...' : 'Baixar PDF'}
+          </Button>
+
+          <Button
+            onClick={onShare}
+            disabled={isPdfDisabled}
+            variant="outline"
+            className="h-12 w-full rounded-2xl border-border-subtle bg-background px-5 font-bold text-text-primary"
+          >
+            {isExportingPdf ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <Share2 className="mr-2 size-4 text-primary" />
+            )}
+            Compartilhar PDF
           </Button>
 
           <Button
