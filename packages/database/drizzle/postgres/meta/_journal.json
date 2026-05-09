@@ -64,6 +64,27 @@
       "when": 1776894381668,
       "tag": "0008_superb_supernaut",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777046025266,
+      "tag": "0009_numerous_makkari",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1777051472998,
+      "tag": "0010_lowly_titanium_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1777051800000,
+      "tag": "0011_client_payments_settlement_idx",
+      "breakpoints": true
     }
   ]
 }
