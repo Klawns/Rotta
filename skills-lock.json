@@ -45,6 +45,11 @@
       "source": "supercent-io/skills-template",
       "sourceType": "github",
       "computedHash": "1459a31d3c87df7fd601a99479363a7f66da1cd2089f08405a7d4854d0da3a93"
+    },
+    "tdd-workflow": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "computedHash": "c03b44b81e6baa41000b3ce8305640900721becc1e707f4dbdf65b1c6d76d300"
     }
   }
 }
