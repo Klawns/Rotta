@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Drizzle is consumed through a dialect-agnostic runtime boundary in this service. */
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, gte, lte, ne } from 'drizzle-orm';
+import { eq, gte, lte, ne, isNull } from 'drizzle-orm';
 import type { GetFinanceStatsDto } from '../dto/finance.dto';
 import { DRIZZLE } from '../../database/database.provider';
 import type { DrizzleClient } from '../../database/database.provider';
@@ -40,6 +40,7 @@ export class FinanceRideQueryService {
       gte(this.schema.rides.rideDate, start),
       lte(this.schema.rides.rideDate, end),
       ne(this.schema.rides.status, 'CANCELLED'),
+      isNull(this.schema.rides.archivedAt),
     ];
 
     if (clientId) {

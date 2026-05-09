@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument -- Drizzle is consumed through a dialect-agnostic runtime boundary in this repository. */
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, gte, lte, sql, desc, or, ilike } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, desc, or, ilike, isNull } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.provider';
 import type { DrizzleClient } from '../../database/database.provider';
 import type {
@@ -25,8 +25,21 @@ export class RideReadRepository {
     return this.drizzle.schema;
   }
 
-  private buildFindAllConditions(userId: string, filters?: FindAllFilters) {
-    const conditions = [eq(this.schema.rides.userId, userId)];
+  private buildArchivedCondition(includeArchived: boolean) {
+    return includeArchived
+      ? sql`${this.schema.rides.archivedAt} is not null`
+      : isNull(this.schema.rides.archivedAt);
+  }
+
+  private buildFindAllConditions(
+    userId: string,
+    filters?: FindAllFilters,
+    options?: { archivedOnly?: boolean },
+  ) {
+    const conditions = [
+      eq(this.schema.rides.userId, userId),
+      this.buildArchivedCondition(Boolean(options?.archivedOnly)),
+    ];
 
     if (filters?.status) {
       conditions.push(eq(this.schema.rides.status, filters.status));
@@ -79,6 +92,9 @@ export class RideReadRepository {
       debtValue: this.schema.rides.debtValue,
       rideDate: this.schema.rides.rideDate,
       createdAt: this.schema.rides.createdAt,
+      archivedAt: this.schema.rides.archivedAt,
+      archivedBy: this.schema.rides.archivedBy,
+      archiveReason: this.schema.rides.archiveReason,
       location: this.schema.rides.location,
       photo: this.schema.rides.photo,
       client: {
@@ -101,7 +117,11 @@ export class RideReadRepository {
         eq(this.schema.rides.clientId, this.schema.clients.id),
       )
       .where(
-        and(eq(this.schema.rides.id, id), eq(this.schema.rides.userId, userId)),
+        and(
+          eq(this.schema.rides.id, id),
+          eq(this.schema.rides.userId, userId),
+          isNull(this.schema.rides.archivedAt),
+        ),
       )
       .limit(1);
 
@@ -120,6 +140,80 @@ export class RideReadRepository {
     hasNextPage: boolean;
   }> {
     const baseConditions = this.buildFindAllConditions(userId, filters);
+    const conditions = [...baseConditions];
+
+    if (cursor) {
+      const cursorCondition = this.rideCursorService.buildCondition(
+        this.schema.rides,
+        this.rideCursorService.decode(cursor),
+      );
+
+      if (cursorCondition) {
+        conditions.push(cursorCondition);
+      }
+    }
+
+    const [results, countResult] = await Promise.all([
+      this.db
+        .select(this.buildRideSelect())
+        .from(this.schema.rides)
+        .leftJoin(
+          this.schema.clients,
+          eq(this.schema.rides.clientId, this.schema.clients.id),
+        )
+        .where(and(...conditions))
+        .orderBy(
+          desc(this.schema.rides.rideDate),
+          desc(this.schema.rides.createdAt),
+          desc(this.schema.rides.id),
+        )
+        .limit(limit + 1),
+      filters?.search
+        ? this.db
+            .select({ count: sql<number>`count(*)` })
+            .from(this.schema.rides)
+            .leftJoin(
+              this.schema.clients,
+              eq(this.schema.rides.clientId, this.schema.clients.id),
+            )
+            .where(and(...baseConditions))
+        : this.db
+            .select({ count: sql<number>`count(*)` })
+            .from(this.schema.rides)
+            .where(and(...baseConditions)),
+    ]);
+
+    const hasNextPage = results.length > limit;
+    const items = hasNextPage ? results.slice(0, limit) : results;
+
+    return {
+      rides: items as RideWithClient[],
+      total: Number(countResult[0]?.count || 0),
+      nextCursor: hasNextPage
+        ? this.rideCursorService.encode({
+            id: items[items.length - 1].id,
+            rideDate: items[items.length - 1].rideDate,
+            createdAt: items[items.length - 1].createdAt,
+          })
+        : undefined,
+      hasNextPage,
+    };
+  }
+
+  async findArchived(
+    userId: string,
+    limit: number = 20,
+    cursor?: string,
+    filters?: FindAllFilters,
+  ): Promise<{
+    rides: RideWithClient[];
+    total: number;
+    nextCursor?: string;
+    hasNextPage: boolean;
+  }> {
+    const baseConditions = this.buildFindAllConditions(userId, filters, {
+      archivedOnly: true,
+    });
     const conditions = [...baseConditions];
 
     if (cursor) {
@@ -279,7 +373,12 @@ export class RideReadRepository {
     const result = await this.db
       .select({ count: sql<number>`count(*)` })
       .from(this.schema.rides)
-      .where(eq(this.schema.rides.userId, userId));
+      .where(
+        and(
+          eq(this.schema.rides.userId, userId),
+          isNull(this.schema.rides.archivedAt),
+        ),
+      );
 
     return result[0].count;
   }

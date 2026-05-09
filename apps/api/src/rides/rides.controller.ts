@@ -22,6 +22,7 @@ import {
   updateRideStatusSchema,
   findAllRidesSchema,
   getStatsSchema,
+  restoreBulkRidesSchema,
 } from './dto/rides.dto';
 import type {
   BulkDeleteRidesDto,
@@ -30,6 +31,7 @@ import type {
   UpdateRideStatusDto,
   FindAllRidesDto,
   GetStatsDto,
+  RestoreBulkRidesDto,
 } from './dto/rides.dto';
 import type { RequestWithUser } from '../auth/auth.types';
 import { RideResponsePresenterService } from './services/ride-response-presenter.service';
@@ -49,6 +51,25 @@ export class RidesController {
   ) {
     const { limit, cursor, ...filters } = query;
     const { rides, ...meta } = await this.ridesService.findAll(
+      req.user.id,
+      limit,
+      cursor,
+      filters,
+    );
+
+    return {
+      data: await this.rideResponsePresenter.presentList(rides),
+      meta,
+    };
+  }
+
+  @Get('archived')
+  async findArchived(
+    @Request() req: RequestWithUser,
+    @ZodQuery(findAllRidesSchema) query: FindAllRidesDto,
+  ) {
+    const { limit, cursor, ...filters } = query;
+    const { rides, ...meta } = await this.ridesService.findArchived(
       req.user.id,
       limit,
       cursor,
@@ -81,6 +102,14 @@ export class RidesController {
     @ZodBody(bulkDeleteRidesSchema) body: BulkDeleteRidesDto,
   ) {
     return this.ridesService.bulkDelete(req.user.id, body);
+  }
+
+  @Post('restore-bulk')
+  async restoreBulk(
+    @Request() req: RequestWithUser,
+    @ZodBody(restoreBulkRidesSchema) body: RestoreBulkRidesDto,
+  ) {
+    return this.ridesService.restoreBulk(req.user.id, body);
   }
 
   @Patch(':id/status')
@@ -162,5 +191,11 @@ export class RidesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Request() req: RequestWithUser, @Param('id') id: string) {
     await this.ridesService.delete(req.user.id, id);
+  }
+
+  @Post(':id/restore')
+  async restore(@Request() req: RequestWithUser, @Param('id') id: string) {
+    const result = await this.ridesService.restore(req.user.id, id);
+    return this.rideResponsePresenter.present(result);
   }
 }

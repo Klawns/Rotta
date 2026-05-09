@@ -21,6 +21,12 @@ export interface RideWithClient extends Ride {
   } | null;
 }
 
+export interface ArchiveRideInput {
+  archivedAt: Date;
+  archivedBy: string;
+  archiveReason?: string | null;
+}
+
 export const IRidesRepository = Symbol('IRidesRepository');
 
 export interface IRidesRepository {
@@ -74,19 +80,42 @@ export interface IRidesRepository {
 
   countAll(userId: string): Promise<number>;
 
-  delete(
+  archive(
+    userId: string,
+    id: string,
+    data: ArchiveRideInput,
+    executor?: unknown,
+  ): Promise<Ride | undefined>;
+  findArchived(
+    userId: string,
+    limit?: number,
+    cursor?: string,
+    filters?: FindAllFilters,
+  ): Promise<{
+    rides: RideWithClient[];
+    total: number;
+    nextCursor?: string;
+    hasNextPage: boolean;
+  }>;
+  findArchivedOne(
     userId: string,
     id: string,
     executor?: unknown,
   ): Promise<Ride | undefined>;
+  findArchivedManyByIds(
+    userId: string,
+    ids: string[],
+    executor?: unknown,
+  ): Promise<Ride[]>;
   findManyByIds(
     userId: string,
     ids: string[],
     executor?: unknown,
   ): Promise<Ride[]>;
-  deleteManyByIds(
+  archiveManyByIds(
     userId: string,
     ids: string[],
+    data: ArchiveRideInput,
     executor?: unknown,
   ): Promise<Ride[]>;
 
@@ -137,5 +166,19 @@ export interface IRidesRepository {
     userId: string,
     executor?: unknown,
   ): Promise<number>;
-  deleteAll(userId: string, executor?: unknown): Promise<void>;
+  restore(
+    userId: string,
+    id: string,
+    executor?: unknown,
+  ): Promise<Ride | undefined>;
+  restoreManyByIds(
+    userId: string,
+    ids: string[],
+    executor?: unknown,
+  ): Promise<Ride[]>;
+  archiveAll(
+    userId: string,
+    data: ArchiveRideInput,
+    executor?: unknown,
+  ): Promise<void>;
 }

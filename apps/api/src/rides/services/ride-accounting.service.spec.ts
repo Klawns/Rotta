@@ -152,7 +152,38 @@ describe('RideAccountingService', () => {
         userId: 'user-1',
         amount: 7,
         type: 'CREDIT',
-        origin: 'MANUAL_ADJUSTMENT',
+        origin: 'RIDE_ARCHIVE_REFUND',
+      }),
+      'tx',
+    );
+  });
+
+  it('should consume the exact archived balance and register a restore debit transaction', async () => {
+    clientsRepoMock.findOneForUpdate.mockResolvedValueOnce({
+      id: 'client-1',
+      balance: 12,
+    });
+
+    await service.consumeExactClientBalanceOrThrow(
+      'user-1',
+      'client-1',
+      7,
+      'tx',
+    );
+
+    expect(clientsRepoMock.decrementBalance).toHaveBeenCalledWith(
+      'user-1',
+      'client-1',
+      7,
+      'tx',
+    );
+    expect(balanceTransactionsRepoMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        clientId: 'client-1',
+        userId: 'user-1',
+        amount: 7,
+        type: 'DEBIT',
+        origin: 'RIDE_RESTORE_USAGE',
       }),
       'tx',
     );

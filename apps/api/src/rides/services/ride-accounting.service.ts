@@ -1,8 +1,16 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { IClientsRepository } from '../../clients/interfaces/clients-repository.interface';
 import { IBalanceTransactionsRepository } from '../../clients/interfaces/balance-transactions-repository.interface';
-import { CLIENT_NOT_FOUND_MESSAGE } from '../../common/messages/domain-errors';
+import {
+  CLIENT_NOT_FOUND_MESSAGE,
+  RIDE_RESTORE_INSUFFICIENT_BALANCE_MESSAGE,
+} from '../../common/messages/domain-errors';
 
 interface ResolvePaymentSnapshotInput {
   value: number;
@@ -137,6 +145,56 @@ export class RideAccountingService {
     return amountToUse;
   }
 
+  async consumeExactClientBalanceOrThrow(
+    userId: string,
+    clientId: string,
+    amount: number,
+    executor: unknown,
+  ) {
+    if (amount <= 0) {
+      return;
+    }
+
+    const client = await this.getScopedClientOrThrow(
+      userId,
+      clientId,
+      executor,
+      {
+        forUpdate: true,
+      },
+    );
+    const normalizedAmount = Number(amount);
+    const currentBalance = Number(client.balance || 0);
+
+    if (currentBalance < normalizedAmount) {
+      throw new ConflictException(RIDE_RESTORE_INSUFFICIENT_BALANCE_MESSAGE);
+    }
+
+    const updatedClient = await this.clientsRepository.decrementBalance(
+      userId,
+      clientId,
+      normalizedAmount,
+      executor,
+    );
+
+    if (!updatedClient) {
+      throw new NotFoundException(CLIENT_NOT_FOUND_MESSAGE);
+    }
+
+    await this.balanceTransactionsRepository.create(
+      {
+        id: randomUUID(),
+        clientId,
+        userId,
+        amount: normalizedAmount,
+        type: 'DEBIT',
+        origin: 'RIDE_RESTORE_USAGE',
+        description: 'Uso de saldo para restaurar a corrida.',
+      },
+      executor,
+    );
+  }
+
   async refundClientBalance(
     userId: string,
     clientId: string,
@@ -166,7 +224,7 @@ export class RideAccountingService {
         userId,
         amount,
         type: 'CREDIT',
-        origin: 'MANUAL_ADJUSTMENT',
+        origin: 'RIDE_ARCHIVE_REFUND',
         description: `Reversão de saldo vinculada à corrida ${rideId}.`,
       },
       executor,

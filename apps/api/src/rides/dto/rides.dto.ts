@@ -48,6 +48,16 @@ export const bulkDeleteRidesSchema = z.object({
 
 export type BulkDeleteRidesDto = z.infer<typeof bulkDeleteRidesSchema>;
 
+export const restoreBulkRidesSchema = z.object({
+  ids: z
+    .array(z.string().trim().min(1, { message: 'ID da corrida e obrigatorio' }))
+    .min(1, { message: 'Informe ao menos uma corrida para restaurar' })
+    .max(500, { message: 'Voce pode restaurar ate 500 corridas por vez' })
+    .transform((ids) => Array.from(new Set(ids))),
+});
+
+export type RestoreBulkRidesDto = z.infer<typeof restoreBulkRidesSchema>;
+
 export const findAllRidesSchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(20),
   cursor: z.string().optional(),

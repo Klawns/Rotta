@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument -- Drizzle is consumed through a dialect-agnostic runtime boundary in this repository. */
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, gte, lte, sql, desc, ne } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, desc, ne, isNull } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.provider';
 import type { DrizzleClient } from '../../database/database.provider';
 import type { RideWithClient } from '../interfaces/rides-repository.interface';
@@ -30,6 +30,7 @@ export class RideStatsRepository {
       eq(this.schema.rides.userId, userId),
       gte(this.schema.rides.rideDate, start),
       lte(this.schema.rides.rideDate, end),
+      isNull(this.schema.rides.archivedAt),
     ];
 
     if (clientId && clientId !== 'all') {
@@ -102,6 +103,7 @@ export class RideStatsRepository {
           eq(this.schema.rides.userId, userId),
           eq(this.schema.rides.paymentStatus, 'PENDING'),
           ne(this.schema.rides.status, 'CANCELLED'),
+          isNull(this.schema.rides.archivedAt),
         ),
       );
 

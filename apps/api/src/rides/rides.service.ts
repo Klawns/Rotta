@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { ProfileCacheService } from '../cache/profile-cache.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { IRidesRepository } from './interfaces/rides-repository.interface';
@@ -21,21 +21,25 @@ import { DRIZZLE } from '../database/database.provider';
 import type { DrizzleClient } from '../database/database.provider';
 import { UserDashboardCacheService } from '../cache/user-dashboard-cache.service';
 import { RideAccountingService } from './services/ride-accounting.service';
+import { RideLifecycleEventService } from './services/ride-lifecycle-event.service';
 import { RidePhotoReferenceService } from './services/ride-photo-reference.service';
 import { RideStatusService } from './services/ride-status.service';
 import type {
   BulkDeleteRidesDto,
   CreateRideDto,
+  RestoreBulkRidesDto,
   UpdateRideDto,
   UpdateRideStatusDto,
   GetStatsDto,
 } from './dto/rides.dto';
 import type { RideResponseDto } from './dto/ride-response.dto';
 import type {
+  ArchiveRideInput,
   Ride,
   RideWithClient,
 } from './interfaces/rides-repository.interface';
 import { ClientPaymentReconciliationService } from '../clients/services/client-payment-reconciliation.service';
+import { IClientPaymentsRepository } from '../clients/interfaces/client-payments-repository.interface';
 import {
   PLAN_NOT_FOUND_MESSAGE,
   RIDE_NOT_FOUND_MESSAGE,
@@ -49,7 +53,6 @@ type RideBalanceRow = {
   id: string;
   clientId: string;
   paidWithBalance: number | null;
-  photo: string | null;
 };
 
 interface BulkDeleteTransaction {
@@ -57,7 +60,6 @@ interface BulkDeleteTransaction {
     id: unknown;
     clientId: unknown;
     paidWithBalance: unknown;
-    photo: unknown;
   }): {
     from(table: unknown): {
       where(condition: unknown): Promise<RideBalanceRow[]>;
@@ -70,6 +72,22 @@ interface RideStatsResult {
   totalValue: number;
   rides: RideResponseDto[];
 }
+
+interface RideCreateTimings {
+  photoValidationMs: number;
+  subscriptionMs: number;
+  transactionMs: number;
+  clientLookupMs: number;
+  paymentSnapshotMs: number;
+  insertMs: number;
+  lifecycleMs: number;
+  reconciliationGateMs: number;
+  reconciliationMs: number;
+  finalReadMs: number;
+  invalidateMs: number;
+}
+
+type RideArchiveReason = 'user-delete' | 'bulk-delete';
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'erro desconhecido';
@@ -88,6 +106,7 @@ function parseRideDateFilters<
       : undefined,
   };
 }
+
 @Injectable()
 export class RidesService {
   private readonly logger = new Logger(RidesService.name);
@@ -100,9 +119,12 @@ export class RidesService {
     private readonly profileCacheService: ProfileCacheService,
     private readonly userDashboardCacheService: UserDashboardCacheService,
     private readonly rideAccountingService: RideAccountingService,
+    private readonly rideLifecycleEventService: RideLifecycleEventService,
     private readonly ridePhotoReferenceService: RidePhotoReferenceService,
     private readonly rideStatusService: RideStatusService,
     private readonly clientPaymentReconciliationService: ClientPaymentReconciliationService,
+    @Inject(IClientPaymentsRepository)
+    private readonly clientPaymentsRepository: IClientPaymentsRepository,
   ) {}
 
   private async getRideOrThrow(
@@ -129,6 +151,24 @@ export class RidesService {
       id,
       executor,
     );
+    if (!ride) {
+      throw new NotFoundException(RIDE_NOT_FOUND_MESSAGE);
+    }
+
+    return ride;
+  }
+
+  private async getArchivedRideOrThrow(
+    userId: string,
+    id: string,
+    executor?: unknown,
+  ): Promise<Ride> {
+    const ride = await this.ridesRepository.findArchivedOne(
+      userId,
+      id,
+      executor,
+    );
+
     if (!ride) {
       throw new NotFoundException(RIDE_NOT_FOUND_MESSAGE);
     }
@@ -199,6 +239,187 @@ export class RidesService {
     }
   }
 
+  private buildArchivePayload(
+    userId: string,
+    reason: RideArchiveReason,
+  ): ArchiveRideInput {
+    return {
+      archivedAt: new Date(),
+      archivedBy: userId,
+      archiveReason: reason,
+    };
+  }
+
+  private async recordLifecycleTransitions(
+    userId: string,
+    existingRide: Ride,
+    updateData: {
+      status?: Ride['status'];
+      paymentStatus?: Ride['paymentStatus'];
+    },
+    executor: unknown,
+  ) {
+    if (updateData.status && updateData.status !== existingRide.status) {
+      await this.rideLifecycleEventService.recordStatusChanged(
+        userId,
+        existingRide,
+        updateData.status,
+        executor,
+      );
+    }
+
+    if (
+      updateData.paymentStatus &&
+      updateData.paymentStatus !== existingRide.paymentStatus
+    ) {
+      await this.rideLifecycleEventService.recordPaymentStatusChanged(
+        userId,
+        existingRide,
+        updateData.paymentStatus,
+        executor,
+      );
+    }
+  }
+
+  private logCreateTimings(
+    userId: string,
+    rideId: string | undefined,
+    timings: RideCreateTimings,
+    startedAt: number,
+  ) {
+    const totalMs = Date.now() - startedAt;
+    const message =
+      `[RidesService] Create timings para corrida ${rideId ?? 'desconhecida'} do usuario ${userId}: ` +
+      `photo=${timings.photoValidationMs}ms subscription=${timings.subscriptionMs}ms ` +
+      `transaction=${timings.transactionMs}ms client=${timings.clientLookupMs}ms ` +
+      `snapshot=${timings.paymentSnapshotMs}ms insert=${timings.insertMs}ms ` +
+      `lifecycle=${timings.lifecycleMs}ms reconciliationGate=${timings.reconciliationGateMs}ms ` +
+      `reconciliation=${timings.reconciliationMs}ms finalRead=${timings.finalReadMs}ms ` +
+      `invalidate=${timings.invalidateMs}ms total=${totalMs}ms`;
+
+    if (totalMs > 1500 || timings.transactionMs > 1000) {
+      this.logger.warn(message);
+      return;
+    }
+
+    this.logger.debug(message);
+  }
+
+  private async shouldReconcileCreatedRide(
+    userId: string,
+    clientId: string,
+    debtValue: number,
+    executor: unknown,
+  ) {
+    if (debtValue > 0) {
+      return true;
+    }
+
+    const paymentStats =
+      await this.clientPaymentsRepository.getUnusedPaymentsStats(
+        clientId,
+        userId,
+        executor,
+      );
+
+    return paymentStats.unusedPaymentsCount > 0;
+  }
+
+  private async restoreArchivedRides(
+    userId: string,
+    rides: Ride[],
+    executor: unknown,
+  ): Promise<Ride[]> {
+    if (rides.length === 0) {
+      throw new NotFoundException('Nenhuma corrida arquivada encontrada.');
+    }
+
+    const requiredBalanceByClient = new Map<string, number>();
+    const clientIds = new Set<string>();
+
+    for (const ride of rides) {
+      clientIds.add(ride.clientId);
+      const paidWithBalance = Number(ride.paidWithBalance ?? 0);
+
+      if (paidWithBalance <= 0) {
+        continue;
+      }
+
+      requiredBalanceByClient.set(
+        ride.clientId,
+        (requiredBalanceByClient.get(ride.clientId) ?? 0) + paidWithBalance,
+      );
+    }
+
+    for (const clientId of clientIds) {
+      const amount = requiredBalanceByClient.get(clientId) ?? 0;
+
+      if (amount > 0) {
+        await this.rideAccountingService.consumeExactClientBalanceOrThrow(
+          userId,
+          clientId,
+          amount,
+          executor,
+        );
+        continue;
+      }
+
+      await this.rideAccountingService.getClientOrThrow(
+        userId,
+        clientId,
+        executor,
+      );
+    }
+
+    if (rides.length === 1) {
+      const restoredRide = await this.ridesRepository.restore(
+        userId,
+        rides[0].id,
+        executor,
+      );
+
+      if (!restoredRide) {
+        throw new NotFoundException(RIDE_NOT_FOUND_MESSAGE);
+      }
+
+      await this.rideLifecycleEventService.recordRestored(
+        userId,
+        rides,
+        executor,
+      );
+      await this.reconcileClients(
+        userId,
+        rides.map((ride) => ride.clientId),
+        executor,
+      );
+
+      return [restoredRide];
+    }
+
+    const restoredRides = await this.ridesRepository.restoreManyByIds(
+      userId,
+      rides.map((ride) => ride.id),
+      executor,
+    );
+
+    if (restoredRides.length === 0) {
+      throw new NotFoundException(RIDE_NOT_FOUND_MESSAGE);
+    }
+
+    await this.rideLifecycleEventService.recordRestored(
+      userId,
+      rides,
+      executor,
+    );
+    await this.reconcileClients(
+      userId,
+      rides.map((ride) => ride.clientId),
+      executor,
+    );
+
+    return restoredRides.filter((ride): ride is Ride => Boolean(ride));
+  }
+
   async findAll(
     userId: string,
     limit: number = 20,
@@ -217,17 +438,59 @@ export class RidesService {
     return this.ridesRepository.findAll(userId, limit, cursor, parsedFilters);
   }
 
+  async findArchived(
+    userId: string,
+    limit: number = 20,
+    cursor?: string,
+    filters?: {
+      status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+      paymentStatus?: 'PENDING' | 'PAID';
+      clientId?: string;
+      startDate?: string;
+      endDate?: string;
+      search?: string;
+    },
+  ) {
+    const parsedFilters = parseRideDateFilters(filters);
+
+    return this.ridesRepository.findArchived(
+      userId,
+      limit,
+      cursor,
+      parsedFilters,
+    );
+  }
+
   async create(userId: string, data: CreateRideDto): Promise<RideWithClient> {
+    const startedAt = Date.now();
+    const timings: RideCreateTimings = {
+      photoValidationMs: 0,
+      subscriptionMs: 0,
+      transactionMs: 0,
+      clientLookupMs: 0,
+      paymentSnapshotMs: 0,
+      insertMs: 0,
+      lifecycleMs: 0,
+      reconciliationGateMs: 0,
+      reconciliationMs: 0,
+      finalReadMs: 0,
+      invalidateMs: 0,
+    };
+
+    const photoValidationStartedAt = Date.now();
     const photo = await this.ridePhotoReferenceService.validateForCreate(
       userId,
       data.photo,
     );
+    timings.photoValidationMs = Date.now() - photoValidationStartedAt;
     this.logger.log(
       `[RidesService] Criando corrida para usuário ${userId}`,
       'RidesService',
     );
 
+    const subscriptionStartedAt = Date.now();
     const sub = await this.subscriptionsService.findByUserId(userId);
+    timings.subscriptionMs = Date.now() - subscriptionStartedAt;
 
     if (!sub) {
       this.logger.warn(
@@ -237,8 +500,10 @@ export class RidesService {
       throw new ForbiddenException(PLAN_NOT_FOUND_MESSAGE);
     }
 
+    const transactionStartedAt = Date.now();
     const result = await (this.drizzle.db as TransactionRunner).transaction(
       async (tx) => {
+        const clientLookupStartedAt = Date.now();
         const paidWithBalance = data.useBalance
           ? await this.rideAccountingService.consumeClientBalance(
               userId,
@@ -252,7 +517,9 @@ export class RidesService {
               tx,
             ),
             0);
+        timings.clientLookupMs = Date.now() - clientLookupStartedAt;
 
+        const paymentSnapshotStartedAt = Date.now();
         const {
           rideTotal,
           paidWithBalance: normalizedPaidWithBalance,
@@ -264,7 +531,9 @@ export class RidesService {
           paidWithBalance,
           paymentStatus: data.paymentStatus,
         });
+        timings.paymentSnapshotMs = Date.now() - paymentSnapshotStartedAt;
 
+        const insertStartedAt = Date.now();
         const createdRide = await this.ridesRepository.create(
           {
             id: randomUUID(),
@@ -283,20 +552,56 @@ export class RidesService {
           },
           tx,
         );
+        timings.insertMs = Date.now() - insertStartedAt;
 
-        await this.reconcileClients(userId, [data.clientId], tx);
+        const lifecycleStartedAt = Date.now();
+        try {
+          await this.rideLifecycleEventService.recordCreated(
+            userId,
+            createdRide,
+            tx,
+          );
+        } catch (error) {
+          this.logger.error(
+            `[RidesService] Falha ao registrar evento de criacao da corrida ${createdRide.id} para o usuario ${userId}: ${getErrorMessage(error)}`,
+            error instanceof Error ? error.stack : undefined,
+          );
+        } finally {
+          timings.lifecycleMs = Date.now() - lifecycleStartedAt;
+        }
+
+        const reconciliationGateStartedAt = Date.now();
+        const shouldReconcile = await this.shouldReconcileCreatedRide(
+          userId,
+          data.clientId,
+          debtValue,
+          tx,
+        );
+        timings.reconciliationGateMs = Date.now() - reconciliationGateStartedAt;
+
+        if (shouldReconcile) {
+          const reconciliationStartedAt = Date.now();
+          await this.reconcileClients(userId, [data.clientId], tx);
+          timings.reconciliationMs = Date.now() - reconciliationStartedAt;
+        }
 
         return createdRide;
       },
     );
+    timings.transactionMs = Date.now() - transactionStartedAt;
 
+    const finalReadStartedAt = Date.now();
     const createdRide = await this.getRideWithClientOrThrow(userId, result.id);
+    timings.finalReadMs = Date.now() - finalReadStartedAt;
 
+    const invalidateStartedAt = Date.now();
     await this.invalidateRideMutations(userId);
+    timings.invalidateMs = Date.now() - invalidateStartedAt;
     this.logger.log(
       `[RidesService] Corrida ${result.id} criada com sucesso`,
       'RidesService',
     );
+    this.logCreateTimings(userId, result.id, timings, startedAt);
 
     return createdRide;
   }
@@ -350,6 +655,12 @@ export class RidesService {
           tx,
         );
 
+        await this.recordLifecycleTransitions(
+          userId,
+          existingRide,
+          updateData,
+          tx,
+        );
         await this.reconcileClients(
           userId,
           [existingRide.clientId, nextClientId],
@@ -378,7 +689,7 @@ export class RidesService {
   }
 
   async delete(userId: string, id: string): Promise<void> {
-    this.logger.log(`[RidesService] Removendo corrida ${id}`, 'RidesService');
+    this.logger.log(`[RidesService] Arquivando corrida ${id}`, 'RidesService');
     const startedAt = Date.now();
     const timings = {
       lookupMs: 0,
@@ -392,6 +703,7 @@ export class RidesService {
     timings.lookupMs = Date.now() - lookupStartedAt;
 
     const transactionStartedAt = Date.now();
+    const archivePayload = this.buildArchivePayload(userId, 'user-delete');
     const result = await (this.drizzle.db as TransactionRunner).transaction(
       async (tx) => {
         await this.rideAccountingService.refundClientBalance(
@@ -402,11 +714,26 @@ export class RidesService {
           tx,
         );
 
-        const deletedRide = await this.ridesRepository.delete(userId, id, tx);
+        const archivedRide = await this.ridesRepository.archive(
+          userId,
+          id,
+          archivePayload,
+          tx,
+        );
 
+        await this.rideLifecycleEventService.recordArchived(
+          userId,
+          [
+            {
+              ...existingRide,
+              archiveReason: archivePayload.archiveReason,
+            },
+          ],
+          tx,
+        );
         await this.reconcileClients(userId, [existingRide.clientId], tx);
 
-        return deletedRide;
+        return archivedRide;
       },
     );
     timings.transactionMs = Date.now() - transactionStartedAt;
@@ -415,22 +742,15 @@ export class RidesService {
       throw new NotFoundException(RIDE_NOT_FOUND_MESSAGE);
     }
 
-    const cleanupStartedAt = Date.now();
-    await this.cleanupManagedRidePhoto(existingRide.photo ?? null, {
-      action: 'delete',
-      userId,
-    });
-    timings.cleanupMs = Date.now() - cleanupStartedAt;
-
     const invalidateStartedAt = Date.now();
     await this.invalidateRideMutations(userId);
     timings.invalidateMs = Date.now() - invalidateStartedAt;
     this.logger.log(
-      `[RidesService] Corrida ${id} removida com sucesso`,
+      `[RidesService] Corrida ${id} arquivada com sucesso`,
       'RidesService',
     );
     this.logger.debug(
-      `[RidesService] Delete timings para corrida ${id}: lookup=${timings.lookupMs}ms transaction=${timings.transactionMs}ms cleanup=${timings.cleanupMs}ms invalidate=${timings.invalidateMs}ms total=${Date.now() - startedAt}ms`,
+      `[RidesService] Archive timings para corrida ${id}: lookup=${timings.lookupMs}ms transaction=${timings.transactionMs}ms cleanup=${timings.cleanupMs}ms invalidate=${timings.invalidateMs}ms total=${Date.now() - startedAt}ms`,
     );
   }
 
@@ -439,11 +759,11 @@ export class RidesService {
     data: BulkDeleteRidesDto,
   ): Promise<{ requestedCount: number; deletedCount: number }> {
     this.logger.log(
-      `[RidesService] Removendo ${data.ids.length} corridas em lote para o usuario ${userId}`,
+      `[RidesService] Arquivando ${data.ids.length} corridas em lote para o usuario ${userId}`,
       'RidesService',
     );
-    const photosToCleanup = new Set<string>();
     let deletedCount = 0;
+    const archivePayload = this.buildArchivePayload(userId, 'bulk-delete');
 
     await (this.drizzle.db as TransactionRunner).transaction(async (tx) => {
       const ridesToDelete = await this.ridesRepository.findManyByIds(
@@ -461,10 +781,6 @@ export class RidesService {
       for (const ride of ridesToDelete) {
         const paidWithBalance = Number(ride.paidWithBalance ?? 0);
 
-        if (this.ridePhotoReferenceService.isManagedPhotoKey(ride.photo)) {
-          photosToCleanup.add(ride.photo);
-        }
-
         if (paidWithBalance > 0) {
           refundByClient.set(
             ride.clientId,
@@ -483,28 +799,28 @@ export class RidesService {
         );
       }
 
-      const deletedRides = await this.ridesRepository.deleteManyByIds(
+      const deletedRides = await this.ridesRepository.archiveManyByIds(
         userId,
         ridesToDelete.map((ride) => ride.id),
+        archivePayload,
         tx,
       );
       deletedCount = deletedRides.length;
 
+      await this.rideLifecycleEventService.recordArchived(
+        userId,
+        ridesToDelete.map((ride) => ({
+          ...ride,
+          archiveReason: archivePayload.archiveReason,
+        })),
+        tx,
+      );
       await this.reconcileClients(
         userId,
         ridesToDelete.map((ride) => ride.clientId),
         tx,
       );
     });
-
-    await Promise.all(
-      Array.from(photosToCleanup).map((photo) =>
-        this.cleanupManagedRidePhoto(photo, {
-          action: 'delete-all',
-          userId,
-        }),
-      ),
-    );
     await this.invalidateRideMutations(userId);
 
     return {
@@ -515,10 +831,10 @@ export class RidesService {
 
   async deleteAll(userId: string): Promise<{ success: true }> {
     this.logger.log(
-      `[RidesService] Removendo TODAS as corridas do usuário ${userId}`,
+      `[RidesService] Arquivando TODAS as corridas do usuário ${userId}`,
       'RidesService',
     );
-    const photosToCleanup = new Set<string>();
+    const archivePayload = this.buildArchivePayload(userId, 'bulk-delete');
 
     await (
       this.drizzle.db as {
@@ -532,19 +848,19 @@ export class RidesService {
           id: this.drizzle.schema.rides.id,
           clientId: this.drizzle.schema.rides.clientId,
           paidWithBalance: this.drizzle.schema.rides.paidWithBalance,
-          photo: this.drizzle.schema.rides.photo,
         })
         .from(this.drizzle.schema.rides)
-        .where(eq(this.drizzle.schema.rides.userId, userId));
+        .where(
+          and(
+            eq(this.drizzle.schema.rides.userId, userId),
+            isNull(this.drizzle.schema.rides.archivedAt),
+          ),
+        );
 
       const refundByClient = new Map<string, number>();
 
       for (const ride of ridesWithBalance) {
         const paidWithBalance = Number(ride.paidWithBalance ?? 0);
-
-        if (this.ridePhotoReferenceService.isManagedPhotoKey(ride.photo)) {
-          photosToCleanup.add(ride.photo);
-        }
 
         if (paidWithBalance > 0) {
           refundByClient.set(
@@ -564,8 +880,17 @@ export class RidesService {
         );
       }
 
-      await this.ridesRepository.deleteAll(userId, tx);
+      await this.ridesRepository.archiveAll(userId, archivePayload, tx);
 
+      await this.rideLifecycleEventService.recordArchived(
+        userId,
+        ridesWithBalance.map((ride) => ({
+          id: ride.id,
+          userId,
+          archiveReason: archivePayload.archiveReason,
+        })),
+        tx,
+      );
       await this.reconcileClients(
         userId,
         ridesWithBalance.map((ride) => ride.clientId),
@@ -573,20 +898,59 @@ export class RidesService {
       );
     });
 
-    await Promise.all(
-      Array.from(photosToCleanup).map((photo) =>
-        this.cleanupManagedRidePhoto(photo, {
-          action: 'delete-all',
-          userId,
-        }),
-      ),
-    );
     await this.invalidateRideMutations(userId);
     this.logger.log(
-      `[RidesService] Todas as corridas do usuário ${userId} removidas com sucesso`,
+      `[RidesService] Todas as corridas do usuário ${userId} arquivadas com sucesso`,
       'RidesService',
     );
     return { success: true };
+  }
+
+  async restore(userId: string, id: string): Promise<RideWithClient> {
+    this.logger.log(`[RidesService] Restaurando corrida ${id}`, 'RidesService');
+
+    await (this.drizzle.db as TransactionRunner).transaction(async (tx) => {
+      const archivedRide = await this.getArchivedRideOrThrow(userId, id, tx);
+      await this.restoreArchivedRides(userId, [archivedRide], tx);
+    });
+
+    const restoredRide = await this.getRideWithClientOrThrow(userId, id);
+    await this.invalidateRideMutations(userId);
+
+    return restoredRide;
+  }
+
+  async restoreBulk(
+    userId: string,
+    data: RestoreBulkRidesDto,
+  ): Promise<{ requestedCount: number; restoredCount: number }> {
+    this.logger.log(
+      `[RidesService] Restaurando ${data.ids.length} corridas em lote para o usuario ${userId}`,
+      'RidesService',
+    );
+    let restoredCount = 0;
+
+    await (this.drizzle.db as TransactionRunner).transaction(async (tx) => {
+      const archivedRides = await this.ridesRepository.findArchivedManyByIds(
+        userId,
+        data.ids,
+        tx,
+      );
+      const restoredRides = await this.restoreArchivedRides(
+        userId,
+        archivedRides,
+        tx,
+      );
+
+      restoredCount = restoredRides.length;
+    });
+
+    await this.invalidateRideMutations(userId);
+
+    return {
+      requestedCount: data.ids.length,
+      restoredCount,
+    };
   }
 
   async updateStatus(userId: string, id: string, data: UpdateRideStatusDto) {
@@ -605,6 +969,12 @@ export class RidesService {
           tx,
         );
 
+        await this.recordLifecycleTransitions(
+          userId,
+          existingRide,
+          updateData,
+          tx,
+        );
         await this.reconcileClients(userId, [existingRide.clientId], tx);
 
         return updatedRide;

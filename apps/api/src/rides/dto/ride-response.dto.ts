@@ -12,6 +12,9 @@ export const rideResponseSchema = z.object({
   createdAt: z.date(),
   paidWithBalance: z.number(),
   debtValue: z.number(),
+  archivedAt: z.date().nullable(),
+  archivedBy: z.string().nullable(),
+  archiveReason: z.string().nullable(),
   client: z
     .object({
       id: z.string(),

@@ -11,12 +11,16 @@ describe('RidesController', () => {
     create: jest.Mock;
     delete: jest.Mock;
     deleteAll: jest.Mock;
+    findArchived: jest.Mock;
     getStats: jest.Mock;
+    restore: jest.Mock;
+    restoreBulk: jest.Mock;
     update: jest.Mock;
     updateStatus: jest.Mock;
   };
   let rideResponsePresenter: {
     present: jest.Mock;
+    presentList: jest.Mock;
     presentMappedList: jest.Mock;
   };
 
@@ -25,12 +29,16 @@ describe('RidesController', () => {
       create: jest.fn(),
       delete: jest.fn(),
       deleteAll: jest.fn(),
+      findArchived: jest.fn(),
       getStats: jest.fn(),
+      restore: jest.fn(),
+      restoreBulk: jest.fn(),
       update: jest.fn(),
       updateStatus: jest.fn(),
     };
     rideResponsePresenter = {
       present: jest.fn(async (ride) => ride),
+      presentList: jest.fn(async (rides) => rides),
       presentMappedList: jest.fn(async (rides) => rides),
     };
 
@@ -161,6 +169,86 @@ describe('RidesController', () => {
     expect(rideResponsePresenter.present).toHaveBeenCalledWith(updatedRide);
   });
 
+  it('should format archived rides responses as data plus meta', async () => {
+    rideResponsePresenter.presentList.mockResolvedValueOnce([
+      {
+        id: 'ride-archived-1',
+        value: 20,
+        notes: null,
+        status: 'COMPLETED',
+        paymentStatus: 'PAID',
+        rideDate: new Date('2026-04-03T10:00:00.000Z').toISOString(),
+        createdAt: new Date('2026-04-03T10:00:00.000Z').toISOString(),
+        paidWithBalance: 5,
+        debtValue: 0,
+        location: 'Centro',
+        photo: null,
+        archivedAt: '2026-04-05T10:00:00.000Z',
+        archivedBy: 'user-1',
+        archiveReason: 'user-delete',
+        client: { id: 'client-1', name: 'Alice' },
+      },
+    ]);
+    ridesService.findArchived.mockResolvedValue({
+      rides: [
+        {
+          id: 'ride-archived-1',
+          value: 20,
+          notes: null,
+          status: 'COMPLETED',
+          paymentStatus: 'PAID',
+          rideDate: new Date('2026-04-03T10:00:00.000Z'),
+          createdAt: new Date('2026-04-03T10:00:00.000Z'),
+          paidWithBalance: 5,
+          debtValue: 0,
+          location: 'Centro',
+          photo: null,
+          archivedAt: new Date('2026-04-05T10:00:00.000Z'),
+          archivedBy: 'user-1',
+          archiveReason: 'user-delete',
+          client: { id: 'client-1', name: 'Alice' },
+        },
+      ],
+      total: 1,
+      hasNextPage: false,
+    });
+
+    const request = {
+      user: { id: 'user-1', role: 'user' },
+    } as unknown as RequestWithUser;
+
+    const result = await controller.findArchived(request, { limit: 20 });
+
+    expect(result).toEqual({
+      data: [
+        expect.objectContaining({
+          id: 'ride-archived-1',
+          archivedAt: '2026-04-05T10:00:00.000Z',
+          archivedBy: 'user-1',
+          archiveReason: 'user-delete',
+        }),
+      ],
+      meta: {
+        total: 1,
+        hasNextPage: false,
+      },
+    });
+    expect(ridesService.findArchived).toHaveBeenCalledWith(
+      'user-1',
+      20,
+      undefined,
+      {},
+    );
+    expect(rideResponsePresenter.presentList).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 'ride-archived-1',
+        archivedAt: new Date('2026-04-05T10:00:00.000Z'),
+        archivedBy: 'user-1',
+        archiveReason: 'user-delete',
+      }),
+    ]);
+  });
+
   it('should present status updates through the presenter before returning the response', async () => {
     const updatedRide = {
       id: 'ride-1',
@@ -200,5 +288,50 @@ describe('RidesController', () => {
 
     expect(ridesService.delete).toHaveBeenCalledWith('user-1', 'ride-1');
     expect(rideResponsePresenter.present).not.toHaveBeenCalled();
+  });
+
+  it('should present restored rides through the presenter before returning the response', async () => {
+    const restoredRide = {
+      id: 'ride-1',
+      archivedAt: null,
+      archivedBy: null,
+      archiveReason: null,
+    };
+
+    ridesService.restore.mockResolvedValue(restoredRide);
+    rideResponsePresenter.present.mockResolvedValue(restoredRide);
+
+    const request = {
+      user: { id: 'user-1', role: 'user' },
+    } as unknown as RequestWithUser;
+
+    await expect(controller.restore(request, 'ride-1')).resolves.toEqual(
+      restoredRide,
+    );
+
+    expect(ridesService.restore).toHaveBeenCalledWith('user-1', 'ride-1');
+    expect(rideResponsePresenter.present).toHaveBeenCalledWith(restoredRide);
+  });
+
+  it('should delegate bulk restore to the service', async () => {
+    ridesService.restoreBulk.mockResolvedValue({
+      requestedCount: 2,
+      restoredCount: 2,
+    });
+
+    const request = {
+      user: { id: 'user-1', role: 'user' },
+    } as unknown as RequestWithUser;
+
+    await expect(
+      controller.restoreBulk(request, { ids: ['ride-1', 'ride-2'] }),
+    ).resolves.toEqual({
+      requestedCount: 2,
+      restoredCount: 2,
+    });
+
+    expect(ridesService.restoreBulk).toHaveBeenCalledWith('user-1', {
+      ids: ['ride-1', 'ride-2'],
+    });
   });
 });

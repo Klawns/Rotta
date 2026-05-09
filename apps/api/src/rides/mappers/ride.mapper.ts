@@ -24,6 +24,9 @@ export class RideMapper {
       createdAt: new Date(entity.createdAt),
       paidWithBalance: Number(entity.paidWithBalance ?? 0),
       debtValue: Number(entity.debtValue ?? 0),
+      archivedAt: entity.archivedAt ? new Date(entity.archivedAt) : null,
+      archivedBy: entity.archivedBy ?? null,
+      archiveReason: entity.archiveReason ?? null,
       client:
         isWithClient && entity.client
           ? {

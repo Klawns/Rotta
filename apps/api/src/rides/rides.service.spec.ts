@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/require-await -- Jest mocks in this spec intentionally use partial runtime stubs. */
-import { Logger, NotFoundException } from '@nestjs/common';
+import { ConflictException, Logger, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { RidesService } from './rides.service';
 import { ProfileCacheService } from '../cache/profile-cache.service';
@@ -11,6 +11,8 @@ import { RideAccountingService } from './services/ride-accounting.service';
 import { RidePhotoReferenceService } from './services/ride-photo-reference.service';
 import { RideStatusService } from './services/ride-status.service';
 import { ClientPaymentReconciliationService } from '../clients/services/client-payment-reconciliation.service';
+import { RideLifecycleEventService } from './services/ride-lifecycle-event.service';
+import { IClientPaymentsRepository } from '../clients/interfaces/client-payments-repository.interface';
 
 describe('RidesService', () => {
   const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
@@ -25,6 +27,8 @@ describe('RidesService', () => {
   let ridePhotoReferenceMock: any;
   let rideStatusMock: any;
   let reconciliationServiceMock: any;
+  let rideLifecycleEventMock: any;
+  let clientPaymentsRepoMock: any;
   let loggerErrorSpy: jest.SpyInstance;
 
   const sampleRide = {
@@ -54,7 +58,9 @@ describe('RidesService', () => {
 
     repoMock = {
       findAll: jest.fn().mockResolvedValue({ rides: [], total: 0 }),
-      create: jest.fn().mockResolvedValue({ id: 'ride-123', value: 25.5 }),
+      create: jest
+        .fn()
+        .mockResolvedValue({ id: 'ride-123', value: 25.5, userId: 'user-1' }),
       findOneWithClient: jest.fn().mockResolvedValue({
         id: 'ride-123',
         displayId: 1,
@@ -81,10 +87,15 @@ describe('RidesService', () => {
       updateStatus: jest
         .fn()
         .mockResolvedValue({ id: 'ride-123', value: 25.5 }),
-      delete: jest.fn().mockResolvedValue({ id: 'ride-123' }),
+      archive: jest.fn().mockResolvedValue({ id: 'ride-123' }),
+      findArchived: jest.fn().mockResolvedValue({ rides: [], total: 0 }),
+      findArchivedOne: jest.fn().mockResolvedValue(null),
+      findArchivedManyByIds: jest.fn().mockResolvedValue([]),
       findManyByIds: jest.fn().mockResolvedValue([]),
-      deleteManyByIds: jest.fn().mockResolvedValue([]),
-      deleteAll: jest.fn().mockResolvedValue(undefined),
+      archiveManyByIds: jest.fn().mockResolvedValue([]),
+      archiveAll: jest.fn().mockResolvedValue(undefined),
+      restore: jest.fn().mockResolvedValue({ id: 'ride-123' }),
+      restoreManyByIds: jest.fn().mockResolvedValue([]),
       getStats: jest
         .fn()
         .mockResolvedValue({ count: 0, totalValue: 0, rides: [] }),
@@ -118,6 +129,7 @@ describe('RidesService', () => {
         .fn()
         .mockResolvedValue({ id: 'client-1', balance: 0 }),
       consumeClientBalance: jest.fn().mockResolvedValue(0),
+      consumeExactClientBalanceOrThrow: jest.fn().mockResolvedValue(undefined),
       refundClientBalance: jest.fn().mockResolvedValue(undefined),
       resolvePaymentSnapshot: jest.fn(
         ({
@@ -197,6 +209,19 @@ describe('RidesService', () => {
     reconciliationServiceMock = {
       reconcileClientPayments: jest.fn().mockResolvedValue(undefined),
     };
+    clientPaymentsRepoMock = {
+      getUnusedPaymentsStats: jest.fn().mockResolvedValue({
+        totalPaid: 0,
+        unusedPaymentsCount: 0,
+      }),
+    };
+    rideLifecycleEventMock = {
+      recordCreated: jest.fn().mockResolvedValue(undefined),
+      recordArchived: jest.fn().mockResolvedValue(undefined),
+      recordRestored: jest.fn().mockResolvedValue(undefined),
+      recordStatusChanged: jest.fn().mockResolvedValue(undefined),
+      recordPaymentStatusChanged: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -236,6 +261,14 @@ describe('RidesService', () => {
         {
           provide: ClientPaymentReconciliationService,
           useValue: reconciliationServiceMock,
+        },
+        {
+          provide: IClientPaymentsRepository,
+          useValue: clientPaymentsRepoMock,
+        },
+        {
+          provide: RideLifecycleEventService,
+          useValue: rideLifecycleEventMock,
         },
       ],
     }).compile();
@@ -291,10 +324,114 @@ describe('RidesService', () => {
       undefined,
     );
     expect(subsMock.findByUserId).toHaveBeenCalledWith('user-1');
+    expect(rideLifecycleEventMock.recordCreated).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({
+        id: 'ride-123',
+        userId: 'user-1',
+      }),
+      'tx',
+    );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
   });
 
+  it('should skip full payment reconciliation when a paid ride has no open payments', async () => {
+    await service.create('user-1', {
+      clientId: 'client-1',
+      value: 25.5,
+      location: 'Central Park',
+      status: 'COMPLETED',
+      paymentStatus: 'PAID',
+      useBalance: false,
+    });
+
+    expect(clientPaymentsRepoMock.getUnusedPaymentsStats).toHaveBeenCalledWith(
+      'client-1',
+      'user-1',
+      'tx',
+    );
+    expect(
+      reconciliationServiceMock.reconcileClientPayments,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('should reconcile payment state during create when the ride creates debt', async () => {
+    await service.create('user-1', {
+      clientId: 'client-1',
+      value: 25.5,
+      location: 'Central Park',
+      status: 'COMPLETED',
+      paymentStatus: 'PENDING',
+      useBalance: false,
+    });
+
+    expect(
+      reconciliationServiceMock.reconcileClientPayments,
+    ).toHaveBeenCalledWith('user-1', 'client-1', 'tx');
+  });
+
+  it('should reconcile payment state during create when the client has open payments', async () => {
+    clientPaymentsRepoMock.getUnusedPaymentsStats.mockResolvedValueOnce({
+      totalPaid: 25.5,
+      unusedPaymentsCount: 1,
+    });
+
+    await service.create('user-1', {
+      clientId: 'client-1',
+      value: 25.5,
+      location: 'Central Park',
+      status: 'COMPLETED',
+      paymentStatus: 'PAID',
+      useBalance: false,
+    });
+
+    expect(
+      reconciliationServiceMock.reconcileClientPayments,
+    ).toHaveBeenCalledWith('user-1', 'client-1', 'tx');
+  });
+
+  it('should list archived rides using the archived repository query', async () => {
+    repoMock.findArchived.mockResolvedValueOnce({
+      rides: [
+        {
+          ...sampleRide,
+          archivedAt: new Date('2026-04-10T10:00:00.000Z'),
+          archivedBy: 'user-1',
+          archiveReason: 'user-delete',
+        },
+      ],
+      total: 1,
+      hasNextPage: false,
+    });
+
+    const result = await service.findArchived('user-1', 10, 'cursor-1', {
+      clientId: 'client-2',
+      search: 'Cliente',
+    });
+
+    expect(repoMock.findArchived).toHaveBeenCalledWith(
+      'user-1',
+      10,
+      'cursor-1',
+      {
+        clientId: 'client-2',
+        search: 'Cliente',
+        startDate: undefined,
+        endDate: undefined,
+      },
+    );
+    expect(result).toEqual({
+      rides: [
+        expect.objectContaining({
+          id: 'ride-456',
+          archivedBy: 'user-1',
+        }),
+      ],
+      total: 1,
+      hasNextPage: false,
+    });
+  });
 
   it('should pass ride list date filters as inclusive Sao Paulo calendar days', async () => {
     await service.findAll('user-1', 20, undefined, {
@@ -303,6 +440,18 @@ describe('RidesService', () => {
     });
 
     const filters = repoMock.findAll.mock.calls[0][3];
+
+    expect(filters.startDate.toISOString()).toBe('2026-04-01T03:00:00.000Z');
+    expect(filters.endDate.toISOString()).toBe('2026-04-09T02:59:59.999Z');
+  });
+
+  it('should pass archived ride date filters as inclusive Sao Paulo calendar days', async () => {
+    await service.findArchived('user-1', 20, undefined, {
+      startDate: '2026-04-01',
+      endDate: '2026-04-08',
+    });
+
+    const filters = repoMock.findArchived.mock.calls[0][3];
 
     expect(filters.startDate.toISOString()).toBe('2026-04-01T03:00:00.000Z');
     expect(filters.endDate.toISOString()).toBe('2026-04-09T02:59:59.999Z');
@@ -348,8 +497,7 @@ describe('RidesService', () => {
       service.create('user-1', {
         clientId: 'client-1',
         value: 25.5,
-        photo:
-          'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+        photo: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
         useBalance: false,
       }),
     ).rejects.toThrow(NotFoundException);
@@ -484,7 +632,7 @@ describe('RidesService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('should refund grouped balance usage when deleting all rides', async () => {
+  it('should refund grouped balance usage when archiving all rides', async () => {
     drizzleMock.db.transaction = jest.fn(
       async (callback: (tx: { select: jest.Mock }) => unknown) =>
         callback({
@@ -525,27 +673,28 @@ describe('RidesService', () => {
       'bulk-delete',
       expect.anything(),
     );
-    expect(repoMock.deleteAll).toHaveBeenCalledWith(
+    expect(repoMock.archiveAll).toHaveBeenCalledWith(
       'user-1',
+      expect.objectContaining({
+        archivedBy: 'user-1',
+        archiveReason: 'bulk-delete',
+      }),
       expect.anything(),
     );
-    expect(ridePhotoReferenceMock.deleteManagedPhoto).toHaveBeenCalledWith(
-      'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
-    );
+    expect(ridePhotoReferenceMock.deleteManagedPhoto).not.toHaveBeenCalled();
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(result).toEqual({ success: true });
   });
 
-  it('should bulk delete only the rides found for the user and refund grouped balances', async () => {
+  it('should bulk archive only the rides found for the user and refund grouped balances', async () => {
     repoMock.findManyByIds.mockResolvedValueOnce([
       {
         id: 'ride-1',
         clientId: 'client-1',
         userId: 'user-1',
         paidWithBalance: 3,
-        photo:
-          'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+        photo: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
       },
       {
         id: 'ride-2',
@@ -555,7 +704,7 @@ describe('RidesService', () => {
         photo: null,
       },
     ]);
-    repoMock.deleteManyByIds.mockResolvedValueOnce([
+    repoMock.archiveManyByIds.mockResolvedValueOnce([
       { id: 'ride-1' },
       { id: 'ride-2' },
     ]);
@@ -576,14 +725,16 @@ describe('RidesService', () => {
       'bulk-delete',
       'tx',
     );
-    expect(repoMock.deleteManyByIds).toHaveBeenCalledWith(
+    expect(repoMock.archiveManyByIds).toHaveBeenCalledWith(
       'user-1',
       ['ride-1', 'ride-2'],
+      expect.objectContaining({
+        archivedBy: 'user-1',
+        archiveReason: 'bulk-delete',
+      }),
       'tx',
     );
-    expect(ridePhotoReferenceMock.deleteManagedPhoto).toHaveBeenCalledWith(
-      'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
-    );
+    expect(ridePhotoReferenceMock.deleteManagedPhoto).not.toHaveBeenCalled();
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(result).toEqual({
@@ -601,7 +752,7 @@ describe('RidesService', () => {
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
 
-    expect(repoMock.deleteManyByIds).not.toHaveBeenCalled();
+    expect(repoMock.archiveManyByIds).not.toHaveBeenCalled();
   });
 
   it('should return cached frequent clients without reading from the repository', async () => {
@@ -800,15 +951,14 @@ describe('RidesService', () => {
 
     await expect(
       service.update('user-1', 'ride-123', {
-        photo:
-          'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+        photo: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
       }),
     ).rejects.toThrow(NotFoundException);
 
     expect(repoMock.update).not.toHaveBeenCalled();
   });
 
-  it('should invalidate dashboard and profile caches after deleting a ride', async () => {
+  it('should invalidate dashboard and profile caches after archiving a ride', async () => {
     repoMock.findOne.mockResolvedValueOnce({
       ...sampleRide,
       photo: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
@@ -816,11 +966,191 @@ describe('RidesService', () => {
 
     await expect(service.delete('user-1', 'ride-123')).resolves.toBeUndefined();
 
-    expect(ridePhotoReferenceMock.deleteManagedPhoto).toHaveBeenCalledWith(
-      'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
+    expect(repoMock.archive).toHaveBeenCalledWith(
+      'user-1',
+      'ride-123',
+      expect.objectContaining({
+        archivedBy: 'user-1',
+        archiveReason: 'user-delete',
+      }),
+      'tx',
+    );
+    expect(rideLifecycleEventMock.recordArchived).toHaveBeenCalledWith(
+      'user-1',
+      [
+        expect.objectContaining({
+          id: 'ride-456',
+          userId: 'user-1',
+          archiveReason: 'user-delete',
+        }),
+      ],
+      'tx',
+    );
+    expect(ridePhotoReferenceMock.deleteManagedPhoto).not.toHaveBeenCalled();
+    expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
+    expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
+  });
+
+  it('should restore an archived ride and debit the consumed balance again', async () => {
+    repoMock.findArchivedOne.mockResolvedValueOnce({
+      ...sampleRide,
+      id: 'ride-123',
+      archivedAt: new Date('2026-04-09T15:00:00.000Z'),
+      archivedBy: 'user-1',
+      archiveReason: 'user-delete',
+    });
+    repoMock.restore.mockResolvedValueOnce({
+      id: 'ride-123',
+    });
+    repoMock.findOneWithClient.mockResolvedValueOnce({
+      ...sampleRide,
+      id: 'ride-123',
+      archivedAt: null,
+      archivedBy: null,
+      archiveReason: null,
+    });
+
+    const result = await service.restore('user-1', 'ride-123');
+
+    expect(
+      rideAccountingMock.consumeExactClientBalanceOrThrow,
+    ).toHaveBeenCalledWith('user-1', 'client-2', 10, 'tx');
+    expect(repoMock.restore).toHaveBeenCalledWith('user-1', 'ride-123', 'tx');
+    expect(
+      reconciliationServiceMock.reconcileClientPayments,
+    ).toHaveBeenCalledWith('user-1', 'client-2', 'tx');
+    expect(rideLifecycleEventMock.recordRestored).toHaveBeenCalledWith(
+      'user-1',
+      [
+        expect.objectContaining({
+          id: 'ride-123',
+          userId: 'user-1',
+        }),
+      ],
+      'tx',
     );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'ride-123',
+        archivedAt: null,
+      }),
+    );
+  });
+
+  it('should throw not found when restoring a missing archived ride', async () => {
+    repoMock.findArchivedOne.mockResolvedValueOnce(null);
+
+    await expect(service.restore('user-1', 'missing')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+
+    expect(repoMock.restore).not.toHaveBeenCalled();
+  });
+
+  it('should surface insufficient balance when restoring an archived ride', async () => {
+    repoMock.findArchivedOne.mockResolvedValueOnce({
+      ...sampleRide,
+      id: 'ride-123',
+      archivedAt: new Date('2026-04-09T15:00:00.000Z'),
+      archivedBy: 'user-1',
+      archiveReason: 'user-delete',
+    });
+    rideAccountingMock.consumeExactClientBalanceOrThrow.mockRejectedValueOnce(
+      new ConflictException('Saldo insuficiente para restaurar a corrida.'),
+    );
+
+    await expect(service.restore('user-1', 'ride-123')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+
+    expect(repoMock.restore).not.toHaveBeenCalled();
+  });
+
+  it('should fail restore when the archived ride client no longer exists', async () => {
+    repoMock.findArchivedOne.mockResolvedValueOnce({
+      ...sampleRide,
+      id: 'ride-123',
+      paidWithBalance: 0,
+      archivedAt: new Date('2026-04-09T15:00:00.000Z'),
+      archivedBy: 'user-1',
+      archiveReason: 'user-delete',
+    });
+    rideAccountingMock.getClientOrThrow.mockRejectedValueOnce(
+      new NotFoundException('Cliente não encontrado.'),
+    );
+
+    await expect(service.restore('user-1', 'ride-123')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+
+    expect(repoMock.restore).not.toHaveBeenCalled();
+  });
+
+  it('should bulk restore archived rides atomically and reuse the restore core', async () => {
+    repoMock.findArchivedManyByIds.mockResolvedValueOnce([
+      {
+        ...sampleRide,
+        id: 'ride-1',
+        clientId: 'client-1',
+        paidWithBalance: 3,
+        archivedAt: new Date('2026-04-09T15:00:00.000Z'),
+      },
+      {
+        ...sampleRide,
+        id: 'ride-2',
+        clientId: 'client-1',
+        paidWithBalance: 2,
+        archivedAt: new Date('2026-04-09T16:00:00.000Z'),
+      },
+    ]);
+    repoMock.restoreManyByIds.mockResolvedValueOnce([
+      { id: 'ride-1' },
+      { id: 'ride-2' },
+    ]);
+
+    const result = await service.restoreBulk('user-1', {
+      ids: ['ride-1', 'ride-2', 'ride-1'],
+    });
+
+    expect(repoMock.findArchivedManyByIds).toHaveBeenCalledWith(
+      'user-1',
+      ['ride-1', 'ride-2', 'ride-1'],
+      'tx',
+    );
+    expect(
+      rideAccountingMock.consumeExactClientBalanceOrThrow,
+    ).toHaveBeenCalledWith('user-1', 'client-1', 5, 'tx');
+    expect(repoMock.restoreManyByIds).toHaveBeenCalledWith(
+      'user-1',
+      ['ride-1', 'ride-2'],
+      'tx',
+    );
+    expect(rideLifecycleEventMock.recordRestored).toHaveBeenCalledWith(
+      'user-1',
+      [
+        expect.objectContaining({ id: 'ride-1', userId: 'user-1' }),
+        expect.objectContaining({ id: 'ride-2', userId: 'user-1' }),
+      ],
+      'tx',
+    );
+    expect(result).toEqual({
+      requestedCount: 3,
+      restoredCount: 2,
+    });
+  });
+
+  it('should throw not found when bulk restore has no archived rides for the user', async () => {
+    repoMock.findArchivedManyByIds.mockResolvedValueOnce([]);
+
+    await expect(
+      service.restoreBulk('user-1', {
+        ids: ['missing-1', 'missing-2'],
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(repoMock.restoreManyByIds).not.toHaveBeenCalled();
   });
 
   it('should surface dashboard cache invalidation failures after updating a ride', async () => {
@@ -849,6 +1179,90 @@ describe('RidesService', () => {
     expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(loggerErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Falha ao invalidar cache user dashboard'),
+      expect.any(String),
+    );
+  });
+
+  it('should record status and payment lifecycle events when updating status', async () => {
+    repoMock.findOneWithClient.mockResolvedValueOnce({
+      ...sampleRide,
+      id: 'ride-123',
+      status: 'PENDING',
+      paymentStatus: 'PENDING',
+      debtValue: 42,
+      paidExternally: 0,
+    });
+
+    await service.updateStatus('user-1', 'ride-123', {
+      status: 'COMPLETED',
+      paymentStatus: 'PAID',
+    });
+
+    expect(rideLifecycleEventMock.recordStatusChanged).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({
+        id: 'ride-123',
+        status: 'PENDING',
+      }),
+      'COMPLETED',
+      'tx',
+    );
+    expect(
+      rideLifecycleEventMock.recordPaymentStatusChanged,
+    ).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({
+        id: 'ride-123',
+        paymentStatus: 'PENDING',
+      }),
+      'PAID',
+      'tx',
+    );
+  });
+
+  it('should not record lifecycle transitions when status values stay the same', async () => {
+    repoMock.findOneWithClient.mockResolvedValueOnce({
+      ...sampleRide,
+      id: 'ride-123',
+      status: 'COMPLETED',
+      paymentStatus: 'PAID',
+    });
+
+    await service.updateStatus('user-1', 'ride-123', {
+      status: 'COMPLETED',
+      paymentStatus: 'PAID',
+    });
+
+    expect(rideLifecycleEventMock.recordStatusChanged).not.toHaveBeenCalled();
+    expect(
+      rideLifecycleEventMock.recordPaymentStatusChanged,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('should keep successful ride creation when lifecycle event persistence fails', async () => {
+    rideLifecycleEventMock.recordCreated.mockRejectedValueOnce(
+      new Error('lifecycle unavailable'),
+    );
+
+    await expect(
+      service.create('user-1', {
+        clientId: 'client-1',
+        value: 25.5,
+        location: 'Central Park',
+        status: 'COMPLETED',
+        paymentStatus: 'PAID',
+        useBalance: false,
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'ride-123',
+      }),
+    );
+
+    expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
+    expect(profileCacheMock.invalidate).toHaveBeenCalledWith('user-1');
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Falha ao registrar evento de criacao'),
       expect.any(String),
     );
   });

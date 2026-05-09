@@ -137,6 +137,7 @@ export class DrizzleClientPaymentsRepository implements IClientPaymentsRepositor
         and(
           eq(this.schema.clientPayments.clientId, clientId),
           eq(this.schema.clientPayments.userId, userId),
+          ne(this.schema.clientPayments.status, 'USED'),
         ),
       )
       .orderBy(

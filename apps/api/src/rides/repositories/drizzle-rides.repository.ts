@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Drizzle is consumed through a dialect-agnostic runtime boundary in this repository. */
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, ne, inArray, asc } from 'drizzle-orm';
+import { eq, and, ne, inArray, asc, isNull, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.provider';
 import type { DrizzleClient } from '../../database/database.provider';
 import {
@@ -10,6 +10,7 @@ import {
   RideWithClient,
   CreateRideDto,
   UpdateRideDto,
+  ArchiveRideInput,
 } from '../interfaces/rides-repository.interface';
 import { RideReadRepository } from './ride-read.repository';
 import { RideStatsRepository } from './ride-stats.repository';
@@ -67,7 +68,45 @@ export class DrizzleRidesRepository implements IRidesRepository {
       .select()
       .from(this.schema.rides)
       .where(
-        and(eq(this.schema.rides.id, id), eq(this.schema.rides.userId, userId)),
+        and(
+          eq(this.schema.rides.id, id),
+          eq(this.schema.rides.userId, userId),
+          isNull(this.schema.rides.archivedAt),
+        ),
+      )
+      .limit(1);
+
+    return results[0];
+  }
+
+  async findArchived(
+    userId: string,
+    limit: number = 20,
+    cursor?: string,
+    filters?: FindAllFilters,
+  ): Promise<{
+    rides: RideWithClient[];
+    total: number;
+    nextCursor?: string;
+    hasNextPage: boolean;
+  }> {
+    return this.rideReadRepository.findArchived(userId, limit, cursor, filters);
+  }
+
+  async findArchivedOne(
+    userId: string,
+    id: string,
+    executor?: any,
+  ): Promise<Ride | undefined> {
+    const results = await this.getExecutor(executor)
+      .select()
+      .from(this.schema.rides)
+      .where(
+        and(
+          eq(this.schema.rides.id, id),
+          eq(this.schema.rides.userId, userId),
+          sql`${this.schema.rides.archivedAt} is not null`,
+        ),
       )
       .limit(1);
 
@@ -97,7 +136,11 @@ export class DrizzleRidesRepository implements IRidesRepository {
       .update(this.schema.rides)
       .set(data as any)
       .where(
-        and(eq(this.schema.rides.id, id), eq(this.schema.rides.userId, userId)),
+        and(
+          eq(this.schema.rides.id, id),
+          eq(this.schema.rides.userId, userId),
+          isNull(this.schema.rides.archivedAt),
+        ),
       )
       .returning();
 
@@ -118,7 +161,11 @@ export class DrizzleRidesRepository implements IRidesRepository {
       .update(this.schema.rides)
       .set(data as any)
       .where(
-        and(eq(this.schema.rides.id, id), eq(this.schema.rides.userId, userId)),
+        and(
+          eq(this.schema.rides.id, id),
+          eq(this.schema.rides.userId, userId),
+          isNull(this.schema.rides.archivedAt),
+        ),
       )
       .returning();
 
@@ -129,15 +176,21 @@ export class DrizzleRidesRepository implements IRidesRepository {
     return this.rideReadRepository.countAll(userId);
   }
 
-  async delete(
+  async archive(
     userId: string,
     id: string,
+    data: ArchiveRideInput,
     executor?: any,
   ): Promise<Ride | undefined> {
     const result = await this.getExecutor(executor)
-      .delete(this.schema.rides)
+      .update(this.schema.rides)
+      .set(data as any)
       .where(
-        and(eq(this.schema.rides.id, id), eq(this.schema.rides.userId, userId)),
+        and(
+          eq(this.schema.rides.id, id),
+          eq(this.schema.rides.userId, userId),
+          isNull(this.schema.rides.archivedAt),
+        ),
       )
       .returning();
 
@@ -160,11 +213,12 @@ export class DrizzleRidesRepository implements IRidesRepository {
         and(
           eq(this.schema.rides.userId, userId),
           inArray(this.schema.rides.id, ids),
+          isNull(this.schema.rides.archivedAt),
         ),
       );
   }
 
-  async deleteManyByIds(
+  async findArchivedManyByIds(
     userId: string,
     ids: string[],
     executor?: any,
@@ -174,11 +228,35 @@ export class DrizzleRidesRepository implements IRidesRepository {
     }
 
     return this.getExecutor(executor)
-      .delete(this.schema.rides)
+      .select()
+      .from(this.schema.rides)
       .where(
         and(
           eq(this.schema.rides.userId, userId),
           inArray(this.schema.rides.id, ids),
+          sql`${this.schema.rides.archivedAt} is not null`,
+        ),
+      );
+  }
+
+  async archiveManyByIds(
+    userId: string,
+    ids: string[],
+    data: ArchiveRideInput,
+    executor?: any,
+  ): Promise<Ride[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    return this.getExecutor(executor)
+      .update(this.schema.rides)
+      .set(data as any)
+      .where(
+        and(
+          eq(this.schema.rides.userId, userId),
+          inArray(this.schema.rides.id, ids),
+          isNull(this.schema.rides.archivedAt),
         ),
       )
       .returning();
@@ -239,6 +317,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
           eq(this.schema.rides.clientId, clientId),
           eq(this.schema.rides.userId, userId),
           ne(this.schema.rides.status, 'CANCELLED'),
+          isNull(this.schema.rides.archivedAt),
         ),
       )
       .orderBy(
@@ -261,7 +340,11 @@ export class DrizzleRidesRepository implements IRidesRepository {
       .update(this.schema.rides)
       .set(data as any)
       .where(
-        and(eq(this.schema.rides.id, id), eq(this.schema.rides.userId, userId)),
+        and(
+          eq(this.schema.rides.id, id),
+          eq(this.schema.rides.userId, userId),
+          isNull(this.schema.rides.archivedAt),
+        ),
       )
       .returning();
 
@@ -282,6 +365,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
           eq(this.schema.rides.userId, userId),
           eq(this.schema.rides.paymentStatus, 'PENDING'),
           ne(this.schema.rides.status, 'CANCELLED'),
+          isNull(this.schema.rides.archivedAt),
         ),
       )
       .returning({ updatedId: this.schema.rides.id });
@@ -289,9 +373,69 @@ export class DrizzleRidesRepository implements IRidesRepository {
     return result.length;
   }
 
-  async deleteAll(userId: string, executor?: any): Promise<void> {
+  async archiveAll(
+    userId: string,
+    data: ArchiveRideInput,
+    executor?: any,
+  ): Promise<void> {
     await this.getExecutor(executor)
-      .delete(this.schema.rides)
-      .where(eq(this.schema.rides.userId, userId));
+      .update(this.schema.rides)
+      .set(data as any)
+      .where(
+        and(
+          eq(this.schema.rides.userId, userId),
+          isNull(this.schema.rides.archivedAt),
+        ),
+      );
+  }
+
+  async restore(
+    userId: string,
+    id: string,
+    executor?: any,
+  ): Promise<Ride | undefined> {
+    const result = await this.getExecutor(executor)
+      .update(this.schema.rides)
+      .set({
+        archivedAt: null,
+        archivedBy: null,
+        archiveReason: null,
+      } as any)
+      .where(
+        and(
+          eq(this.schema.rides.id, id),
+          eq(this.schema.rides.userId, userId),
+          sql`${this.schema.rides.archivedAt} is not null`,
+        ),
+      )
+      .returning();
+
+    return result[0];
+  }
+
+  async restoreManyByIds(
+    userId: string,
+    ids: string[],
+    executor?: any,
+  ): Promise<Ride[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    return this.getExecutor(executor)
+      .update(this.schema.rides)
+      .set({
+        archivedAt: null,
+        archivedBy: null,
+        archiveReason: null,
+      } as any)
+      .where(
+        and(
+          eq(this.schema.rides.userId, userId),
+          inArray(this.schema.rides.id, ids),
+          sql`${this.schema.rides.archivedAt} is not null`,
+        ),
+      )
+      .returning();
   }
 }

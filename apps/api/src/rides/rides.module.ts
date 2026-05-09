@@ -10,10 +10,13 @@ import { RideAccountingService } from './services/ride-accounting.service';
 import { RidePhotoReferenceService } from './services/ride-photo-reference.service';
 import { RideResponsePresenterService } from './services/ride-response-presenter.service';
 import { RideStatusService } from './services/ride-status.service';
+import { RideLifecycleEventService } from './services/ride-lifecycle-event.service';
 import { RideCursorService } from './repositories/ride-cursor.service';
 import { RideReadRepository } from './repositories/ride-read.repository';
 import { RideStatsRepository } from './repositories/ride-stats.repository';
 import { StorageModule } from '../storage/storage.module';
+import { DrizzleRideLifecycleEventsRepository } from './repositories/drizzle-ride-lifecycle-events.repository';
+import { IRideLifecycleEventsRepository } from './interfaces/ride-lifecycle-events-repository.interface';
 
 @Module({
   imports: [
@@ -28,12 +31,17 @@ import { StorageModule } from '../storage/storage.module';
     RidePhotoReferenceService,
     RideResponsePresenterService,
     RideStatusService,
+    RideLifecycleEventService,
     RideCursorService,
     RideReadRepository,
     RideStatsRepository,
     {
       provide: IRidesRepository,
       useClass: DrizzleRidesRepository,
+    },
+    {
+      provide: IRideLifecycleEventsRepository,
+      useClass: DrizzleRideLifecycleEventsRepository,
     },
   ],
   controllers: [RidesController],
