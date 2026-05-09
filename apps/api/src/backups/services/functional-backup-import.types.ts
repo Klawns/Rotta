@@ -6,7 +6,8 @@ export type ImportableBackupModuleName =
   | 'rides'
   | 'client_payments'
   | 'balance_transactions'
-  | 'ride_presets';
+  | 'ride_presets'
+  | 'ride_lifecycle_events';
 
 export interface ImportedClientRecord {
   id: string;
@@ -35,6 +36,9 @@ export interface ImportedRideRecord {
   debtValue?: number | string | null;
   rideDate?: string | Date | null;
   photo?: string | null;
+  archivedAt?: string | Date | null;
+  archivedBy?: string | null;
+  archiveReason?: string | null;
   createdAt?: string | Date | null;
 }
 
@@ -57,7 +61,12 @@ export interface ImportedBalanceTransactionRecord {
   userId?: string;
   amount: number | string;
   type: 'CREDIT' | 'DEBIT';
-  origin: 'PAYMENT_OVERFLOW' | 'RIDE_USAGE' | 'MANUAL_ADJUSTMENT';
+  origin:
+    | 'PAYMENT_OVERFLOW'
+    | 'RIDE_USAGE'
+    | 'RIDE_ARCHIVE_REFUND'
+    | 'RIDE_RESTORE_USAGE'
+    | 'MANUAL_ADJUSTMENT';
   description?: string | null;
   createdAt?: string | Date | null;
 }
@@ -71,6 +80,25 @@ export interface ImportedRidePresetRecord {
   createdAt?: string | Date | null;
 }
 
+export interface ImportedRideLifecycleEventRecord {
+  id: string;
+  rideId: string;
+  rideUserId?: string;
+  actorUserId?: string | null;
+  eventType:
+    | 'CREATED'
+    | 'STATUS_CHANGED'
+    | 'PAYMENT_STATUS_CHANGED'
+    | 'ARCHIVED'
+    | 'RESTORED';
+  previousStatus?: 'PENDING' | 'COMPLETED' | 'CANCELLED' | null;
+  nextStatus?: 'PENDING' | 'COMPLETED' | 'CANCELLED' | null;
+  previousPaymentStatus?: 'PENDING' | 'PAID' | null;
+  nextPaymentStatus?: 'PENDING' | 'PAID' | null;
+  metadataJson?: string | null;
+  createdAt?: string | Date | null;
+}
+
 export interface FunctionalBackupImportDataset {
   manifest: FunctionalBackupManifest;
   clients: ImportedClientRecord[];
@@ -78,6 +106,7 @@ export interface FunctionalBackupImportDataset {
   clientPayments: ImportedClientPaymentRecord[];
   balanceTransactions: ImportedBalanceTransactionRecord[];
   ridePresets: ImportedRidePresetRecord[];
+  rideLifecycleEvents: ImportedRideLifecycleEventRecord[];
 }
 
 export interface ParsedFunctionalBackupArchive {

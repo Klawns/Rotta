@@ -9,6 +9,7 @@ import type {
   ImportedBalanceTransactionRecord,
   ImportedClientPaymentRecord,
   ImportedClientRecord,
+  ImportedRideLifecycleEventRecord,
   ImportedRidePresetRecord,
   ImportedRideRecord,
 } from './functional-backup-import.types';
@@ -78,6 +79,14 @@ export class FunctionalBackupImportExecutorService {
           })),
         );
       }
+
+      if (dataset.rideLifecycleEvents.length > 0) {
+        await tx.insert(this.drizzle.schema.rideLifecycleEvents).values(
+          dataset.rideLifecycleEvents.map((event) => ({
+            ...this.toRideLifecycleEventInsertRecord(event, userId),
+          })),
+        );
+      }
     });
 
     await this.userDashboardCacheService.invalidate(userId);
@@ -137,6 +146,8 @@ export class FunctionalBackupImportExecutorService {
   }
 
   private toRideInsertRecord(ride: ImportedRideRecord, userId: string) {
+    const archivedAt = this.normalizeDate(ride.archivedAt);
+
     return {
       id: ride.id,
       clientId: ride.clientId,
@@ -151,6 +162,9 @@ export class FunctionalBackupImportExecutorService {
       debtValue: ride.debtValue ?? 0,
       rideDate: this.normalizeDate(ride.rideDate),
       photo: null,
+      archivedAt,
+      archivedBy: archivedAt ? userId : null,
+      archiveReason: ride.archiveReason ?? null,
       createdAt: this.normalizeDate(ride.createdAt) ?? new Date(),
     };
   }
@@ -202,6 +216,25 @@ export class FunctionalBackupImportExecutorService {
       value: preset.value,
       location: preset.location,
       createdAt: this.normalizeDate(preset.createdAt) ?? new Date(),
+    };
+  }
+
+  private toRideLifecycleEventInsertRecord(
+    event: ImportedRideLifecycleEventRecord,
+    userId: string,
+  ) {
+    return {
+      id: event.id,
+      rideId: event.rideId,
+      rideUserId: userId,
+      actorUserId: event.actorUserId ? userId : null,
+      eventType: event.eventType,
+      previousStatus: event.previousStatus ?? null,
+      nextStatus: event.nextStatus ?? null,
+      previousPaymentStatus: event.previousPaymentStatus ?? null,
+      nextPaymentStatus: event.nextPaymentStatus ?? null,
+      metadataJson: event.metadataJson ?? null,
+      createdAt: this.normalizeDate(event.createdAt) ?? new Date(),
     };
   }
 }

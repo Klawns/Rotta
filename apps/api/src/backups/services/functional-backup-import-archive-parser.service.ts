@@ -1,11 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import {
-  BACKUP_MANIFEST_VERSION,
   DEFAULT_BACKUP_IMPORT_MAX_COMPRESSION_RATIO,
   DEFAULT_BACKUP_IMPORT_MAX_ENTRY_BYTES,
   DEFAULT_BACKUP_IMPORT_MAX_ENTRY_COUNT,
   DEFAULT_BACKUP_IMPORT_MAX_UNCOMPRESSED_BYTES,
+  SUPPORTED_BACKUP_MANIFEST_VERSIONS,
 } from '../backups.constants';
 import {
   readZipArchiveFromSource,
@@ -17,6 +17,7 @@ import type {
   ImportedBalanceTransactionRecord,
   ImportedClientPaymentRecord,
   ImportedClientRecord,
+  ImportedRideLifecycleEventRecord,
   ImportedRidePresetRecord,
   ImportedRideRecord,
   ParsedFunctionalBackupArchive,
@@ -32,6 +33,7 @@ export class FunctionalBackupImportArchiveParserService {
     'balance-transactions.json',
     'ride-presets.json',
   ] as const;
+  private readonly optionalFiles = ['ride-lifecycle-events.json'] as const;
 
   async parseArchiveSource(
     source: AsyncIterable<Buffer | Uint8Array | string>,
@@ -43,7 +45,7 @@ export class FunctionalBackupImportArchiveParserService {
       const parsedEntries = this.createParsedEntriesState();
 
       await readZipArchiveFromSource(source, {
-        allowedEntryNames: this.requiredFiles,
+        allowedEntryNames: [...this.requiredFiles, ...this.optionalFiles],
         blockNestedZip: true,
         maxCompressionRatio: DEFAULT_BACKUP_IMPORT_MAX_COMPRESSION_RATIO,
         maxEntries: DEFAULT_BACKUP_IMPORT_MAX_ENTRY_COUNT,
@@ -87,6 +89,7 @@ export class FunctionalBackupImportArchiveParserService {
       clientPayments: null as ImportedClientPaymentRecord[] | null,
       balanceTransactions: null as ImportedBalanceTransactionRecord[] | null,
       ridePresets: null as ImportedRidePresetRecord[] | null,
+      rideLifecycleEvents: null as ImportedRideLifecycleEventRecord[] | null,
     };
   }
 
@@ -128,6 +131,13 @@ export class FunctionalBackupImportArchiveParserService {
         parsedEntries.ridePresets =
           this.parseJsonArray<ImportedRidePresetRecord>(content, entryName);
         return;
+      case 'ride-lifecycle-events.json':
+        parsedEntries.rideLifecycleEvents =
+          this.parseJsonArray<ImportedRideLifecycleEventRecord>(
+            content,
+            entryName,
+          );
+        return;
       default:
         throw new BadRequestException(`Arquivo inesperado no ZIP: ${entryName}.`);
     }
@@ -151,6 +161,7 @@ export class FunctionalBackupImportArchiveParserService {
       clientPayments: parsedEntries.clientPayments!,
       balanceTransactions: parsedEntries.balanceTransactions!,
       ridePresets: parsedEntries.ridePresets!,
+      rideLifecycleEvents: parsedEntries.rideLifecycleEvents ?? [],
     };
   }
 
@@ -158,7 +169,9 @@ export class FunctionalBackupImportArchiveParserService {
     parsedEntries: ReturnType<
       FunctionalBackupImportArchiveParserService['createParsedEntriesState']
     >,
-    fileName: (typeof this.requiredFiles)[number],
+    fileName:
+      | (typeof this.requiredFiles)[number]
+      | (typeof this.optionalFiles)[number],
   ) {
     switch (fileName) {
       case 'manifest.json':
@@ -173,6 +186,8 @@ export class FunctionalBackupImportArchiveParserService {
         return parsedEntries.balanceTransactions;
       case 'ride-presets.json':
         return parsedEntries.ridePresets;
+      case 'ride-lifecycle-events.json':
+        return parsedEntries.rideLifecycleEvents;
     }
   }
 
@@ -207,7 +222,7 @@ export class FunctionalBackupImportArchiveParserService {
 
     const manifest = parsed as FunctionalBackupManifest;
 
-    if (manifest.version !== BACKUP_MANIFEST_VERSION) {
+    if (!SUPPORTED_BACKUP_MANIFEST_VERSIONS.includes(manifest.version as 1 | 2)) {
       throw new BadRequestException(
         `Versao de backup nao suportada: ${manifest.version}.`,
       );

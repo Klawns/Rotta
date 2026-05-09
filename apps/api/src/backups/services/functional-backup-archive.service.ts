@@ -17,7 +17,8 @@ type BackupModuleName =
   | 'rides'
   | 'client_payments'
   | 'balance_transactions'
-  | 'ride_presets';
+  | 'ride_presets'
+  | 'ride_lifecycle_events';
 
 export interface FunctionalBackupManifest {
   version: number;
@@ -60,6 +61,9 @@ interface ExportedRideRecord {
   debtValue: number | string;
   rideDate: Date | string | null;
   photo: null;
+  archivedAt: Date | string | null;
+  archivedBy: string | null;
+  archiveReason: string | null;
   createdAt: Date | string | null;
 }
 
@@ -80,7 +84,12 @@ interface ExportedBalanceTransactionRecord {
   clientId: string;
   amount: number | string;
   type: 'CREDIT' | 'DEBIT';
-  origin: 'PAYMENT_OVERFLOW' | 'RIDE_USAGE' | 'MANUAL_ADJUSTMENT';
+  origin:
+    | 'PAYMENT_OVERFLOW'
+    | 'RIDE_USAGE'
+    | 'RIDE_ARCHIVE_REFUND'
+    | 'RIDE_RESTORE_USAGE'
+    | 'MANUAL_ADJUSTMENT';
   description: string | null;
   createdAt: Date | string | null;
 }
@@ -90,6 +99,24 @@ interface ExportedRidePresetRecord {
   label: string;
   value: number | string;
   location: string;
+  createdAt: Date | string | null;
+}
+
+interface ExportedRideLifecycleEventRecord {
+  id: string;
+  rideId: string;
+  actorUserId: string | null;
+  eventType:
+    | 'CREATED'
+    | 'STATUS_CHANGED'
+    | 'PAYMENT_STATUS_CHANGED'
+    | 'ARCHIVED'
+    | 'RESTORED';
+  previousStatus: 'PENDING' | 'COMPLETED' | 'CANCELLED' | null;
+  nextStatus: 'PENDING' | 'COMPLETED' | 'CANCELLED' | null;
+  previousPaymentStatus: 'PENDING' | 'PAID' | null;
+  nextPaymentStatus: 'PENDING' | 'PAID' | null;
+  metadataJson: string | null;
   createdAt: Date | string | null;
 }
 
@@ -127,6 +154,7 @@ export class FunctionalBackupArchiveService {
       rawClientPayments,
       rawBalanceTransactions,
       rawRidePresets,
+      rawRideLifecycleEvents,
     ] = await Promise.all([
       this.db
         .select()
@@ -170,6 +198,14 @@ export class FunctionalBackupArchiveService {
           asc(this.schema.ridePresets.createdAt),
           asc(this.schema.ridePresets.id),
         ),
+      this.db
+        .select()
+        .from(this.schema.rideLifecycleEvents)
+        .where(eq(this.schema.rideLifecycleEvents.rideUserId, userId))
+        .orderBy(
+          asc(this.schema.rideLifecycleEvents.createdAt),
+          asc(this.schema.rideLifecycleEvents.id),
+        ),
     ]);
 
     const clients: ExportedClientRecord[] = rawClients.map((client: any) => ({
@@ -193,6 +229,9 @@ export class FunctionalBackupArchiveService {
       debtValue: ride.debtValue ?? 0,
       rideDate: ride.rideDate ?? null,
       photo: null,
+      archivedAt: ride.archivedAt ?? null,
+      archivedBy: ride.archivedBy ?? null,
+      archiveReason: ride.archiveReason ?? null,
       createdAt: ride.createdAt ?? null,
     }));
     const clientPayments: ExportedClientPaymentRecord[] = rawClientPayments.map(
@@ -227,6 +266,19 @@ export class FunctionalBackupArchiveService {
         createdAt: preset.createdAt ?? null,
       }),
     );
+    const rideLifecycleEvents: ExportedRideLifecycleEventRecord[] =
+      rawRideLifecycleEvents.map((event: any) => ({
+        id: event.id,
+        rideId: event.rideId,
+        actorUserId: event.actorUserId ?? null,
+        eventType: event.eventType,
+        previousStatus: event.previousStatus ?? null,
+        nextStatus: event.nextStatus ?? null,
+        previousPaymentStatus: event.previousPaymentStatus ?? null,
+        nextPaymentStatus: event.nextPaymentStatus ?? null,
+        metadataJson: event.metadataJson ?? null,
+        createdAt: event.createdAt ?? null,
+      }));
 
     const modules: BackupModuleName[] = [
       'clients',
@@ -234,6 +286,7 @@ export class FunctionalBackupArchiveService {
       'client_payments',
       'balance_transactions',
       'ride_presets',
+      'ride_lifecycle_events',
     ];
     const counts = {
       clients: clients.length,
@@ -241,6 +294,7 @@ export class FunctionalBackupArchiveService {
       client_payments: clientPayments.length,
       balance_transactions: balanceTransactions.length,
       ride_presets: ridePresets.length,
+      ride_lifecycle_events: rideLifecycleEvents.length,
     };
 
     const payloadBuffers = [
@@ -249,6 +303,7 @@ export class FunctionalBackupArchiveService {
       Buffer.from(this.stringifyJson(clientPayments)),
       Buffer.from(this.stringifyJson(balanceTransactions)),
       Buffer.from(this.stringifyJson(ridePresets)),
+      Buffer.from(this.stringifyJson(rideLifecycleEvents)),
     ];
 
     const manifest: FunctionalBackupManifest = {
@@ -272,6 +327,7 @@ export class FunctionalBackupArchiveService {
       { name: 'client-payments.json', content: payloadBuffers[2] },
       { name: 'balance-transactions.json', content: payloadBuffers[3] },
       { name: 'ride-presets.json', content: payloadBuffers[4] },
+      { name: 'ride-lifecycle-events.json', content: payloadBuffers[5] },
     ]);
 
     return {

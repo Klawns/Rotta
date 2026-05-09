@@ -27,6 +27,10 @@ describe('FunctionalBackupImportService', () => {
     clientPayments: { name: 'clientPayments' },
     balanceTransactions: { name: 'balanceTransactions' },
     ridePresets: { name: 'ridePresets', userId: 'ridePresets.userId' },
+    rideLifecycleEvents: {
+      name: 'rideLifecycleEvents',
+      rideUserId: 'rideLifecycleEvents.rideUserId',
+    },
   };
 
   const buildArchiveBuffer = (dataset: {
@@ -35,36 +39,60 @@ describe('FunctionalBackupImportService', () => {
     clientPayments: unknown[];
     balanceTransactions: unknown[];
     ridePresets: unknown[];
-  }) => {
+    rideLifecycleEvents?: unknown[];
+  }, options?: { version?: number }) => {
+    const manifestVersion = options?.version ?? BACKUP_MANIFEST_VERSION;
+    const includeLifecycleEvents = manifestVersion >= BACKUP_MANIFEST_VERSION;
     const payloadBuffers = [
       Buffer.from(JSON.stringify(dataset.clients)),
       Buffer.from(JSON.stringify(dataset.rides)),
       Buffer.from(JSON.stringify(dataset.clientPayments)),
       Buffer.from(JSON.stringify(dataset.balanceTransactions)),
       Buffer.from(JSON.stringify(dataset.ridePresets)),
+      ...(includeLifecycleEvents
+        ? [Buffer.from(JSON.stringify(dataset.rideLifecycleEvents ?? []))]
+        : []),
     ];
 
     const manifest = {
-      version: BACKUP_MANIFEST_VERSION,
+      version: manifestVersion,
       kind: FUNCTIONAL_BACKUP_KIND,
       createdAt: '2026-04-01T12:00:00.000Z',
       ownerUserId: 'source-user',
       ownerName: 'Origem',
       appVersion: '0.0.1',
-      modules: [
-        'clients',
-        'rides',
-        'client_payments',
-        'balance_transactions',
-        'ride_presets',
-      ],
-      counts: {
-        clients: dataset.clients.length,
-        rides: dataset.rides.length,
-        client_payments: dataset.clientPayments.length,
-        balance_transactions: dataset.balanceTransactions.length,
-        ride_presets: dataset.ridePresets.length,
-      },
+      modules: includeLifecycleEvents
+        ? [
+            'clients',
+            'rides',
+            'client_payments',
+            'balance_transactions',
+            'ride_presets',
+            'ride_lifecycle_events',
+          ]
+        : [
+            'clients',
+            'rides',
+            'client_payments',
+            'balance_transactions',
+            'ride_presets',
+          ],
+      counts: includeLifecycleEvents
+        ? {
+            clients: dataset.clients.length,
+            rides: dataset.rides.length,
+            client_payments: dataset.clientPayments.length,
+            balance_transactions: dataset.balanceTransactions.length,
+            ride_presets: dataset.ridePresets.length,
+            ride_lifecycle_events: (dataset.rideLifecycleEvents ?? []).length,
+          }
+        : {
+            clients: dataset.clients.length,
+            rides: dataset.rides.length,
+            client_payments: dataset.clientPayments.length,
+            balance_transactions: dataset.balanceTransactions.length,
+            ride_presets: dataset.ridePresets.length,
+          },
       sha256: createHash('sha256')
         .update(Buffer.concat(payloadBuffers))
         .digest('hex'),
@@ -77,6 +105,9 @@ describe('FunctionalBackupImportService', () => {
       { name: 'client-payments.json', content: payloadBuffers[2] },
       { name: 'balance-transactions.json', content: payloadBuffers[3] },
       { name: 'ride-presets.json', content: payloadBuffers[4] },
+      ...(includeLifecycleEvents
+        ? [{ name: 'ride-lifecycle-events.json', content: payloadBuffers[5] }]
+        : []),
     ]);
   };
 
@@ -101,6 +132,7 @@ describe('FunctionalBackupImportService', () => {
           'client_payments',
           'balance_transactions',
           'ride_presets',
+          'ride_lifecycle_events',
         ],
         counts: {
           clients: 1,
@@ -108,6 +140,7 @@ describe('FunctionalBackupImportService', () => {
           client_payments: 1,
           balance_transactions: 1,
           ride_presets: 1,
+          ride_lifecycle_events: 1,
         },
         warnings: [],
       }),
@@ -204,6 +237,7 @@ describe('FunctionalBackupImportService', () => {
             client_payments: 0,
             balance_transactions: 0,
             ride_presets: 0,
+            ride_lifecycle_events: 0,
           },
           modules: [
             'clients',
@@ -211,6 +245,7 @@ describe('FunctionalBackupImportService', () => {
             'client_payments',
             'balance_transactions',
             'ride_presets',
+            'ride_lifecycle_events',
           ],
           createdAt: '2026-04-01T12:00:00.000Z',
           ownerUserId: 'user-1',
@@ -303,6 +338,7 @@ describe('FunctionalBackupImportService', () => {
       clientPayments: [],
       balanceTransactions: [],
       ridePresets: [],
+      rideLifecycleEvents: [],
     });
 
     await expect(
@@ -325,6 +361,42 @@ describe('FunctionalBackupImportService', () => {
     expect(repositoryMock.createImportJob).not.toHaveBeenCalled();
   });
 
+  it('should accept legacy v1 backups without lifecycle events during preview', async () => {
+    const { service, repositoryMock } = createService();
+    const archiveBuffer = buildArchiveBuffer(
+      {
+        clients: [],
+        rides: [],
+        clientPayments: [],
+        balanceTransactions: [],
+        ridePresets: [],
+      },
+      { version: 1 },
+    );
+
+    const result = await service.previewImport(
+      'user-1',
+      createUploadSource(archiveBuffer),
+    );
+
+    expect(repositoryMock.createImportJob).toHaveBeenCalled();
+    expect(result.preview.modules).toEqual([
+      'clients',
+      'rides',
+      'client_payments',
+      'balance_transactions',
+      'ride_presets',
+    ]);
+    expect(result.preview.counts).toEqual({
+      clients: 0,
+      rides: 0,
+      client_payments: 0,
+      balance_transactions: 0,
+      ride_presets: 0,
+      ride_lifecycle_events: 0,
+    });
+  });
+
   it('should reject archive bombs during preview before persisting the import job', async () => {
     const { service, repositoryMock } = createService();
     const archiveBuffer = createZipArchive([
@@ -343,6 +415,7 @@ describe('FunctionalBackupImportService', () => {
             'client_payments',
             'balance_transactions',
             'ride_presets',
+            'ride_lifecycle_events',
           ],
           counts: {
             clients: 0,
@@ -350,6 +423,7 @@ describe('FunctionalBackupImportService', () => {
             client_payments: 0,
             balance_transactions: 0,
             ride_presets: 0,
+            ride_lifecycle_events: 0,
           },
           sha256:
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -360,6 +434,7 @@ describe('FunctionalBackupImportService', () => {
       { name: 'client-payments.json', content: '[]' },
       { name: 'balance-transactions.json', content: '[]' },
       { name: 'ride-presets.json', content: '[]' },
+      { name: 'ride-lifecycle-events.json', content: '[]' },
     ]);
 
     await expect(
@@ -377,6 +452,7 @@ describe('FunctionalBackupImportService', () => {
       clientPayments: [],
       balanceTransactions: [],
       ridePresets: [],
+      rideLifecycleEvents: [],
     });
 
     storageProviderMock.uploadPrivateStream.mockImplementationOnce(
@@ -435,6 +511,9 @@ describe('FunctionalBackupImportService', () => {
           debtValue: '0',
           rideDate: '2026-03-29T18:00:00.000Z',
           photo: 'photo-key',
+          archivedAt: '2026-03-30T18:00:00.000Z',
+          archivedBy: 'source-user',
+          archiveReason: 'user-delete',
           createdAt: '2026-03-29T18:00:00.000Z',
         },
       ],
@@ -472,6 +551,19 @@ describe('FunctionalBackupImportService', () => {
           createdAt: '2026-03-29T17:00:00.000Z',
         },
       ],
+      rideLifecycleEvents: [
+        {
+          id: 'event-1',
+          rideId: 'ride-1',
+          rideUserId: 'source-user',
+          actorUserId: 'source-user',
+          eventType: 'ARCHIVED',
+          previousStatus: 'COMPLETED',
+          nextStatus: 'COMPLETED',
+          metadataJson: '{"archiveReason":"user-delete"}',
+          createdAt: '2026-03-30T18:01:00.000Z',
+        },
+      ],
     });
 
     const archiveChecksum = createHash('sha256')
@@ -498,6 +590,7 @@ describe('FunctionalBackupImportService', () => {
           'client_payments',
           'balance_transactions',
           'ride_presets',
+          'ride_lifecycle_events',
         ],
         counts: {
           clients: 1,
@@ -505,6 +598,7 @@ describe('FunctionalBackupImportService', () => {
           client_payments: 1,
           balance_transactions: 1,
           ride_presets: 1,
+          ride_lifecycle_events: 1,
         },
         warnings: [],
       }),
@@ -568,6 +662,8 @@ describe('FunctionalBackupImportService', () => {
         clientId: 'client-1',
         userId: 'user-1',
         photo: null,
+        archivedBy: 'user-1',
+        archiveReason: 'user-delete',
       }),
     ]);
     expect(insertedValues.get('rides')?.[0]).not.toHaveProperty('displayId');
@@ -590,6 +686,15 @@ describe('FunctionalBackupImportService', () => {
       expect.objectContaining({
         id: 'preset-1',
         userId: 'user-1',
+      }),
+    ]);
+    expect(insertedValues.get('rideLifecycleEvents')).toEqual([
+      expect.objectContaining({
+        id: 'event-1',
+        rideId: 'ride-1',
+        rideUserId: 'user-1',
+        actorUserId: 'user-1',
+        eventType: 'ARCHIVED',
       }),
     ]);
   });
@@ -626,6 +731,7 @@ describe('FunctionalBackupImportService', () => {
           'client_payments',
           'balance_transactions',
           'ride_presets',
+          'ride_lifecycle_events',
         ],
         counts: {
           clients: 0,
@@ -633,6 +739,7 @@ describe('FunctionalBackupImportService', () => {
           client_payments: 0,
           balance_transactions: 0,
           ride_presets: 0,
+          ride_lifecycle_events: 0,
         },
         warnings: [],
       }),

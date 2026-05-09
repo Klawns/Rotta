@@ -39,6 +39,11 @@ const schema = {
     createdAt: 'ridePresets.createdAt',
     id: 'ridePresets.id',
   },
+  rideLifecycleEvents: {
+    rideUserId: 'rideLifecycleEvents.rideUserId',
+    createdAt: 'rideLifecycleEvents.createdAt',
+    id: 'rideLifecycleEvents.id',
+  },
 };
 
 describe('FunctionalBackupArchiveService', () => {
@@ -87,6 +92,16 @@ describe('FunctionalBackupArchiveService', () => {
                       return [
                         { id: 'preset-1', userId: 'user-1', label: 'Centro' },
                       ];
+                    case schema.rideLifecycleEvents:
+                      return [
+                        {
+                          id: 'event-1',
+                          rideId: 'ride-1',
+                          rideUserId: 'user-1',
+                          actorUserId: 'user-1',
+                          eventType: 'ARCHIVED',
+                        },
+                      ];
                     default:
                       return [];
                   }
@@ -110,6 +125,7 @@ describe('FunctionalBackupArchiveService', () => {
       client_payments: 1,
       balance_transactions: 1,
       ride_presets: 1,
+      ride_lifecycle_events: 1,
     });
     expect(result.manifest.ownerName).toBe('Alice Motorista');
     expect(result.archiveBuffer.includes(Buffer.from('manifest.json'))).toBe(
@@ -161,6 +177,9 @@ describe('FunctionalBackupArchiveService', () => {
                           paymentStatus: 'PAID',
                           paidWithBalance: '0',
                           debtValue: '0',
+                          archivedAt: '2026-04-01T10:00:00.000Z',
+                          archivedBy: 'user-1',
+                          archiveReason: 'user-delete',
                           photo: 'photo-key',
                           createdAt: '2026-03-31T12:00:00.000Z',
                         },
@@ -199,6 +218,21 @@ describe('FunctionalBackupArchiveService', () => {
                           createdAt: '2026-03-31T12:00:00.000Z',
                         },
                       ];
+                    case schema.rideLifecycleEvents:
+                      return [
+                        {
+                          id: 'event-1',
+                          userId: 'user-1',
+                          rideId: 'ride-1',
+                          rideUserId: 'user-1',
+                          actorUserId: 'user-1',
+                          eventType: 'ARCHIVED',
+                          previousStatus: 'COMPLETED',
+                          nextStatus: 'COMPLETED',
+                          metadataJson: '{"archiveReason":"user-delete"}',
+                          createdAt: '2026-04-01T10:01:00.000Z',
+                        },
+                      ];
                     default:
                       return [];
                   }
@@ -223,6 +257,11 @@ describe('FunctionalBackupArchiveService', () => {
         .find((entry) => entry.name === 'rides.json')!
         .content.toString('utf8'),
     ) as Array<Record<string, unknown>>;
+    const rideLifecycleEvents = JSON.parse(
+      entries
+        .find((entry) => entry.name === 'ride-lifecycle-events.json')!
+        .content.toString('utf8'),
+    ) as Array<Record<string, unknown>>;
 
     expect(clients[0]).toEqual({
       id: 'client-1',
@@ -237,10 +276,27 @@ describe('FunctionalBackupArchiveService', () => {
         id: 'ride-1',
         clientId: 'client-1',
         value: '22.00',
+        archivedAt: '2026-04-01T10:00:00.000Z',
+        archivedBy: 'user-1',
+        archiveReason: 'user-delete',
         photo: null,
       }),
     );
     expect(rides[0]).not.toHaveProperty('displayId');
     expect(rides[0]).not.toHaveProperty('userId');
+    expect(rideLifecycleEvents[0]).toEqual({
+      id: 'event-1',
+      rideId: 'ride-1',
+      actorUserId: 'user-1',
+      eventType: 'ARCHIVED',
+      previousStatus: 'COMPLETED',
+      nextStatus: 'COMPLETED',
+      previousPaymentStatus: null,
+      nextPaymentStatus: null,
+      metadataJson: '{"archiveReason":"user-delete"}',
+      createdAt: '2026-04-01T10:01:00.000Z',
+    });
+    expect(rideLifecycleEvents[0]).not.toHaveProperty('rideUserId');
+    expect(rideLifecycleEvents[0]).not.toHaveProperty('userId');
   });
 });

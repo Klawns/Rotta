@@ -1,6 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
-import { BACKUP_MANIFEST_VERSION } from '../backups.constants';
+import {
+  BACKUP_MANIFEST_VERSION,
+  SUPPORTED_BACKUP_MANIFEST_VERSIONS,
+} from '../backups.constants';
 import type {
   FunctionalBackupImportDataset,
   FunctionalBackupImportPreview,
@@ -14,7 +17,16 @@ const TRANSACTION_TYPES = ['CREDIT', 'DEBIT'] as const;
 const TRANSACTION_ORIGINS = [
   'PAYMENT_OVERFLOW',
   'RIDE_USAGE',
+  'RIDE_ARCHIVE_REFUND',
+  'RIDE_RESTORE_USAGE',
   'MANUAL_ADJUSTMENT',
+] as const;
+const RIDE_LIFECYCLE_EVENT_TYPES = [
+  'CREATED',
+  'STATUS_CHANGED',
+  'PAYMENT_STATUS_CHANGED',
+  'ARCHIVED',
+  'RESTORED',
 ] as const;
 
 @Injectable()
@@ -33,16 +45,24 @@ export class FunctionalBackupImportDatasetValidatorService {
   }
 
   private validateDataset(dataset: FunctionalBackupImportDataset) {
-    const modules = [
+    const baseModules: ImportableBackupModuleName[] = [
       'clients',
       'rides',
       'client_payments',
       'balance_transactions',
       'ride_presets',
-    ] as const;
+    ];
+    const modules: ImportableBackupModuleName[] =
+      dataset.manifest.version >= BACKUP_MANIFEST_VERSION
+        ? [...baseModules, 'ride_lifecycle_events']
+        : baseModules;
     const warnings: string[] = [];
 
-    if (dataset.manifest.version !== BACKUP_MANIFEST_VERSION) {
+    if (
+      !SUPPORTED_BACKUP_MANIFEST_VERSIONS.includes(
+        dataset.manifest.version as 1 | 2,
+      )
+    ) {
       throw new BadRequestException(
         `Versao de backup nao suportada: ${dataset.manifest.version}.`,
       );
@@ -66,11 +86,12 @@ export class FunctionalBackupImportDatasetValidatorService {
       client_payments: dataset.clientPayments.length,
       balance_transactions: dataset.balanceTransactions.length,
       ride_presets: dataset.ridePresets.length,
+      ride_lifecycle_events: dataset.rideLifecycleEvents.length,
     };
 
     for (const [key, count] of Object.entries(counts)) {
       const manifestCount =
-        dataset.manifest.counts[key as ImportableBackupModuleName];
+        dataset.manifest.counts[key as ImportableBackupModuleName] ?? 0;
 
       if (manifestCount !== count) {
         throw new BadRequestException(
@@ -87,6 +108,9 @@ export class FunctionalBackupImportDatasetValidatorService {
           Buffer.from(JSON.stringify(dataset.clientPayments)),
           Buffer.from(JSON.stringify(dataset.balanceTransactions)),
           Buffer.from(JSON.stringify(dataset.ridePresets)),
+          ...(dataset.manifest.version >= BACKUP_MANIFEST_VERSION
+            ? [Buffer.from(JSON.stringify(dataset.rideLifecycleEvents))]
+            : []),
         ]),
       )
       .digest('hex');
@@ -101,6 +125,10 @@ export class FunctionalBackupImportDatasetValidatorService {
     this.validateUniqueIds(dataset.clientPayments, 'pagamentos');
     this.validateUniqueIds(dataset.balanceTransactions, 'transacoes');
     this.validateUniqueIds(dataset.ridePresets, 'atalhos de corrida');
+    this.validateUniqueIds(
+      dataset.rideLifecycleEvents,
+      'eventos do ciclo de vida das corridas',
+    );
 
     if (
       dataset.clients.some(
@@ -110,10 +138,12 @@ export class FunctionalBackupImportDatasetValidatorService {
         (ride) => ride.displayId !== null && ride.displayId !== undefined,
       ) ||
       dataset.clients.some((client) => client.userId) ||
+      dataset.rides.some((ride) => ride.archivedBy) ||
       dataset.rides.some((ride) => ride.userId) ||
       dataset.clientPayments.some((payment) => payment.userId) ||
       dataset.balanceTransactions.some((transaction) => transaction.userId) ||
-      dataset.ridePresets.some((preset) => preset.userId)
+      dataset.ridePresets.some((preset) => preset.userId) ||
+      dataset.rideLifecycleEvents.some((event) => event.rideUserId)
     ) {
       warnings.push(
         'Identificadores internos do sistema serao ignorados e regenerados durante a importacao.',
@@ -127,6 +157,7 @@ export class FunctionalBackupImportDatasetValidatorService {
     }
 
     const clientIds = new Set(dataset.clients.map((client) => client.id));
+    const rideIds = new Set(dataset.rides.map((ride) => ride.id));
 
     for (const client of dataset.clients) {
       this.normalizeDate(client.createdAt);
@@ -163,6 +194,7 @@ export class FunctionalBackupImportDatasetValidatorService {
         `corrida ${ride.id} valor em aberto`,
       );
       this.normalizeDate(ride.rideDate);
+      this.normalizeDate(ride.archivedAt);
       this.normalizeDate(ride.createdAt);
 
       if (ride.photo) {
@@ -221,6 +253,42 @@ export class FunctionalBackupImportDatasetValidatorService {
     for (const preset of dataset.ridePresets) {
       this.parseNumericValue(preset.value, `atalho ${preset.id} valor`);
       this.normalizeDate(preset.createdAt);
+    }
+
+    for (const event of dataset.rideLifecycleEvents) {
+      if (!rideIds.has(event.rideId)) {
+        throw new BadRequestException(
+          `Evento de corrida ${event.id} referencia uma corrida inexistente.`,
+        );
+      }
+
+      this.validateEnumValue(
+        event.eventType,
+        RIDE_LIFECYCLE_EVENT_TYPES,
+        `tipo do evento ${event.id}`,
+      );
+      this.validateEnumValue(
+        event.previousStatus ?? undefined,
+        RIDE_STATUSES,
+        `status anterior do evento ${event.id}`,
+      );
+      this.validateEnumValue(
+        event.nextStatus ?? undefined,
+        RIDE_STATUSES,
+        `status seguinte do evento ${event.id}`,
+      );
+      this.validateEnumValue(
+        event.previousPaymentStatus ?? undefined,
+        RIDE_PAYMENT_STATUSES,
+        `status de pagamento anterior do evento ${event.id}`,
+      );
+      this.validateEnumValue(
+        event.nextPaymentStatus ?? undefined,
+        RIDE_PAYMENT_STATUSES,
+        `status de pagamento seguinte do evento ${event.id}`,
+      );
+      this.validateJsonString(event.metadataJson, `metadata do evento ${event.id}`);
+      this.normalizeDate(event.createdAt);
     }
 
     return {
@@ -311,6 +379,29 @@ export class FunctionalBackupImportDatasetValidatorService {
     if (!allowedValues.includes(value as T)) {
       throw new BadRequestException(
         `Arquivo de backup contem valor invalido em ${fieldLabel}.`,
+      );
+    }
+  }
+
+  private validateJsonString(
+    value: string | null | undefined,
+    fieldLabel: string,
+  ) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    if (typeof value !== 'string') {
+      throw new BadRequestException(
+        `Arquivo de backup contem JSON invalido em ${fieldLabel}.`,
+      );
+    }
+
+    try {
+      return JSON.parse(value) as unknown;
+    } catch {
+      throw new BadRequestException(
+        `Arquivo de backup contem JSON invalido em ${fieldLabel}.`,
       );
     }
   }
