@@ -9,6 +9,9 @@ interface SelectionActionBarMobileProps {
   onToggleSelectAll: () => void;
   onDeleteSelected: () => void;
   onCancel: () => void;
+  actionLabel?: string;
+  actionProgressLabel?: string;
+  actionTone?: 'brand' | 'success';
   className?: string;
   style?: CSSProperties;
 }
@@ -20,6 +23,9 @@ export function SelectionActionBarMobile({
   onToggleSelectAll,
   onDeleteSelected,
   onCancel,
+  actionLabel = 'Excluir',
+  actionProgressLabel = 'Excluindo...',
+  actionTone = 'brand',
   className,
   style,
 }: SelectionActionBarMobileProps) {
@@ -40,9 +46,13 @@ export function SelectionActionBarMobile({
           type="button"
           onClick={onDeleteSelected}
           disabled={!hasSelection || isDeleting}
-          className="inline-flex min-w-0 flex-1 items-center justify-center rounded-2xl border border-blue-500/15 bg-blue-500 px-3 py-3 text-xs font-semibold text-white transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className={
+            actionTone === 'success'
+              ? 'inline-flex min-w-0 flex-1 items-center justify-center rounded-2xl border border-success/15 bg-success px-3 py-3 text-xs font-semibold text-success-foreground transition-all hover:bg-success/90 disabled:cursor-not-allowed disabled:opacity-50'
+              : 'inline-flex min-w-0 flex-1 items-center justify-center rounded-2xl border border-blue-500/15 bg-blue-500 px-3 py-3 text-xs font-semibold text-white transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50'
+          }
         >
-          {isDeleting ? 'Excluindo...' : 'Excluir'}
+          {isDeleting ? actionProgressLabel : actionLabel}
         </button>
         <button
           type="button"

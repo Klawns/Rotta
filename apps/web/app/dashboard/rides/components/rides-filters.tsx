@@ -2,6 +2,8 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarRange, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
+import { type ClientAutocompleteState } from '@/hooks/use-client-autocomplete';
+import { Input } from '@/components/ui/input';
 import { ClientAutocompleteField } from '@/components/ui/client-autocomplete-field';
 import {
   Drawer,
@@ -18,15 +20,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import {
   RIDE_PAYMENT_FILTER_OPTIONS,
   RIDE_PERIOD_PRESET_OPTIONS,
+  RIDE_SCOPE_OPTIONS,
   type RidesFilterChip,
 } from '../_lib/rides-filters';
-import { type ClientAutocompleteState } from '@/hooks/use-client-autocomplete';
 import {
+  type RideListScope,
   type RidePaymentFilter,
   type RidePeriodPreset,
   type RidesFilterState,
@@ -37,6 +39,7 @@ interface RidesFiltersProps {
   clientAutocomplete: ClientAutocompleteState;
   activeFilterChips: RidesFilterChip[];
   activeFilterCount: number;
+  setScope: (value: RideListScope) => void;
   setSearch: (value: string) => void;
   setPaymentFilter: (value: RidePaymentFilter) => void;
   setStartDate: (value: string) => void;
@@ -54,6 +57,7 @@ export function RidesFilters({
   clientAutocomplete,
   activeFilterChips,
   activeFilterCount,
+  setScope,
   setSearch,
   setPaymentFilter,
   setStartDate,
@@ -72,11 +76,49 @@ export function RidesFilters({
   const mobileActionActiveClass = 'border-primary bg-primary/10 text-primary';
   const mobileActionAccentClass =
     'border-primary/20 bg-primary/5 text-text-primary hover:border-primary/30 hover:bg-primary/10';
+  const isArchivedScope = filters.scope === 'archived';
+  const searchPlaceholder = isArchivedScope
+    ? 'Buscar corrida arquivada por cliente, local ou ID'
+    : 'Buscar por cliente, local ou ID';
+  const desktopSearchPlaceholder = isArchivedScope
+    ? 'Buscar corrida arquivada por cliente, local ou ID'
+    : 'Buscar por cliente, local ou ID da corrida';
+  const clientHint = isArchivedScope
+    ? 'Selecione um cliente especifico quando quiser reduzir a lista arquivada.'
+    : 'Selecione um cliente especifico quando quiser reduzir a lista.';
+  const periodHint = isArchivedScope
+    ? 'Use atalhos rapidos ou ajuste um intervalo manual para achar corridas arquivadas.'
+    : 'Use atalhos rapidos ou ajuste um intervalo manual.';
+  const drawerDescription = isArchivedScope
+    ? 'Refine cliente e periodo sem sair do modo arquivadas.'
+    : 'Refine cliente e periodo sem ocupar o topo da lista.';
+
+  const renderScopeButtons = (className?: string) => (
+    <div className={cn('grid grid-cols-2 gap-2', className)}>
+      {RIDE_SCOPE_OPTIONS.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => setScope(option.value)}
+          className={cn(
+            'rounded-2xl border px-3 py-2.5 text-xs font-bold uppercase tracking-[0.16em] transition-colors',
+            filters.scope === option.value
+              ? 'border-primary bg-primary text-white'
+              : 'border-border-subtle bg-card-background text-text-secondary hover:border-border hover:bg-hover-accent hover:text-text-primary',
+          )}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="space-y-4">
       <section className="rounded-[1.5rem] border border-border-subtle bg-background/90 p-3 shadow-sm backdrop-blur-sm md:hidden">
         <div className="flex flex-col gap-3">
+          {renderScopeButtons()}
+
           <div className="relative">
             <Search
               size={18}
@@ -84,7 +126,7 @@ export function RidesFilters({
             />
             <Input
               type="text"
-              placeholder="Buscar por cliente, local ou ID"
+              placeholder={searchPlaceholder}
               value={filters.search}
               onChange={(event) => setSearch(event.target.value)}
               className="h-11 rounded-2xl border-border-subtle bg-card-background pl-11 pr-4 text-sm font-medium text-text-primary shadow-none"
@@ -164,6 +206,8 @@ export function RidesFilters({
 
       <section className="hidden rounded-[1.9rem] border border-border-subtle bg-background/90 p-4 shadow-sm backdrop-blur-sm md:block">
         <div className="flex flex-col gap-4">
+          {renderScopeButtons('max-w-sm')}
+
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
             <div className="relative flex-1">
               <Search
@@ -172,7 +216,7 @@ export function RidesFilters({
               />
               <Input
                 type="text"
-                placeholder="Buscar por cliente, local ou ID da corrida"
+                placeholder={desktopSearchPlaceholder}
                 value={filters.search}
                 onChange={(event) => setSearch(event.target.value)}
                 className="h-12 rounded-2xl border-border-subtle bg-card-background pl-11 pr-4 text-sm font-medium text-text-primary shadow-none"
@@ -258,7 +302,7 @@ export function RidesFilters({
                         Cliente
                       </p>
                       <p className="mt-1 text-sm text-text-secondary">
-                        Selecione um cliente específico quando quiser reduzir a lista.
+                        {clientHint}
                       </p>
                     </div>
 
@@ -279,11 +323,11 @@ export function RidesFilters({
                       <div className="flex items-center gap-2">
                         <CalendarRange size={16} className="text-text-secondary" />
                         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-secondary/70">
-                          Período
+                          Periodo
                         </p>
                       </div>
                       <p className="mt-1 text-sm text-text-secondary">
-                        Use atalhos rápidos ou ajuste um intervalo manual.
+                        {periodHint}
                       </p>
                     </div>
 
@@ -308,7 +352,7 @@ export function RidesFilters({
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-2">
                         <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-secondary/70">
-                          Início
+                          Inicio
                         </label>
                         <Input
                           type="date"
@@ -344,19 +388,30 @@ export function RidesFilters({
             <DrawerTitle className="text-lg font-display font-extrabold text-text-primary">
               Ajustar filtros
             </DrawerTitle>
-            <DrawerDescription>
-              Refine cliente e período sem ocupar o topo da lista.
-            </DrawerDescription>
+            <DrawerDescription>{drawerDescription}</DrawerDescription>
           </DrawerHeader>
 
           <div className="space-y-5 overflow-y-auto px-4 pb-2">
             <section className="space-y-3">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                  Escopo
+                </p>
+                <p className="mt-1 text-sm text-text-secondary">
+                  Alterne entre corridas ativas e arquivadas na mesma tela.
+                </p>
+              </div>
+
+              {renderScopeButtons()}
+            </section>
+
+            <section className="space-y-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
                   Cliente
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">
-                  Selecione um cliente específico quando quiser reduzir a lista.
+                  {clientHint}
                 </p>
               </div>
 
@@ -377,11 +432,11 @@ export function RidesFilters({
                 <div className="flex items-center gap-2">
                   <CalendarRange size={16} className="text-text-secondary" />
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
-                    Período
+                    Periodo
                   </p>
                 </div>
                 <p className="mt-1 text-sm text-text-secondary">
-                  Use atalhos rápidos ou ajuste um intervalo manual.
+                  {periodHint}
                 </p>
               </div>
 
@@ -406,7 +461,7 @@ export function RidesFilters({
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-secondary/70">
-                    Início
+                    Inicio
                   </label>
                   <Input
                     type="date"

@@ -1,6 +1,6 @@
 'use client';
 
-import { PaymentStatus, RideViewModel } from '@/types/rides';
+import { PaymentStatus, RideListScope, RideViewModel } from '@/types/rides';
 import { useRidesListViewModel } from '../_hooks/use-rides-list-view-model';
 import { RidesListView } from './rides-list-view';
 
@@ -16,6 +16,7 @@ interface RidesListContainerProps {
   loadMoreError?: unknown;
   retry?: () => void | Promise<unknown>;
   retryLoadMore?: () => void | Promise<unknown>;
+  scope: RideListScope;
   onEdit: (ride: RideViewModel) => void;
   onDelete: (ride: RideViewModel) => void;
   onChangePaymentStatus: (
@@ -37,6 +38,9 @@ interface RidesListContainerProps {
   isSelectionIndeterminate: boolean;
   onDeleteSelected: () => void;
   isDeletingSelected: boolean;
+  selectionActionLabel: string;
+  selectionActionProgressLabel: string;
+  selectionActionTone: 'brand' | 'success';
 }
 
 export function RidesListContainer({
@@ -51,6 +55,7 @@ export function RidesListContainer({
   loadMoreError,
   retry,
   retryLoadMore,
+  scope,
   onEdit,
   onDelete,
   onChangePaymentStatus,
@@ -69,6 +74,9 @@ export function RidesListContainer({
   isSelectionIndeterminate,
   onDeleteSelected,
   isDeletingSelected,
+  selectionActionLabel,
+  selectionActionProgressLabel,
+  selectionActionTone,
 }: RidesListContainerProps) {
   const viewModel = useRidesListViewModel({
     rides,
@@ -78,6 +86,7 @@ export function RidesListContainer({
     isFetchingNextPage,
     error,
     hasActiveFilters,
+    scope,
   });
 
   return (
@@ -103,6 +112,9 @@ export function RidesListContainer({
         isSelectionIndeterminate,
         onDeleteSelected,
         isDeletingSelected,
+        selectionActionLabel,
+        selectionActionProgressLabel,
+        selectionActionTone,
       }}
       pagination={{
         hasNextPage,

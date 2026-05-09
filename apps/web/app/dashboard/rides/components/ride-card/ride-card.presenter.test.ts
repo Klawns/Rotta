@@ -12,6 +12,9 @@ function createRide(overrides: Partial<RideViewModel> = {}): RideViewModel {
     paymentStatus: 'PENDING',
     rideDate: '2026-04-10T10:00:00.000Z',
     createdAt: '2026-04-10T10:00:00.000Z',
+    archivedAt: null,
+    archivedBy: null,
+    archiveReason: null,
     location: 'Centro',
     photo: null,
     client: {
@@ -42,4 +45,20 @@ test('keeps the photo URL empty when the ride has no attached photo', () => {
   const presentation = getRideCardPresentation(createRide());
 
   assert.equal(presentation.photoUrl, null);
+});
+
+test('builds the archived card state with restore-only actions', () => {
+  const presentation = getRideCardPresentation(
+    createRide({
+      archivedAt: '2026-04-12T15:00:00.000Z',
+      archivedBy: 'user-1',
+      archiveReason: 'bulk-delete',
+    }),
+  );
+
+  assert.equal(presentation.isArchived, true);
+  assert.equal(presentation.financialState, 'archived');
+  assert.equal(presentation.financialLabel, 'Arquivada');
+  assert.equal(presentation.actionLabel, 'Restaurar');
+  assert.match(presentation.financialHelper ?? '', /Arquivada em lote/);
 });

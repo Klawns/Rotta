@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import { clientKeys, financeKeys, rideKeys } from '@/lib/query-keys';
-import { invalidateRideCachesAfterBulkDeletion } from './use-delete-rides-mutation';
+import { invalidateRideCachesAfterBulkRestore } from './use-restore-rides-mutation';
 
-test('invalidates shared caches and each affected client once after bulk deletion', async () => {
+test('invalidates shared caches and each affected client once after bulk restore', async () => {
   const invalidated: Array<readonly unknown[]> = [];
-  const queryClient: Parameters<typeof invalidateRideCachesAfterBulkDeletion>[0] = {
+  const queryClient: Parameters<typeof invalidateRideCachesAfterBulkRestore>[0] = {
     invalidateQueries: async (filters) => {
       if (filters?.queryKey) {
         invalidated.push(filters.queryKey);
@@ -14,7 +13,7 @@ test('invalidates shared caches and each affected client once after bulk deletio
     },
   };
 
-  await invalidateRideCachesAfterBulkDeletion(queryClient, [
+  await invalidateRideCachesAfterBulkRestore(queryClient, [
     'client-1',
     'client-2',
     'client-1',
@@ -32,9 +31,9 @@ test('invalidates shared caches and each affected client once after bulk deletio
   ]);
 });
 
-test('skips client invalidation when rides have no client ids', async () => {
+test('skips client invalidation when restored rides have no client ids', async () => {
   const invalidated: Array<readonly unknown[]> = [];
-  const queryClient: Parameters<typeof invalidateRideCachesAfterBulkDeletion>[0] = {
+  const queryClient: Parameters<typeof invalidateRideCachesAfterBulkRestore>[0] = {
     invalidateQueries: async (filters) => {
       if (filters?.queryKey) {
         invalidated.push(filters.queryKey);
@@ -42,7 +41,7 @@ test('skips client invalidation when rides have no client ids', async () => {
     },
   };
 
-  await invalidateRideCachesAfterBulkDeletion(queryClient, ['', '']);
+  await invalidateRideCachesAfterBulkRestore(queryClient, ['', '']);
 
   assert.deepEqual(invalidated, [
     rideKeys.lists(),

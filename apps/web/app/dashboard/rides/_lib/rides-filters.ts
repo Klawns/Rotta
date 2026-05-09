@@ -5,6 +5,7 @@ import {
   subDays,
 } from 'date-fns';
 import {
+  type RideListScope,
   type RidePaymentFilter,
   type RidePeriodPreset,
   type RidesFilterState,
@@ -24,6 +25,11 @@ export const RIDE_PAYMENT_FILTER_OPTIONS: readonly RideFilterOption<RidePaymentF
   { value: 'all', label: 'Todas' },
   { value: 'PENDING', label: 'Com pendência' },
   { value: 'PAID', label: 'Pagas' },
+] as const;
+
+export const RIDE_SCOPE_OPTIONS: readonly RideFilterOption<RideListScope>[] = [
+  { value: 'active', label: 'Ativas' },
+  { value: 'archived', label: 'Arquivadas' },
 ] as const;
 
 export const RIDE_PERIOD_PRESET_OPTIONS: readonly RideFilterOption<RidePeriodPreset>[] = [

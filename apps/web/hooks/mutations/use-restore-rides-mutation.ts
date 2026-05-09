@@ -2,25 +2,24 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientKeys, financeKeys, rideKeys } from '@/lib/query-keys';
-import { removeRideCachesByIds } from '@/lib/ride-cache';
 import { ridesService } from '@/services/rides-service';
-import type { BulkDeleteRidesResult, RideViewModel } from '@/types/rides';
+import type { BulkRestoreRidesResult, RideViewModel } from '@/types/rides';
 
-type RideBulkDeletionQueryClient = Pick<
+type RideBulkRestoreQueryClient = Pick<
   ReturnType<typeof useQueryClient>,
   'invalidateQueries'
 >;
 
-interface UseDeleteRidesMutationOptions {
+interface UseRestoreRidesMutationOptions {
   onSuccess?: (
-    result: BulkDeleteRidesResult,
+    result: BulkRestoreRidesResult,
     rides: RideViewModel[],
   ) => Promise<void> | void;
   onError?: (error: unknown, rides: RideViewModel[]) => Promise<void> | void;
 }
 
-export async function invalidateRideCachesAfterBulkDeletion(
-  queryClient: RideBulkDeletionQueryClient,
+export async function invalidateRideCachesAfterBulkRestore(
+  queryClient: RideBulkRestoreQueryClient,
   clientIds: string[],
 ) {
   const uniqueClientIds = Array.from(
@@ -52,22 +51,18 @@ export async function invalidateRideCachesAfterBulkDeletion(
   await Promise.all(tasks);
 }
 
-export function useDeleteRidesMutation(
-  options?: UseDeleteRidesMutationOptions,
+export function useRestoreRidesMutation(
+  options?: UseRestoreRidesMutationOptions,
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (rides: RideViewModel[]) => {
       const ids = Array.from(new Set(rides.map((ride) => ride.id).filter(Boolean)));
-      return ridesService.deleteRides(ids);
+      return ridesService.restoreRides(ids);
     },
     onSuccess: async (result, rides) => {
-      removeRideCachesByIds(
-        queryClient,
-        rides.map((ride) => ride.id),
-      );
-      void invalidateRideCachesAfterBulkDeletion(
+      await invalidateRideCachesAfterBulkRestore(
         queryClient,
         rides.map((ride) => ride.clientId ?? ''),
       );

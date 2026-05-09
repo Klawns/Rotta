@@ -5,6 +5,7 @@ export type RideStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
 export type PaymentStatus = 'PENDING' | 'PAID';
 export type RidePaymentFilter = 'all' | PaymentStatus;
 export type RidePeriodPreset = 'today' | '7d' | '30d' | 'month' | 'custom';
+export type RideListScope = 'active' | 'archived';
 
 // ===========================
 // Entities
@@ -59,6 +60,9 @@ export interface RideResponseDTO {
     paymentStatus: PaymentStatus;
     rideDate: string;
     createdAt: string;
+    archivedAt?: string | null;
+    archivedBy?: string | null;
+    archiveReason?: string | null;
     paidWithBalance?: number | null;
     debtValue?: number | null;
     location?: string | null;
@@ -74,6 +78,9 @@ export interface RideDomainModel {
     paymentStatus: PaymentStatus;
     rideDate: string;
     createdAt: string;
+    archivedAt: string | null;
+    archivedBy: string | null;
+    archiveReason: string | null;
     paidWithBalance?: number;
     debtValue?: number;
     location: string | null;
@@ -89,6 +96,9 @@ export interface RideViewModel {
     paymentStatus: PaymentStatus;
     rideDate: string;
     createdAt: string;
+    archivedAt: string | null;
+    archivedBy: string | null;
+    archiveReason: string | null;
     paidWithBalance?: number;
     debtValue?: number;
     location: string | null;
@@ -123,6 +133,11 @@ export interface BulkDeleteRidesResult {
     deletedCount: number;
 }
 
+export interface BulkRestoreRidesResult {
+    requestedCount: number;
+    restoredCount: number;
+}
+
 export interface BulkDeleteClientsResult {
     requestedCount: number;
     deletedCount: number;
@@ -132,6 +147,7 @@ export interface BulkDeleteClientsResult {
 // Filters & Pagination
 // ===========================
 export interface RidesFilterState {
+    scope: RideListScope;
     search: string;
     paymentFilter: RidePaymentFilter;
     clientId: string | null;

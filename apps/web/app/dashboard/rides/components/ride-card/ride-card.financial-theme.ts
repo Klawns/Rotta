@@ -33,6 +33,12 @@ const RIDE_CARD_FINANCIAL_THEME: Record<RideCardFinancialState, RideCardFinancia
     helperClassName: 'text-icon-destructive',
     dotClassName: 'bg-icon-destructive',
   },
+  archived: {
+    cardClassName: 'border-l-[3px] border-l-slate-400/60 bg-slate-500/[0.03]',
+    badgeClassName: 'border-slate-300 bg-slate-100 text-slate-700',
+    helperClassName: 'text-slate-600',
+    dotClassName: 'bg-slate-500',
+  },
 };
 
 export function getRideCardFinancialTheme(financialState: RideCardFinancialState) {

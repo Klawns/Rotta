@@ -2,41 +2,41 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientKeys, financeKeys, rideKeys } from '@/lib/query-keys';
-import { removeRideCaches } from '@/lib/ride-cache';
 import { ridesService } from '@/services/rides-service';
 import { type RideViewModel } from '@/types/rides';
 
-type RideDeletionQueryClient = Pick<
+type RideRestoreQueryClient = Pick<
   ReturnType<typeof useQueryClient>,
   'invalidateQueries'
 >;
 
-interface UseDeleteRideMutationOptions {
+interface UseRestoreRideMutationOptions {
   onSuccess?: (ride: RideViewModel) => Promise<void> | void;
   onError?: (error: unknown, ride: RideViewModel) => Promise<void> | void;
 }
 
-export async function invalidateRideCachesAfterDeletion(
-  queryClient: RideDeletionQueryClient,
-  clientId?: string,
+export async function invalidateRideCachesAfterRestore(
+  queryClient: RideRestoreQueryClient,
+  ride: Pick<RideViewModel, 'id' | 'clientId'>,
 ) {
   const tasks: Array<Promise<unknown>> = [
     queryClient.invalidateQueries({ queryKey: rideKeys.lists() }),
+    queryClient.invalidateQueries({ queryKey: rideKeys.detail(ride.id), exact: true }),
     queryClient.invalidateQueries({ queryKey: [...rideKeys.all, 'stats'] }),
     queryClient.invalidateQueries({ queryKey: rideKeys.frequentClients() }),
     queryClient.invalidateQueries({ queryKey: financeKeys.all }),
   ];
 
-  if (clientId) {
+  if (ride.clientId) {
     tasks.push(
       queryClient.invalidateQueries({
-        queryKey: clientKeys.detail(clientId),
+        queryKey: clientKeys.detail(ride.clientId),
         exact: true,
       }),
     );
     tasks.push(
       queryClient.invalidateQueries({
-        queryKey: clientKeys.balance(clientId),
+        queryKey: clientKeys.balance(ride.clientId),
         exact: true,
       }),
     );
@@ -45,19 +45,15 @@ export async function invalidateRideCachesAfterDeletion(
   await Promise.all(tasks);
 }
 
-export function useDeleteRideMutation(
-  options?: UseDeleteRideMutationOptions,
+export function useRestoreRideMutation(
+  options?: UseRestoreRideMutationOptions,
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (ride: RideViewModel) => ridesService.deleteRide(ride.id),
+    mutationFn: (ride: RideViewModel) => ridesService.restoreRide(ride.id),
     onSuccess: async (_, ride) => {
-      removeRideCaches(queryClient, ride.id);
-      void invalidateRideCachesAfterDeletion(
-        queryClient,
-        ride.clientId ?? undefined,
-      );
+      await invalidateRideCachesAfterRestore(queryClient, ride);
       await options?.onSuccess?.(ride);
     },
     onError: async (error, ride) => {

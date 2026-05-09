@@ -8,6 +8,9 @@ interface SelectionContextBarProps {
   isAllVisibleSelected: boolean;
   onDeleteSelected: () => void;
   isDeleting: boolean;
+  actionLabel?: string;
+  actionProgressLabel?: string;
+  actionTone?: 'brand' | 'success';
   hideInlineActions?: boolean;
   selectionLabel?: string;
   summaryLabel?: string;
@@ -21,6 +24,9 @@ export function SelectionContextBar({
   isAllVisibleSelected,
   onDeleteSelected,
   isDeleting,
+  actionLabel = 'Excluir',
+  actionProgressLabel = 'Excluindo...',
+  actionTone = 'brand',
   hideInlineActions = false,
   selectionLabel,
   summaryLabel,
@@ -70,9 +76,13 @@ export function SelectionContextBar({
                 type="button"
                 onClick={onDeleteSelected}
                 disabled={selectedCount === 0 || isDeleting}
-                className="inline-flex items-center rounded-xl border border-blue-500/15 bg-blue-500 px-3 py-2 text-xs font-semibold text-white transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className={
+                  actionTone === 'success'
+                    ? 'inline-flex items-center rounded-xl border border-success/15 bg-success px-3 py-2 text-xs font-semibold text-success-foreground transition-all hover:bg-success/90 disabled:cursor-not-allowed disabled:opacity-50'
+                    : 'inline-flex items-center rounded-xl border border-blue-500/15 bg-blue-500 px-3 py-2 text-xs font-semibold text-white transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50'
+                }
               >
-                {isDeleting ? 'Excluindo...' : 'Excluir'}
+                {isDeleting ? actionProgressLabel : actionLabel}
               </button>
             </>
           ) : null}

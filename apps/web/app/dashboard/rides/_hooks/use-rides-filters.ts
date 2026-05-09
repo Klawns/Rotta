@@ -8,12 +8,14 @@ import {
   normalizeRideDateRange,
 } from '../_lib/rides-filters';
 import {
+  type RideListScope,
   type RidePaymentFilter,
   type RidePeriodPreset,
   type RidesFilterState,
 } from '@/types/rides';
 
 export function useRidesFilters() {
+  const [scope, setScope] = useState<RideListScope>('active');
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<RidePaymentFilter>('all');
   const [periodPreset, setPeriodPresetState] = useState<RidePeriodPreset | null>(null);
@@ -77,6 +79,7 @@ export function useRidesFilters() {
 
   const filterState = useMemo(
     (): RidesFilterState => ({
+      scope,
       search,
       paymentFilter,
       clientId: clientAutocomplete.appliedClientId ?? null,
@@ -91,6 +94,7 @@ export function useRidesFilters() {
       endDate,
       paymentFilter,
       periodPreset,
+      scope,
       search,
       startDate,
     ],
@@ -106,6 +110,7 @@ export function useRidesFilters() {
     clientAutocomplete,
     activeFilterChips,
     activeFilterCount: activeFilterChips.length,
+    setScope,
     setSearch,
     setPaymentFilter,
     setStartDate: handleSetStartDate,

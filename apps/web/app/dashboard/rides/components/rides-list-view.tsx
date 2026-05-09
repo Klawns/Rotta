@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { useRef } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Bike, SearchX } from "lucide-react";
-import { SelectionActionBarMobile } from "@/components/ride-selection/selection-action-bar-mobile";
-import { SelectionContextBar } from "@/components/ride-selection/selection-context-bar";
-import { SelectionCheckbox } from "@/components/ride-selection/selection-checkbox";
-import { InfiniteScrollTrigger } from "@/components/dashboard/mobile-dashboard/components/infinite-scroll-trigger";
-import { ScrollBoundaryContainer } from "@/components/ui/scroll-boundary-container";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { PaymentStatus, RideViewModel } from "@/types/rides";
-import { DASHBOARD_MOBILE_NAV_OFFSET } from "@/app/dashboard/_lib/dashboard-navigation";
-import { type RidesListPresentation } from "../_mappers/rides-list.presenter";
-import { RideCard } from "./ride-card";
-import { RideSkeleton } from "./ride-skeleton";
+import { useRef } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Archive, Bike, SearchX } from 'lucide-react';
+import { InfiniteScrollTrigger } from '@/components/dashboard/mobile-dashboard/components/infinite-scroll-trigger';
+import { SelectionActionBarMobile } from '@/components/ride-selection/selection-action-bar-mobile';
+import { SelectionCheckbox } from '@/components/ride-selection/selection-checkbox';
+import { SelectionContextBar } from '@/components/ride-selection/selection-context-bar';
+import { ScrollBoundaryContainer } from '@/components/ui/scroll-boundary-container';
+import { DASHBOARD_MOBILE_NAV_OFFSET } from '@/app/dashboard/_lib/dashboard-navigation';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { PaymentStatus, RideViewModel } from '@/types/rides';
+import { type RidesListPresentation } from '../_mappers/rides-list.presenter';
+import { RideCard } from './ride-card';
+import { RideSkeleton } from './ride-skeleton';
 
 const SELECTION_TRANSITION = {
   duration: 0.15,
-  ease: "easeOut",
+  ease: 'easeOut',
 } as const;
 
 interface RidesListActions {
@@ -57,6 +57,9 @@ interface RidesListViewProps {
     isSelectionIndeterminate: boolean;
     onDeleteSelected: () => void;
     isDeletingSelected: boolean;
+    selectionActionLabel: string;
+    selectionActionProgressLabel: string;
+    selectionActionTone: 'brand' | 'success';
   };
 }
 
@@ -71,9 +74,11 @@ function RidesListLoadingState() {
 }
 
 function RidesListErrorState({
+  title,
   errorMessage,
   retry,
 }: {
+  title: string;
   errorMessage: string;
   retry?: () => void | Promise<unknown>;
 }) {
@@ -81,7 +86,7 @@ function RidesListErrorState({
     <div className="flex flex-col items-center justify-center gap-5 rounded-[1.75rem] border border-border-subtle bg-card-background/60 px-6 py-20 text-center">
       <div className="space-y-2">
         <h3 className="text-2xl font-display font-extrabold tracking-tight text-text-primary">
-          Erro ao carregar corridas
+          {title}
         </h3>
         <p className="max-w-md text-sm text-text-secondary">{errorMessage}</p>
       </div>
@@ -102,19 +107,27 @@ function RidesListEmptyState({
   title,
   description,
   variant,
+  isArchivedScope,
   onClearFilters,
 }: {
   title: string;
   description: string;
-  variant: RidesListPresentation["emptyStateVariant"];
+  variant: RidesListPresentation['emptyStateVariant'];
+  isArchivedScope: boolean;
   onClearFilters: () => void;
 }) {
-  const isFiltered = variant === "filtered";
+  const isFiltered = variant === 'filtered';
 
   return (
     <div className="flex flex-col items-center justify-center gap-5 rounded-[1.75rem] border border-dashed border-border-subtle bg-card-background/50 px-6 py-20 text-center">
       <div className="rounded-full bg-secondary/10 p-5 text-text-secondary/40">
-        {isFiltered ? <SearchX size={40} /> : <Bike size={40} />}
+        {isFiltered ? (
+          <SearchX size={40} />
+        ) : isArchivedScope ? (
+          <Archive size={40} />
+        ) : (
+          <Bike size={40} />
+        )}
       </div>
       <div className="space-y-2">
         <h3 className="text-2xl font-display font-extrabold tracking-tight text-text-primary">
@@ -145,7 +158,7 @@ function RidesListResults({
   viewModel: RidesListPresentation;
   actions: RidesListActions;
   pagination: RidesListPaginationProps;
-  selection: RidesListViewProps["selection"];
+  selection: RidesListViewProps['selection'];
   isMobile: boolean;
 }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -200,7 +213,7 @@ function RidesListResults({
           hasMore={!!pagination.hasNextPage}
           error={pagination.loadMoreError}
           retry={
-            typeof pagination.retryLoadMore === "function"
+            typeof pagination.retryLoadMore === 'function'
               ? () => void pagination.retryLoadMore?.()
               : undefined
           }
@@ -218,30 +231,31 @@ export function RidesListView({
   selection,
 }: RidesListViewProps) {
   const isMobile = useIsMobile();
+  const isArchivedScope = viewModel.scope === 'archived';
 
   const renderContent = () => {
     switch (viewModel.contentState) {
-      case "loading":
+      case 'loading':
         return <RidesListLoadingState />;
-      case "error":
+      case 'error':
         return (
           <RidesListErrorState
-            errorMessage={
-              viewModel.errorMessage ?? "Ocorreu um erro inesperado."
-            }
+            title={isArchivedScope ? 'Erro ao carregar arquivadas' : 'Erro ao carregar corridas'}
+            errorMessage={viewModel.errorMessage ?? 'Ocorreu um erro inesperado.'}
             retry={pagination.retry}
           />
         );
-      case "empty":
+      case 'empty':
         return (
           <RidesListEmptyState
             title={viewModel.emptyTitle}
             description={viewModel.emptyDescription}
             variant={viewModel.emptyStateVariant}
+            isArchivedScope={isArchivedScope}
             onClearFilters={actions.onClearFilters}
           />
         );
-      case "results":
+      case 'results':
         return (
           <RidesListResults
             viewModel={viewModel}
@@ -288,7 +302,19 @@ export function RidesListView({
                 isAllVisibleSelected={selection.isAllVisibleSelected}
                 onDeleteSelected={selection.onDeleteSelected}
                 isDeleting={selection.isDeletingSelected}
+                actionLabel={selection.selectionActionLabel}
+                actionProgressLabel={selection.selectionActionProgressLabel}
+                actionTone={selection.selectionActionTone}
                 hideInlineActions={isMobile}
+                selectionLabel={
+                  selection.selectedCount === 1
+                    ? isArchivedScope
+                      ? '1 corrida arquivada selecionada'
+                      : '1 corrida selecionada'
+                    : isArchivedScope
+                      ? `${selection.selectedCount} corridas arquivadas selecionadas`
+                      : `${selection.selectedCount} corridas selecionadas`
+                }
               />
             </motion.div>
           ) : (
@@ -302,7 +328,7 @@ export function RidesListView({
               transition={SELECTION_TRANSITION}
             >
               <h2 className="text-lg font-display font-bold tracking-tight text-text-primary">
-                Lista de corridas
+                {viewModel.title}
               </h2>
 
               <div className="flex flex-wrap items-center gap-2 text-sm text-text-secondary">
@@ -310,10 +336,10 @@ export function RidesListView({
                   <span className="font-semibold text-text-primary">
                     {viewModel.resultsLabel}
                   </span>
-                  {" / "}
+                  {' / '}
                   Ordenadas por data
                 </span>
-                {viewModel.contentState === "results" ? (
+                {viewModel.contentState === 'results' ? (
                   <motion.button
                     type="button"
                     layout
@@ -330,13 +356,13 @@ export function RidesListView({
         </AnimatePresence>
 
         <AnimatePresence initial={false}>
-          {selection.isSelectionMode && !isMobile && viewModel.contentState === "results" ? (
+          {selection.isSelectionMode && !isMobile && viewModel.contentState === 'results' ? (
             <motion.div
               key="selection-desktop-actions"
               layout
               className="mb-5 overflow-hidden"
               initial={{ opacity: 0, y: -3, height: 0 }}
-              animate={{ opacity: 1, y: 0, height: "auto" }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
               exit={{ opacity: 0, y: -3, height: 0 }}
               transition={SELECTION_TRANSITION}
             >
@@ -347,7 +373,7 @@ export function RidesListView({
                       selection.isAllVisibleSelected
                         ? true
                         : selection.isSelectionIndeterminate
-                          ? "indeterminate"
+                          ? 'indeterminate'
                           : false
                     }
                     onToggle={() =>
@@ -358,8 +384,8 @@ export function RidesListView({
                   />
                   <span>
                     {selection.isAllVisibleSelected
-                      ? "Desmarcar todas"
-                      : "Selecionar todas"}
+                      ? 'Desmarcar todas'
+                      : 'Selecionar todas'}
                   </span>
                 </label>
               </div>
@@ -390,6 +416,9 @@ export function RidesListView({
               }
               onDeleteSelected={selection.onDeleteSelected}
               onCancel={selection.onExitSelectionMode}
+              actionLabel={selection.selectionActionLabel}
+              actionProgressLabel={selection.selectionActionProgressLabel}
+              actionTone={selection.selectionActionTone}
             />
           </motion.div>
         ) : null}

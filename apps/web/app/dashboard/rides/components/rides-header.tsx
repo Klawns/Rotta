@@ -1,24 +1,47 @@
-"use client";
+'use client';
 
-import { Plus } from "lucide-react";
+import { Plus } from 'lucide-react';
+import { type RideListScope } from '@/types/rides';
 
 interface RidesHeaderProps {
   onNewRide: () => void;
   totalCount: number;
   hasActiveFilters: boolean;
+  scope: RideListScope;
+}
+
+function getSummary(scope: RideListScope, totalCount: number, hasActiveFilters: boolean) {
+  if (scope === 'archived') {
+    if (totalCount === 0) {
+      return 'Nenhuma corrida arquivada neste recorte.';
+    }
+
+    return `${totalCount} ${
+      totalCount === 1 ? 'corrida arquivada encontrada' : 'corridas arquivadas encontradas'
+    }${hasActiveFilters ? ' no recorte atual.' : ' no historico arquivado.'}`;
+  }
+
+  if (totalCount === 0) {
+    return 'Nenhuma corrida neste recorte.';
+  }
+
+  return `${totalCount} ${
+    totalCount === 1 ? 'corrida encontrada' : 'corridas encontradas'
+  }${hasActiveFilters ? ' no recorte atual.' : ' no historico atual.'}`;
 }
 
 export function RidesHeader({
   onNewRide,
   totalCount,
   hasActiveFilters,
+  scope,
 }: RidesHeaderProps) {
-  const summary =
-    totalCount === 0
-      ? "Nenhuma corrida neste recorte."
-      : `${totalCount} ${
-          totalCount === 1 ? "corrida encontrada" : "corridas encontradas"
-        }${hasActiveFilters ? " no recorte atual." : " no histórico atual."}`;
+  const isArchivedScope = scope === 'archived';
+  const summary = getSummary(scope, totalCount, hasActiveFilters);
+  const title = isArchivedScope ? 'Corridas Arquivadas' : 'Historico de Corridas';
+  const description = isArchivedScope
+    ? 'Revise corridas removidas e restaure quando precisar.'
+    : 'Veja todas as corridas registradas e acompanhe pendencias com mais rapidez.';
 
   return (
     <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -26,11 +49,10 @@ export function RidesHeader({
         <div className="flex items-start justify-between gap-3 md:block">
           <div className="min-w-0">
             <h1 className="hidden text-[1.75rem] font-display font-extrabold tracking-tight text-text-primary md:block md:text-3xl">
-              Histórico de Corridas
+              {title}
             </h1>
             <p className="mt-1 hidden text-base text-text-secondary md:block">
-              Veja todas as corridas registradas e acompanhe pendências com mais
-              rapidez.
+              {description}
             </p>
           </div>
 

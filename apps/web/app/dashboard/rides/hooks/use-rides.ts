@@ -14,7 +14,7 @@ export function useRides() {
     pageSize: PAGE_SIZE,
   });
 
-  const modals = useRidesModals();
+  const modals = useRidesModals(filters.filterState.scope);
 
   return {
     rides: data.rides,
@@ -34,6 +34,7 @@ export function useRides() {
     activeFilterCount: filters.activeFilterCount,
     isFiltersOpen: filters.isFiltersOpen,
     hasActiveFilters: filters.hasActiveFilters,
+    setScope: filters.setScope,
     setSearch: filters.setSearch,
     setPaymentFilter: filters.setPaymentFilter,
     setStartDate: filters.setStartDate,

@@ -6,14 +6,19 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRidePaymentStatus } from '@/hooks/use-ride-payment-status';
 import { rideKeys } from '@/lib/query-keys';
 import { ridesService } from '@/services/rides-service';
-import { RideViewModel, RidesFilterState } from '@/types/rides';
+import {
+  RideListScope,
+  RideViewModel,
+  RidesFilterState,
+  RidesParams,
+} from '@/types/rides';
 
 interface UseRidesDataProps {
   filters: RidesFilterState;
   pageSize: number;
 }
 
-function buildRideFilters(filters: RidesFilterState, pageSize: number) {
+export function buildRideFilters(filters: RidesFilterState, pageSize: number) {
   return {
     limit: pageSize,
     paymentStatus:
@@ -23,6 +28,16 @@ function buildRideFilters(filters: RidesFilterState, pageSize: number) {
     endDate: filters.endDate || undefined,
     search: filters.search || undefined,
   };
+}
+
+export function fetchRidesPage(
+  scope: RideListScope,
+  params: RidesParams,
+  signal?: AbortSignal,
+) {
+  return scope === 'archived'
+    ? ridesService.getArchivedRides(params, signal)
+    : ridesService.getRides(params, signal);
 }
 
 function getUniqueRides(rides: RideViewModel[]) {
@@ -41,6 +56,13 @@ export function useRidesData({ filters, pageSize }: UseRidesDataProps) {
     () => buildRideFilters(filters, pageSize),
     [filters, pageSize],
   );
+  const queryFilters = useMemo(
+    () => ({
+      scope: filters.scope,
+      ...activeFilters,
+    }),
+    [activeFilters, filters.scope],
+  );
 
   const {
     data: ridesData,
@@ -53,9 +75,10 @@ export function useRidesData({ filters, pageSize }: UseRidesDataProps) {
     error: ridesError,
     refetch: fetchRides,
   } = useInfiniteQuery({
-    queryKey: rideKeys.infinite(activeFilters),
+    queryKey: rideKeys.infinite(queryFilters),
     queryFn: ({ pageParam, signal }) =>
-      ridesService.getRides(
+      fetchRidesPage(
+        filters.scope,
         {
           ...activeFilters,
           cursor: pageParam as string | undefined,

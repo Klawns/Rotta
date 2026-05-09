@@ -1,5 +1,6 @@
 import { ApiEnvelope, apiClient } from '@/services/api';
 import {
+  BulkRestoreRidesResult,
   CreateRideDTO,
   CursorMeta,
   FrequentClient,
@@ -39,6 +40,23 @@ export const ridesService = {
     return {
       data: RidesMapper.toViewModelList(
         parseRideResponseDTOList(response.data, 'rides list'),
+      ),
+      meta: response.meta,
+    };
+  },
+
+  async getArchivedRides(
+    params: RidesParams,
+    signal?: AbortSignal,
+  ): Promise<ApiEnvelope<RideViewModel[], CursorMeta>> {
+    const response = await apiClient.getPaginated<unknown, CursorMeta>(
+      '/rides/archived',
+      { params, signal },
+    );
+
+    return {
+      data: RidesMapper.toViewModelList(
+        parseRideResponseDTOList(response.data, 'archived rides list'),
       ),
       meta: response.meta,
     };
@@ -109,6 +127,15 @@ export const ridesService = {
 
   async deleteRides(ids: string[]): Promise<BulkDeleteRidesResult> {
     return apiClient.post('/rides/bulk-delete', { ids });
+  },
+
+  async restoreRide(id: string): Promise<RideViewModel> {
+    const data = await apiClient.post<unknown>(`/rides/${id}/restore`);
+    return RidesMapper.toViewModelFromDTO(parseRideResponseDTO(data, 'restore ride'));
+  },
+
+  async restoreRides(ids: string[]): Promise<BulkRestoreRidesResult> {
+    return apiClient.post('/rides/restore-bulk', { ids });
   },
 
   async deleteAllRides(): Promise<void> {

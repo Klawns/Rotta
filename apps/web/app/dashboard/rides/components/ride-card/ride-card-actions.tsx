@@ -1,6 +1,14 @@
 'use client';
 
-import { CheckCircle2, CircleDashed, LoaderCircle, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import {
+  Archive,
+  CheckCircle2,
+  CircleDashed,
+  LoaderCircle,
+  MoreHorizontal,
+  Pencil,
+  Undo2,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,8 +47,8 @@ export function RideCardActions({
             event.stopPropagation();
           }}
           className="flex h-8 w-8 items-center justify-center rounded-full border border-border-subtle bg-card-background text-text-secondary transition-colors hover:border-border hover:bg-hover-accent hover:text-text-primary sm:h-9 sm:w-9"
-          title="Abrir ações da corrida"
-          aria-label="Abrir menu de ações da corrida"
+          title="Abrir acoes da corrida"
+          aria-label="Abrir menu de acoes da corrida"
         >
           <MoreHorizontal className="size-4" />
         </button>
@@ -53,53 +61,68 @@ export function RideCardActions({
           event.stopPropagation();
         }}
       >
-        <DropdownMenuItem
-          onSelect={(event) => {
-            event.preventDefault();
-            onEdit(ride);
-          }}
-          className="rounded-xl font-medium text-text-primary"
-        >
-          <Pencil size={14} />
-          Editar
-        </DropdownMenuItem>
+        {presentation.isArchived ? (
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              onDelete(ride);
+            }}
+            className="rounded-xl font-medium text-success focus:bg-success/10 focus:text-success"
+          >
+            <Undo2 size={14} />
+            {presentation.actionLabel}
+          </DropdownMenuItem>
+        ) : (
+          <>
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                onEdit(ride);
+              }}
+              className="rounded-xl font-medium text-text-primary"
+            >
+              <Pencil size={14} />
+              Editar
+            </DropdownMenuItem>
 
-        <DropdownMenuItem
-          disabled={isPaymentUpdating}
-          onSelect={(event) => {
-            event.preventDefault();
+            <DropdownMenuItem
+              disabled={isPaymentUpdating}
+              onSelect={(event) => {
+                event.preventDefault();
 
-            if (isPaymentUpdating) {
-              return;
-            }
+                if (isPaymentUpdating) {
+                  return;
+                }
 
-            void onChangePaymentStatus(ride, nextStatus);
-          }}
-          className="rounded-xl font-medium text-text-primary"
-        >
-          {isPaymentUpdating ? (
-            <LoaderCircle className="size-4 animate-spin" />
-          ) : nextStatus === 'PAID' ? (
-            <CheckCircle2 size={14} />
-          ) : (
-            <CircleDashed size={14} />
-          )}
-          {presentation.paymentActionLabel}
-        </DropdownMenuItem>
+                void onChangePaymentStatus(ride, nextStatus);
+              }}
+              className="rounded-xl font-medium text-text-primary"
+            >
+              {isPaymentUpdating ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : nextStatus === 'PAID' ? (
+                <CheckCircle2 size={14} />
+              ) : (
+                <CircleDashed size={14} />
+              )}
+              {presentation.paymentActionLabel}
+            </DropdownMenuItem>
 
-        <DropdownMenuSeparator />
+            <DropdownMenuSeparator />
 
-        <DropdownMenuItem
-          variant="destructive"
-          onSelect={(event) => {
-            event.preventDefault();
-            onDelete(ride);
-          }}
-          className="rounded-xl font-medium"
-        >
-          <Trash2 size={14} />
-          Excluir
-        </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={(event) => {
+                event.preventDefault();
+                onDelete(ride);
+              }}
+              className="rounded-xl font-medium"
+            >
+              <Archive size={14} />
+              {presentation.actionLabel}
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import { clientKeys, financeKeys, rideKeys } from '@/lib/query-keys';
-import { invalidateRideCachesAfterBulkDeletion } from './use-delete-rides-mutation';
+import { invalidateRideCachesAfterRestore } from './use-restore-ride-mutation';
 
-test('invalidates shared caches and each affected client once after bulk deletion', async () => {
+test('invalidates shared and client caches after a ride restore', async () => {
   const invalidated: Array<readonly unknown[]> = [];
-  const queryClient: Parameters<typeof invalidateRideCachesAfterBulkDeletion>[0] = {
+  const queryClient: Parameters<typeof invalidateRideCachesAfterRestore>[0] = {
     invalidateQueries: async (filters) => {
       if (filters?.queryKey) {
         invalidated.push(filters.queryKey);
@@ -14,27 +13,25 @@ test('invalidates shared caches and each affected client once after bulk deletio
     },
   };
 
-  await invalidateRideCachesAfterBulkDeletion(queryClient, [
-    'client-1',
-    'client-2',
-    'client-1',
-  ]);
+  await invalidateRideCachesAfterRestore(queryClient, {
+    id: 'ride-1',
+    clientId: 'client-1',
+  });
 
   assert.deepEqual(invalidated, [
     rideKeys.lists(),
+    rideKeys.detail('ride-1'),
     [...rideKeys.all, 'stats'],
     rideKeys.frequentClients(),
     financeKeys.all,
     clientKeys.detail('client-1'),
     clientKeys.balance('client-1'),
-    clientKeys.detail('client-2'),
-    clientKeys.balance('client-2'),
   ]);
 });
 
-test('skips client invalidation when rides have no client ids', async () => {
+test('skips client invalidation when the restored ride has no client id', async () => {
   const invalidated: Array<readonly unknown[]> = [];
-  const queryClient: Parameters<typeof invalidateRideCachesAfterBulkDeletion>[0] = {
+  const queryClient: Parameters<typeof invalidateRideCachesAfterRestore>[0] = {
     invalidateQueries: async (filters) => {
       if (filters?.queryKey) {
         invalidated.push(filters.queryKey);
@@ -42,10 +39,14 @@ test('skips client invalidation when rides have no client ids', async () => {
     },
   };
 
-  await invalidateRideCachesAfterBulkDeletion(queryClient, ['', '']);
+  await invalidateRideCachesAfterRestore(queryClient, {
+    id: 'ride-1',
+    clientId: null,
+  });
 
   assert.deepEqual(invalidated, [
     rideKeys.lists(),
+    rideKeys.detail('ride-1'),
     [...rideKeys.all, 'stats'],
     rideKeys.frequentClients(),
     financeKeys.all,

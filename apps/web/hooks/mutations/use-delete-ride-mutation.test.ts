@@ -17,6 +17,7 @@ test('invalidates stats, frequent clients, finance, and affected client caches a
   await invalidateRideCachesAfterDeletion(queryClient, 'client-1');
 
   assert.deepEqual(invalidated, [
+    rideKeys.lists(),
     [...rideKeys.all, 'stats'],
     rideKeys.frequentClients(),
     financeKeys.all,
@@ -38,6 +39,7 @@ test('skips client-scoped invalidations when the deleted ride has no client id',
   await invalidateRideCachesAfterDeletion(queryClient);
 
   assert.deepEqual(invalidated, [
+    rideKeys.lists(),
     [...rideKeys.all, 'stats'],
     rideKeys.frequentClients(),
     financeKeys.all,

@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { ConfirmModal } from "@/components/confirm-modal";
-import { RideModal } from "@/components/ride-modal";
-import { useRidesPageController } from "./_hooks/use-rides-page-controller";
-import { FrequentClients } from "./components/frequent-clients";
-import { RidesFilters } from "./components/rides-filters";
-import { RidesHeader } from "./components/rides-header";
-import { RidesListContainer } from "./components/rides-list";
+import { ConfirmModal } from '@/components/confirm-modal';
+import { RideModal } from '@/components/ride-modal';
+import { useRidesPageController } from './_hooks/use-rides-page-controller';
+import { FrequentClients } from './components/frequent-clients';
+import { RidesFilters } from './components/rides-filters';
+import { RidesHeader } from './components/rides-header';
+import { RidesListContainer } from './components/rides-list';
 
 export default function RidesPage() {
   const page = useRidesPageController();
@@ -23,10 +23,11 @@ export default function RidesPage() {
               onNewRide={page.header.onNewRide}
               totalCount={page.header.totalCount}
               hasActiveFilters={page.header.hasActiveFilters}
+              scope={page.header.scope}
             />
           </div>
 
-          <RidesFilters {...page.filters} onNewRide={page.header.onNewRide} />
+          <RidesFilters {...page.filters} />
 
           <FrequentClients
             clients={page.frequentClients.clients}
@@ -52,9 +53,10 @@ export default function RidesPage() {
         isOpen={page.deleteDialog.isOpen}
         onClose={page.deleteDialog.onClose}
         onConfirm={page.deleteDialog.onConfirm}
-        title="Excluir corrida"
-        description="Tem certeza que deseja excluir esta corrida? Esta ação é irreversível."
-        variant="danger"
+        title={page.deleteDialog.title}
+        description={page.deleteDialog.description}
+        confirmText={page.deleteDialog.confirmText}
+        variant={page.deleteDialog.variant}
         isLoading={page.deleteDialog.isLoading}
       />
 
@@ -62,14 +64,10 @@ export default function RidesPage() {
         isOpen={page.bulkDeleteDialog.isOpen}
         onClose={page.bulkDeleteDialog.onClose}
         onConfirm={page.bulkDeleteDialog.onConfirm}
-        title="Excluir corridas selecionadas"
-        description={
-          page.bulkDeleteDialog.selectedCount === 1
-            ? "Deseja realmente excluir a corrida selecionada? Esta ação é irreversível."
-            : `Deseja realmente excluir as ${page.bulkDeleteDialog.selectedCount} corridas selecionadas? Esta ação é irreversível.`
-        }
-        confirmText="Excluir selecionadas"
-        variant="danger"
+        title={page.bulkDeleteDialog.title}
+        description={page.bulkDeleteDialog.description}
+        confirmText={page.bulkDeleteDialog.confirmText}
+        variant={page.bulkDeleteDialog.variant}
         isLoading={page.bulkDeleteDialog.isLoading}
       />
     </>

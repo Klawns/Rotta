@@ -1,12 +1,12 @@
-import { parseApiError } from "@/lib/api-error";
-import type { RideViewModel } from "@/types/rides";
+import { parseApiError } from '@/lib/api-error';
+import type { RideListScope, RideViewModel } from '@/types/rides';
 import {
   groupRidesByDate,
   type RideDateGroup,
-} from "../_lib/rides-list-groups";
+} from '../_lib/rides-list-groups';
 
-export type RidesListContentState = "loading" | "error" | "empty" | "results";
-export type RidesListEmptyStateVariant = "default" | "filtered";
+export type RidesListContentState = 'loading' | 'error' | 'empty' | 'results';
+export type RidesListEmptyStateVariant = 'default' | 'filtered';
 
 export interface BuildRidesListPresenterParams {
   rides: RideViewModel[];
@@ -16,17 +16,58 @@ export interface BuildRidesListPresenterParams {
   isFetchingNextPage?: boolean;
   error?: unknown;
   hasActiveFilters: boolean;
+  scope: RideListScope;
   now?: Date;
 }
 
 export interface RidesListPresentation {
   groupedRides: RideDateGroup[];
+  scope: RideListScope;
+  title: string;
   resultsLabel: string;
   contentState: RidesListContentState;
   emptyStateVariant: RidesListEmptyStateVariant;
   emptyTitle: string;
   emptyDescription: string;
   errorMessage: string | null;
+}
+
+function getResultsLabel(scope: RideListScope, totalCount: number, ridesCount: number) {
+  const suffix = scope === 'archived' ? 'corridas arquivadas' : 'corridas';
+
+  if (totalCount > ridesCount) {
+    return `Mostrando ${ridesCount} de ${totalCount} ${suffix}`;
+  }
+
+  if (totalCount === 1) {
+    return scope === 'archived' ? '1 corrida arquivada' : '1 corrida';
+  }
+
+  return `${totalCount} ${suffix}`;
+}
+
+function getEmptyCopy(scope: RideListScope, hasActiveFilters: boolean) {
+  if (scope === 'archived') {
+    return hasActiveFilters
+      ? {
+          title: 'Nenhuma corrida arquivada encontrada',
+          description: 'Ajuste os filtros para ampliar a busca entre as arquivadas.',
+        }
+      : {
+          title: 'Nenhuma corrida arquivada',
+          description: 'As corridas arquivadas aparecerao aqui quando forem removidas da lista ativa.',
+        };
+  }
+
+  return hasActiveFilters
+    ? {
+        title: 'Nenhuma corrida encontrada',
+        description: 'Ajuste os filtros para ampliar a busca ou limpar o recorte atual.',
+      }
+    : {
+        title: 'Nenhuma corrida registrada',
+        description: 'As novas corridas aparecerao aqui assim que forem registradas.',
+      };
 }
 
 export function buildRidesListPresenter({
@@ -37,39 +78,41 @@ export function buildRidesListPresenter({
   isFetchingNextPage = false,
   error,
   hasActiveFilters,
+  scope,
   now,
 }: BuildRidesListPresenterParams): RidesListPresentation {
   const groupedRides = groupRidesByDate(rides, now);
   const showLoadingState =
     (isLoading || (isFetching && rides.length === 0)) && !isFetchingNextPage;
+  const emptyCopy = getEmptyCopy(scope, hasActiveFilters);
 
-  let contentState: RidesListContentState = "results";
+  let contentState: RidesListContentState = 'results';
 
   if (showLoadingState) {
-    contentState = "loading";
+    contentState = 'loading';
   } else if (error && rides.length === 0) {
-    contentState = "error";
+    contentState = 'error';
   } else if (rides.length === 0 && !isFetching) {
-    contentState = "empty";
+    contentState = 'empty';
   }
 
   return {
     groupedRides,
-    resultsLabel:
-      totalCount > rides.length
-        ? `Mostrando ${rides.length} de ${totalCount} corridas`
-        : `${totalCount} ${totalCount === 1 ? "corrida" : "corridas"}`,
+    scope,
+    title: scope === 'archived' ? 'Lista de corridas arquivadas' : 'Lista de corridas',
+    resultsLabel: getResultsLabel(scope, totalCount, rides.length),
     contentState,
-    emptyStateVariant: hasActiveFilters ? "filtered" : "default",
-    emptyTitle: hasActiveFilters
-      ? "Nenhuma corrida encontrada"
-      : "Nenhuma corrida registrada",
-    emptyDescription: hasActiveFilters
-      ? "Ajuste os filtros para ampliar a busca ou limpar o recorte atual."
-      : "As novas corridas aparecerão aqui assim que forem registradas.",
+    emptyStateVariant: hasActiveFilters ? 'filtered' : 'default',
+    emptyTitle: emptyCopy.title,
+    emptyDescription: emptyCopy.description,
     errorMessage:
-      contentState === "error"
-        ? parseApiError(error, "Não foi possível carregar o histórico agora.")
+      contentState === 'error'
+        ? parseApiError(
+            error,
+            scope === 'archived'
+              ? 'Nao foi possivel carregar as corridas arquivadas agora.'
+              : 'Nao foi possivel carregar o historico agora.',
+          )
         : null,
   };
 }

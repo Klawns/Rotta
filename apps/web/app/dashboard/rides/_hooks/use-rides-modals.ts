@@ -1,85 +1,119 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
 import { useDeleteRideMutation } from '@/hooks/mutations/use-delete-ride-mutation';
+import { useRestoreRideMutation } from '@/hooks/mutations/use-restore-ride-mutation';
+import { useToast } from '@/hooks/use-toast';
 import { parseApiError } from '@/lib/api-error';
-import { type RideViewModel } from '@/types/rides';
+import { type RideListScope, type RideViewModel } from '@/types/rides';
 
-export function useRidesModals() {
-    const [isRideModalOpen, setIsRideModalOpen] = useState(false);
-    const [selectedQuickClient, setSelectedQuickClient] = useState<{
-        id: string;
-        name: string;
-    } | null>(null);
-    const [rideToEdit, setRideToEdit] = useState<RideViewModel | null>(null);
-    const [rideToDelete, setRideToDelete] = useState<RideViewModel | null>(null);
-    const { toast } = useToast();
-    const deleteRideMutation = useDeleteRideMutation({
-        onSuccess: async () => {
-            toast({
-                title: 'Corrida excluída',
-                description: 'A corrida foi removida com sucesso.',
-            });
-            setRideToDelete(null);
-        },
-        onError: async (error) => {
-            toast({
-                title: 'Erro ao excluir',
-                description: parseApiError(
-                    error,
-                    'Não foi possível excluir a corrida. Tente novamente.',
-                ),
-                variant: 'destructive',
-            });
-        },
-    });
+export function useRidesModals(scope: RideListScope) {
+  const [isRideModalOpen, setIsRideModalOpen] = useState(false);
+  const [selectedQuickClient, setSelectedQuickClient] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [rideToEdit, setRideToEdit] = useState<RideViewModel | null>(null);
+  const [ridePendingAction, setRidePendingAction] = useState<RideViewModel | null>(null);
+  const { toast } = useToast();
+  const isArchivedScope = scope === 'archived';
 
-    const handleEditRide = useCallback((ride: RideViewModel) => {
-        setRideToEdit(ride);
-        setIsRideModalOpen(true);
-    }, []);
+  const deleteRideMutation = useDeleteRideMutation({
+    onSuccess: async () => {
+      toast({
+        title: 'Corrida arquivada',
+        description: 'A corrida foi movida para arquivadas com sucesso.',
+      });
+      setRidePendingAction(null);
+    },
+    onError: async (error) => {
+      toast({
+        title: 'Erro ao arquivar',
+        description: parseApiError(
+          error,
+          'Nao foi possivel arquivar a corrida. Tente novamente.',
+        ),
+        variant: 'destructive',
+      });
+    },
+  });
 
-    const handleDeleteRide = useCallback(async () => {
-        if (!rideToDelete) {
-            return;
-        }
+  const restoreRideMutation = useRestoreRideMutation({
+    onSuccess: async () => {
+      toast({
+        title: 'Corrida restaurada',
+        description: 'A corrida voltou para a lista de ativas.',
+      });
+      setRidePendingAction(null);
+    },
+    onError: async (error) => {
+      toast({
+        title: 'Erro ao restaurar',
+        description: parseApiError(
+          error,
+          'Nao foi possivel restaurar a corrida. Tente novamente.',
+        ),
+        variant: 'destructive',
+      });
+    },
+  });
 
-        await deleteRideMutation.mutateAsync(rideToDelete);
-    }, [deleteRideMutation, rideToDelete]);
+  const handleEditRide = useCallback((ride: RideViewModel) => {
+    setRideToEdit(ride);
+    setIsRideModalOpen(true);
+  }, []);
 
-    const openCreateModal = useCallback(() => {
-        setRideToEdit(null);
-        setSelectedQuickClient(null);
-        setIsRideModalOpen(true);
-    }, []);
+  const handleConfirmRideAction = useCallback(async () => {
+    if (!ridePendingAction) {
+      return;
+    }
 
-    const openQuickCreateModal = useCallback((id: string, name: string) => {
-        setSelectedQuickClient({ id, name });
-        setRideToEdit(null);
-        setIsRideModalOpen(true);
-    }, []);
+    if (isArchivedScope) {
+      await restoreRideMutation.mutateAsync(ridePendingAction);
+      return;
+    }
 
-    const closeRideModal = useCallback(() => {
-        setIsRideModalOpen(false);
-        setRideToEdit(null);
-        setSelectedQuickClient(null);
-    }, []);
+    await deleteRideMutation.mutateAsync(ridePendingAction);
+  }, [
+    deleteRideMutation,
+    isArchivedScope,
+    restoreRideMutation,
+    ridePendingAction,
+  ]);
 
-    return {
-        isRideModalOpen,
-        setIsRideModalOpen,
-        selectedQuickClient,
-        setSelectedQuickClient,
-        rideToEdit,
-        setRideToEdit,
-        rideToDelete,
-        setRideToDelete,
-        isDeleting: deleteRideMutation.isPending,
-        handleEditRide,
-        handleDeleteRide,
-        openCreateModal,
-        openQuickCreateModal,
-        closeRideModal,
-    };
+  const openCreateModal = useCallback(() => {
+    setRideToEdit(null);
+    setSelectedQuickClient(null);
+    setIsRideModalOpen(true);
+  }, []);
+
+  const openQuickCreateModal = useCallback((id: string, name: string) => {
+    setSelectedQuickClient({ id, name });
+    setRideToEdit(null);
+    setIsRideModalOpen(true);
+  }, []);
+
+  const closeRideModal = useCallback(() => {
+    setIsRideModalOpen(false);
+    setRideToEdit(null);
+    setSelectedQuickClient(null);
+  }, []);
+
+  return {
+    isRideModalOpen,
+    setIsRideModalOpen,
+    selectedQuickClient,
+    setSelectedQuickClient,
+    rideToEdit,
+    setRideToEdit,
+    ridePendingAction,
+    setRidePendingAction,
+    isRideActionPending:
+      deleteRideMutation.isPending || restoreRideMutation.isPending,
+    handleEditRide,
+    handleConfirmRideAction,
+    openCreateModal,
+    openQuickCreateModal,
+    closeRideModal,
+  };
 }

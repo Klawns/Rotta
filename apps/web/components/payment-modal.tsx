@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, DollarSign, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, DollarSign, X } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { parseApiError } from '@/lib/api-error';
-import { upsertClientPaymentCaches } from '@/lib/client-cache';
-import { invalidateRideCachesForClient } from '@/lib/ride-cache';
-import { clientKeys, financeKeys } from '@/lib/query-keys';
-import { clientsService } from '@/services/clients-service';
-import { type CreateClientPaymentInput } from '@/types/client-payments';
-import { buildPaymentSuccessMessage } from '@/components/payment-modal/payment-feedback';
+} from "@/components/ui/dialog";
+import { parseApiError } from "@/lib/api-error";
+import { upsertClientPaymentCaches } from "@/lib/client-cache";
+import { invalidateRideCachesForClient } from "@/lib/ride-cache";
+import { clientKeys, financeKeys } from "@/lib/query-keys";
+import { clientsService } from "@/services/clients-service";
+import { type CreateClientPaymentInput } from "@/types/client-payments";
+import { buildPaymentSuccessMessage } from "@/components/payment-modal/payment-feedback";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -27,10 +27,10 @@ interface PaymentModalProps {
   clientName: string;
 }
 
-interface PaymentModalFormProps extends Omit<PaymentModalProps, 'isOpen'> {}
+interface PaymentModalFormProps extends Omit<PaymentModalProps, "isOpen"> {}
 
 function createIdempotencyKey() {
-  if (typeof globalThis.crypto?.randomUUID === 'function') {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
     return globalThis.crypto.randomUUID();
   }
 
@@ -43,18 +43,18 @@ function PaymentModalForm({
   clientId,
   clientName,
 }: PaymentModalFormProps) {
-  const [amount, setAmount] = useState('');
-  const [notes, setNotes] = useState('');
+  const [amount, setAmount] = useState("");
+  const [notes, setNotes] = useState("");
   const [idempotencyKey] = useState(createIdempotencyKey);
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: (payload: CreateClientPaymentInput) =>
       clientsService.addClientPayment(clientId, payload),
-    onSuccess: async (result) => {
+    onSuccess: (result) => {
       upsertClientPaymentCaches(queryClient, result.payment);
 
-      await Promise.all([
+      void Promise.allSettled([
         invalidateRideCachesForClient(queryClient, clientId),
         queryClient.invalidateQueries({
           queryKey: clientKeys.detail(clientId),
@@ -73,7 +73,7 @@ function PaymentModalForm({
     },
     onError: (error) => {
       toast.error(
-        parseApiError(error, 'Erro ao registrar pagamento. Tente novamente.'),
+        parseApiError(error, "Erro ao registrar pagamento. Tente novamente."),
       );
     },
   });
@@ -99,7 +99,10 @@ function PaymentModalForm({
         className="group absolute right-6 top-6 z-20 rounded-xl border border-border-subtle bg-secondary/10 p-2.5 text-text-secondary shadow-lg transition-all hover:bg-secondary/20 hover:text-text-primary sm:right-10 sm:top-10"
         title="Fechar"
       >
-        <X size={20} className="transition-transform duration-300 group-hover:rotate-90" />
+        <X
+          size={20}
+          className="transition-transform duration-300 group-hover:rotate-90"
+        />
       </button>
 
       <div className="px-6 pt-8 pb-8 sm:px-10 sm:pt-12">
@@ -199,7 +202,7 @@ export function PaymentModal({
         </DialogHeader>
 
         <PaymentModalForm
-          key={`${clientId || 'empty'}:${isOpen ? 'open' : 'closed'}`}
+          key={`${clientId || "empty"}:${isOpen ? "open" : "closed"}`}
           onClose={onClose}
           onSuccess={onSuccess}
           clientId={clientId}

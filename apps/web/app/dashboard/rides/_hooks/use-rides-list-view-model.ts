@@ -15,6 +15,7 @@ export function useRidesListViewModel(params: BuildRidesListPresenterParams) {
     isFetchingNextPage,
     error,
     hasActiveFilters,
+    scope,
     now,
   } = params;
 
@@ -28,6 +29,7 @@ export function useRidesListViewModel(params: BuildRidesListPresenterParams) {
         isFetchingNextPage,
         error,
         hasActiveFilters,
+        scope,
         now,
       }),
     [
@@ -38,6 +40,7 @@ export function useRidesListViewModel(params: BuildRidesListPresenterParams) {
       isLoading,
       now,
       rides,
+      scope,
       totalCount,
     ],
   );

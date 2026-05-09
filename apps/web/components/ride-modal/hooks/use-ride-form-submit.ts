@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { toast } from 'sonner';
-import { parseApiError } from '@/lib/api-error';
-import { useSubmitRideMutation } from '@/hooks/mutations/use-submit-ride-mutation';
-import { type RideViewModel } from '@/types/rides';
-import { type RideSubmissionDraft } from '../lib/ride-submission';
+import { useRef } from "react";
+import { toast } from "sonner";
+import { parseApiError } from "@/lib/api-error";
+import { useSubmitRideMutation } from "@/hooks/mutations/use-submit-ride-mutation";
+import { type RideViewModel } from "@/types/rides";
+import { type RideSubmissionDraft } from "../lib/ride-submission";
 
 interface UseRideFormSubmitProps {
   draft: RideSubmissionDraft;
@@ -21,14 +22,15 @@ export function useRideFormSubmit({
   onSuccess,
   onClose,
 }: UseRideFormSubmitProps) {
+  const isSubmittingRef = useRef(false);
   const mutation = useSubmitRideMutation({
     onSuccess: async (ride) => {
-      if (rideToEdit && ride.paymentStatus === 'PENDING') {
+      if (rideToEdit && ride.paymentStatus === "PENDING") {
         toast.success(
-          'Corrida atualizada. O status financeiro voltou para pendente.',
+          "Corrida atualizada. O status financeiro voltou para pendente.",
         );
       } else {
-        toast.success(rideToEdit ? 'Corrida atualizada' : 'Corrida registrada');
+        toast.success(rideToEdit ? "Corrida atualizada" : "Corrida registrada");
       }
 
       if (!rideToEdit) {
@@ -42,7 +44,7 @@ export function useRideFormSubmit({
       toast.error(
         parseApiError(
           error,
-          `Erro ao ${rideToEdit ? 'atualizar' : 'registrar'} corrida.`,
+          `Erro ao ${rideToEdit ? "atualizar" : "registrar"} corrida.`,
         ),
       );
     },
@@ -53,15 +55,25 @@ export function useRideFormSubmit({
     handleSubmit: async (event?: React.FormEvent | React.MouseEvent) => {
       event?.preventDefault();
 
-      if (!draft.selectedClientId || !draft.value) {
-        toast.error('Informe o cliente e o valor da corrida.');
+      if (isSubmittingRef.current || mutation.isPending) {
         return;
       }
 
-      await mutation.mutateAsync({
-        draft,
-        rideToEdit,
-      });
+      if (!draft.selectedClientId || !draft.value) {
+        toast.error("Informe o cliente e o valor da corrida.");
+        return;
+      }
+
+      isSubmittingRef.current = true;
+
+      try {
+        await mutation.mutateAsync({
+          draft,
+          rideToEdit,
+        });
+      } finally {
+        isSubmittingRef.current = false;
+      }
     },
   };
 }

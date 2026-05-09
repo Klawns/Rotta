@@ -1,6 +1,11 @@
 import type { PaymentStatus } from '@/types/rides';
 
-export type RideCardFinancialState = 'paid' | 'pending' | 'partial' | 'debt';
+export type RideCardFinancialState =
+  | 'paid'
+  | 'pending'
+  | 'partial'
+  | 'debt'
+  | 'archived';
 
 export interface RideCardDetailItem {
   label: string;
@@ -9,6 +14,7 @@ export interface RideCardDetailItem {
 }
 
 export interface RideCardPresentation {
+  isArchived: boolean;
   rideShortLabel: string;
   clientName: string;
   formattedValue: string;
@@ -17,6 +23,7 @@ export interface RideCardPresentation {
   financialHelper: string | null;
   paymentStatus: PaymentStatus;
   paymentActionLabel: string;
+  actionLabel: string;
   metaItems: string[];
   details: RideCardDetailItem[];
   notes: string | null;

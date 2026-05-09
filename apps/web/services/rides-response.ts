@@ -57,6 +57,9 @@ function isRideResponseDTO(value: unknown): value is RideResponseDTO {
     isPaymentStatus(value.paymentStatus) &&
     typeof value.rideDate === 'string' &&
     typeof value.createdAt === 'string' &&
+    isNullableString(value.archivedAt) &&
+    isNullableString(value.archivedBy) &&
+    isNullableString(value.archiveReason) &&
     isNullableNumber(value.paidWithBalance) &&
     isNullableNumber(value.debtValue) &&
     isNullableString(value.location) &&
