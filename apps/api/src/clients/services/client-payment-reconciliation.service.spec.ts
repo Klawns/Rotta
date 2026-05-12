@@ -39,7 +39,9 @@ const buildRide = (
   debtValue: 10,
   status: 'COMPLETED',
   rideDate: new Date(`2026-04-${String(index).padStart(2, '0')}T10:00:00.000Z`),
-  createdAt: new Date(`2026-04-${String(index).padStart(2, '0')}T10:00:00.000Z`),
+  createdAt: new Date(
+    `2026-04-${String(index).padStart(2, '0')}T10:00:00.000Z`,
+  ),
   ...overrides,
 });
 
@@ -54,8 +56,12 @@ const buildPayment = (
   amount,
   remainingAmount: amount,
   status: 'UNUSED',
-  paymentDate: new Date(`2026-04-${String(index).padStart(2, '0')}T12:00:00.000Z`),
-  createdAt: new Date(`2026-04-${String(index).padStart(2, '0')}T12:00:00.000Z`),
+  paymentDate: new Date(
+    `2026-04-${String(index).padStart(2, '0')}T12:00:00.000Z`,
+  ),
+  createdAt: new Date(
+    `2026-04-${String(index).padStart(2, '0')}T12:00:00.000Z`,
+  ),
   ...overrides,
 });
 
@@ -68,39 +74,43 @@ describe('ClientPaymentReconciliationService', () => {
       findOneForUpdate: jest
         .fn()
         .mockResolvedValue({ id: 'client-1', userId: 'user-1', balance: 0 }),
-      incrementBalance: jest.fn().mockResolvedValue({ id: 'client-1', balance: 0 }),
+      incrementBalance: jest
+        .fn()
+        .mockResolvedValue({ id: 'client-1', balance: 0 }),
     };
     const ridesRepository = {
       findSettlementCandidatesByClient: jest
         .fn()
         .mockResolvedValue(fixtures.rides),
-      updateFinancialSnapshot: jest.fn().mockImplementation(
-        async (
-          _userId: string,
-          rideId: string,
-          data: Partial<RideFixture>,
-        ) => {
-          const ride = fixtures.rides.find((entry) => entry.id === rideId);
-          Object.assign(ride ?? {}, data);
-          return ride;
-        },
-      ),
+      updateFinancialSnapshot: jest
+        .fn()
+        .mockImplementation(
+          (_userId: string, rideId: string, data: Partial<RideFixture>) => {
+            const ride = fixtures.rides.find((entry) => entry.id === rideId);
+            Object.assign(ride ?? {}, data);
+            return Promise.resolve(ride);
+          },
+        ),
     };
     const clientPaymentsRepository = {
       findSettlementPaymentsByClient: jest
         .fn()
         .mockResolvedValue(fixtures.payments),
-      updateFinancialState: jest.fn().mockImplementation(
-        async (
-          paymentId: string,
-          _userId: string,
-          data: Partial<PaymentFixture>,
-        ) => {
-          const payment = fixtures.payments.find((entry) => entry.id === paymentId);
-          Object.assign(payment ?? {}, data);
-          return payment;
-        },
-      ),
+      updateFinancialState: jest
+        .fn()
+        .mockImplementation(
+          (
+            paymentId: string,
+            _userId: string,
+            data: Partial<PaymentFixture>,
+          ) => {
+            const payment = fixtures.payments.find(
+              (entry) => entry.id === paymentId,
+            );
+            Object.assign(payment ?? {}, data);
+            return Promise.resolve(payment);
+          },
+        ),
     };
     const balanceTransactionsRepository = {
       create: jest.fn().mockResolvedValue(undefined),
@@ -158,7 +168,10 @@ describe('ClientPaymentReconciliationService', () => {
 
   it('should keep the remainder available when the next ride is not fully covered', async () => {
     const fixtures = {
-      rides: [buildRide(1, { value: 30, debtValue: 30 }), buildRide(2, { value: 30, debtValue: 30 })],
+      rides: [
+        buildRide(1, { value: 30, debtValue: 30 }),
+        buildRide(2, { value: 30, debtValue: 30 }),
+      ],
       payments: [buildPayment(1, 20), buildPayment(2, 20)],
     };
     const { service } = createService(fixtures);
@@ -195,11 +208,8 @@ describe('ClientPaymentReconciliationService', () => {
       rides: [buildRide(1, { value: 20, debtValue: 20 })],
       payments: [buildPayment(1, 35)],
     };
-    const {
-      service,
-      clientsRepository,
-      balanceTransactionsRepository,
-    } = createService(fixtures);
+    const { service, clientsRepository, balanceTransactionsRepository } =
+      createService(fixtures);
 
     const result = await service.reconcileClientPayments('user-1', 'client-1');
 

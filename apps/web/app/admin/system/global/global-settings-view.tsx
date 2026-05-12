@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { Mail, Smartphone } from "lucide-react";
 
 import {
@@ -36,6 +36,7 @@ export function GlobalSettingsView() {
     () => getAdminSystemConfigFormValues(configs),
     [configs],
   );
+  const formKey = `${initialValues.supportWhatsapp}::${initialValues.supportEmail}`;
 
   if (isLoading) {
     return (
@@ -67,6 +68,7 @@ export function GlobalSettingsView() {
       />
 
       <GlobalSettingsForm
+        key={formKey}
         initialValues={initialValues}
         isSaving={isSaving}
         onSave={saveConfigs}
@@ -92,11 +94,6 @@ function GlobalSettingsForm({
     tone: "success" | "danger";
     text: string;
   } | null>(null);
-
-  useEffect(() => {
-    setFormValues(initialValues);
-    setMessage(null);
-  }, [initialValues]);
 
   const pendingUpdates = useMemo(
     () => buildAdminSystemConfigUpdates(formValues, initialValues),

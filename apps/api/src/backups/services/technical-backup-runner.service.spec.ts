@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- Jest mocks are intentionally partial. */
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { spawn } from 'node:child_process';
@@ -46,7 +45,8 @@ describe('TechnicalBackupRunnerService', () => {
     loggerErrorSpy.mockClear();
     existsSyncMock.mockReturnValue(false);
     configValues = {
-      POSTGRES_DATABASE_URL: 'postgresql://postgres:secret@postgres:5432/railway',
+      POSTGRES_DATABASE_URL:
+        'postgresql://postgres:secret@postgres:5432/railway',
       DATABASE_URL: undefined,
       PG_DUMP_BINARY: undefined,
       PG_DUMP_EXECUTION_MODE: undefined,
@@ -144,7 +144,8 @@ describe('TechnicalBackupRunnerService', () => {
     const dump = Buffer.from('CREATE TABLE public.test(id integer);');
     configValues.PG_DUMP_EXECUTION_MODE = 'docker_compose';
     configValues.PG_DUMP_DOCKER_COMPOSE_SERVICE = 'postgres';
-    configValues.PG_DUMP_DOCKER_COMPOSE_FILE = 'A:/Projetos/Mohamed/docker-compose.yml';
+    configValues.PG_DUMP_DOCKER_COMPOSE_FILE =
+      'A:/Projetos/Mohamed/docker-compose.yml';
     spawnMock.mockReturnValue(child as never);
 
     const resultPromise = service.createDumpBuffer();
@@ -186,7 +187,8 @@ describe('TechnicalBackupRunnerService', () => {
     const dump = Buffer.from('CREATE TABLE public.test(id integer);');
     configValues.PG_DUMP_EXECUTION_MODE = 'auto';
     configValues.PG_DUMP_DOCKER_COMPOSE_SERVICE = 'postgres';
-    configValues.PG_DUMP_DOCKER_COMPOSE_FILE = 'A:/Projetos/Mohamed/docker-compose.yml';
+    configValues.PG_DUMP_DOCKER_COMPOSE_FILE =
+      'A:/Projetos/Mohamed/docker-compose.yml';
     spawnMock
       .mockReturnValueOnce(binaryChild as never)
       .mockReturnValueOnce(dockerChild as never);

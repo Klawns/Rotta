@@ -71,7 +71,8 @@ export class SystemBackupSchedulerService implements OnModuleInit {
       return;
     }
 
-    const resolvedSettings = settings ?? (await this.settingsService.getSettings());
+    const resolvedSettings =
+      settings ?? (await this.settingsService.getSettings());
 
     if (resolvedSettings.schedule.mode === 'disabled') {
       await this.queue.removeJobScheduler(TECHNICAL_BACKUP_SCHEDULER_ID);
@@ -99,7 +100,9 @@ export class SystemBackupSchedulerService implements OnModuleInit {
         await this.queue.upsertJobScheduler(
           TECHNICAL_BACKUP_SCHEDULER_ID,
           {
-            pattern: this.buildFixedTimePattern(resolvedSettings.schedule.fixedTime),
+            pattern: this.buildFixedTimePattern(
+              resolvedSettings.schedule.fixedTime,
+            ),
           },
           this.buildTemplate(),
         );

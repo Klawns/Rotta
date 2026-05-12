@@ -71,9 +71,13 @@ export class TechnicalBackupsService {
 
       return this.toResponse(job);
     } catch (error) {
-      this.logOperationalError('technicalBackups.createManualBackup:error', error, {
-        actorUserId,
-      });
+      this.logOperationalError(
+        'technicalBackups.createManualBackup:error',
+        error,
+        {
+          actorUserId,
+        },
+      );
       throw error;
     }
   }
@@ -138,7 +142,7 @@ export class TechnicalBackupsService {
       throw new NotFoundException('Backup tecnico nao encontrado.');
     }
 
-    const response = await this.buildSignedDownloadResponse(job);
+    const response = this.buildSignedDownloadResponse(job);
 
     this.logger.log({
       context: 'technicalBackups.getDownloadUrl:success',
@@ -322,7 +326,7 @@ export class TechnicalBackupsService {
     );
   }
 
-  private async buildSignedDownloadResponse(job: BackupJobRecord) {
+  private buildSignedDownloadResponse(job: BackupJobRecord) {
     if (job.status !== 'success' || !job.storageKey) {
       throw new BadRequestException(
         'O backup ainda nao esta disponivel para download.',

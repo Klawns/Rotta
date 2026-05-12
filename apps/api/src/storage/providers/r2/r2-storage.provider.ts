@@ -182,7 +182,7 @@ export class R2StorageProvider implements IStorageProvider {
     const key = path;
     const bucket = this.resolveBucket('public');
 
-    this.logger.log(`Iniciando upload para R2: ${key} (${file.mimetype})`);
+    this.logger.debug(`Iniciando upload para R2: ${key} (${file.mimetype})`);
 
     try {
       await this.client.send(
@@ -196,7 +196,7 @@ export class R2StorageProvider implements IStorageProvider {
           ContentDisposition: 'inline',
         }),
       );
-      this.logger.log(`Upload concluído com sucesso: ${key}`);
+      this.logger.debug(`Upload concluído com sucesso: ${key}`);
     } catch (error) {
       const message = this.buildOperationErrorMessage(
         'upload',
@@ -226,7 +226,7 @@ export class R2StorageProvider implements IStorageProvider {
     const key = path;
     const bucket = this.resolveBucket('public');
 
-    this.logger.log(
+    this.logger.debug(
       `Iniciando upload por stream para R2: ${key} (${file.mimetype})`,
     );
 
@@ -246,7 +246,7 @@ export class R2StorageProvider implements IStorageProvider {
 
     try {
       await upload.done();
-      this.logger.log(`Upload por stream concluído com sucesso: ${key}`);
+      this.logger.debug(`Upload por stream concluído com sucesso: ${key}`);
     } catch (error) {
       const message = this.buildOperationErrorMessage(
         'upload',
@@ -276,7 +276,7 @@ export class R2StorageProvider implements IStorageProvider {
     const key = path;
     const bucket = this.resolveBucket('private');
 
-    this.logger.log(`Iniciando upload privado para R2: ${key}`);
+    this.logger.debug(`Iniciando upload privado para R2: ${key}`);
 
     try {
       await this.client.send(
@@ -291,7 +291,7 @@ export class R2StorageProvider implements IStorageProvider {
             `attachment; filename="${file.originalname}"`,
         }),
       );
-      this.logger.log(`Upload privado concluído com sucesso: ${key}`);
+      this.logger.debug(`Upload privado concluído com sucesso: ${key}`);
     } catch (error) {
       const message = this.buildOperationErrorMessage(
         'upload privado',
@@ -318,7 +318,7 @@ export class R2StorageProvider implements IStorageProvider {
     const key = path;
     const bucket = this.resolveBucket('private');
 
-    this.logger.log(`Iniciando upload privado por stream para R2: ${key}`);
+    this.logger.debug(`Iniciando upload privado por stream para R2: ${key}`);
 
     const upload = new Upload({
       client: this.client,
@@ -337,7 +337,7 @@ export class R2StorageProvider implements IStorageProvider {
 
     try {
       await upload.done();
-      this.logger.log(
+      this.logger.debug(
         `Upload privado por stream concluído com sucesso: ${key}`,
       );
     } catch (error) {
@@ -364,7 +364,7 @@ export class R2StorageProvider implements IStorageProvider {
   ): Promise<void> {
     const bucket = this.resolveBucket(options?.visibility ?? 'public');
 
-    this.logger.log(`Excluindo objeto do R2: ${key}`);
+    this.logger.debug(`Excluindo objeto do R2: ${key}`);
 
     try {
       await this.client.send(
@@ -373,7 +373,7 @@ export class R2StorageProvider implements IStorageProvider {
           Key: key,
         }),
       );
-      this.logger.log(`Objeto excluído com sucesso: ${key}`);
+      this.logger.debug(`Objeto excluído com sucesso: ${key}`);
     } catch (error) {
       const message = this.buildOperationErrorMessage(
         'delete',

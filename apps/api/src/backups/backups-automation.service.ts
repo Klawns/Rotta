@@ -79,7 +79,9 @@ export class BackupsAutomationService implements OnModuleInit {
 
       this.status.health = 'registered';
 
-      this.logger.log(`Automacao funcional registrada. Funcional: ${functionalCron}.`);
+      this.logger.log(
+        `Automacao funcional registrada. Funcional: ${functionalCron}.`,
+      );
     } catch (error) {
       this.status.health = 'failed';
       this.status.lastCheckedAt = new Date().toISOString();

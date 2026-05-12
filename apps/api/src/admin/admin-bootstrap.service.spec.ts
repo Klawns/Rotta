@@ -84,11 +84,10 @@ describe('AdminBootstrapService', () => {
       adminSettingsRepository,
       profileCacheService,
       cache,
-    } =
-      createService({
-        ADMIN_BOOTSTRAP_EMAIL: 'admin_rotta@gmail.com',
-        ADMIN_BOOTSTRAP_PASSWORD: 'senha-forte-123',
-      });
+    } = createService({
+      ADMIN_BOOTSTRAP_EMAIL: 'admin_rotta@gmail.com',
+      ADMIN_BOOTSTRAP_PASSWORD: 'senha-forte-123',
+    });
 
     usersService.findByEmail.mockResolvedValue({
       id: 'user-1',

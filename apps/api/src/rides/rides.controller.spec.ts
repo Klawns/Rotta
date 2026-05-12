@@ -4,25 +4,30 @@ import { RidesService } from './rides.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import type { RequestWithUser } from '../auth/auth.types';
 import { RideResponsePresenterService } from './services/ride-response-presenter.service';
+import type { Ride } from './interfaces/rides-repository.interface';
 
 describe('RidesController', () => {
   let controller: RidesController;
-  let ridesService: {
-    create: jest.Mock;
-    delete: jest.Mock;
-    deleteAll: jest.Mock;
-    findArchived: jest.Mock;
-    getStats: jest.Mock;
-    restore: jest.Mock;
-    restoreBulk: jest.Mock;
-    update: jest.Mock;
-    updateStatus: jest.Mock;
-  };
-  let rideResponsePresenter: {
-    present: jest.Mock;
-    presentList: jest.Mock;
-    presentMappedList: jest.Mock;
-  };
+  let ridesService: jest.Mocked<
+    Pick<
+      RidesService,
+      | 'create'
+      | 'delete'
+      | 'deleteAll'
+      | 'findArchived'
+      | 'getStats'
+      | 'restore'
+      | 'restoreBulk'
+      | 'update'
+      | 'updateStatus'
+    >
+  >;
+  let rideResponsePresenter: jest.Mocked<
+    Pick<
+      RideResponsePresenterService,
+      'present' | 'presentList' | 'presentMappedList'
+    >
+  >;
 
   beforeEach(async () => {
     ridesService = {
@@ -35,12 +40,30 @@ describe('RidesController', () => {
       restoreBulk: jest.fn(),
       update: jest.fn(),
       updateStatus: jest.fn(),
-    };
+    } as jest.Mocked<
+      Pick<
+        RidesService,
+        | 'create'
+        | 'delete'
+        | 'deleteAll'
+        | 'findArchived'
+        | 'getStats'
+        | 'restore'
+        | 'restoreBulk'
+        | 'update'
+        | 'updateStatus'
+      >
+    >;
     rideResponsePresenter = {
-      present: jest.fn(async (ride) => ride),
-      presentList: jest.fn(async (rides) => rides),
-      presentMappedList: jest.fn(async (rides) => rides),
-    };
+      present: jest.fn((ride: Ride) => Promise.resolve(ride)),
+      presentList: jest.fn((rides: Ride[]) => Promise.resolve(rides)),
+      presentMappedList: jest.fn((rides: Ride[]) => Promise.resolve(rides)),
+    } as jest.Mocked<
+      Pick<
+        RideResponsePresenterService,
+        'present' | 'presentList' | 'presentMappedList'
+      >
+    >;
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [RidesController],
@@ -136,9 +159,9 @@ describe('RidesController', () => {
       user: { id: 'user-1', role: 'user' },
     } as unknown as RequestWithUser;
 
-    await expect(
-      controller.create(request, {} as never),
-    ).resolves.toEqual(presentedRide);
+    await expect(controller.create(request, {} as never)).resolves.toEqual(
+      presentedRide,
+    );
 
     expect(ridesService.create).toHaveBeenCalledWith('user-1', {});
     expect(rideResponsePresenter.present).toHaveBeenCalledWith(createdRide);
@@ -267,13 +290,9 @@ describe('RidesController', () => {
       } as never),
     ).resolves.toEqual(updatedRide);
 
-    expect(ridesService.updateStatus).toHaveBeenCalledWith(
-      'user-1',
-      'ride-1',
-      {
-        status: 'COMPLETED',
-      },
-    );
+    expect(ridesService.updateStatus).toHaveBeenCalledWith('user-1', 'ride-1', {
+      status: 'COMPLETED',
+    });
     expect(rideResponsePresenter.present).toHaveBeenCalledWith(updatedRide);
   });
 

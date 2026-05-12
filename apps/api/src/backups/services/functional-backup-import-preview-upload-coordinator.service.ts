@@ -91,8 +91,7 @@ export class FunctionalBackupImportPreviewUploadCoordinatorService {
         {
           context: 'cleanupUploadedArchive',
           storageKey,
-          message:
-            error instanceof Error ? error.message : 'Erro desconhecido',
+          message: error instanceof Error ? error.message : 'Erro desconhecido',
         },
         error instanceof Error ? error.stack : undefined,
       );

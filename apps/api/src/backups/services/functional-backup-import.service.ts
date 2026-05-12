@@ -256,11 +256,15 @@ export class FunctionalBackupImportService {
         finishedAt: null,
       });
     } catch (error) {
-      await this.cleanupUploadedArchive(storageKey, {
-        importJobId,
-        originalname: upload.originalname,
-        userId,
-      }, parsedArchive !== null);
+      await this.cleanupUploadedArchive(
+        storageKey,
+        {
+          importJobId,
+          originalname: upload.originalname,
+          userId,
+        },
+        parsedArchive !== null,
+      );
       const validationError = this.toParsedArchiveValidationException(error);
 
       if (validationError) {

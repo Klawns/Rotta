@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call -- Drizzle executors are consumed behind a runtime boundary in this repository. */
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Drizzle executors are consumed behind a runtime boundary in this repository. */
 import { Inject, Injectable } from '@nestjs/common';
 import { DRIZZLE } from '../../database/database.provider';
 import type { DrizzleClient } from '../../database/database.provider';
@@ -8,9 +8,7 @@ import {
 } from '../interfaces/ride-lifecycle-events-repository.interface';
 
 @Injectable()
-export class DrizzleRideLifecycleEventsRepository
-  implements IRideLifecycleEventsRepository
-{
+export class DrizzleRideLifecycleEventsRepository implements IRideLifecycleEventsRepository {
   constructor(
     @Inject(DRIZZLE)
     private readonly drizzle: DrizzleClient,

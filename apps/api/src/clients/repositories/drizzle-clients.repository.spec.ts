@@ -23,23 +23,25 @@ describe('DrizzleClientsRepository', () => {
     const client = { id: 'client-1', userId: 'user-1', name: 'Cliente A' };
     const { repository } = createRepository([client]);
 
-    await expect(repository.findOneForUpdate('user-1', 'client-1')).resolves.toEqual(
-      client,
-    );
+    await expect(
+      repository.findOneForUpdate('user-1', 'client-1'),
+    ).resolves.toEqual(client);
   });
 
   it('should return the first client when execute resolves a rows wrapper', async () => {
     const client = { id: 'client-1', userId: 'user-1', name: 'Cliente A' };
     const { repository } = createRepository({ rows: [client] });
 
-    await expect(repository.findOneForUpdate('user-1', 'client-1')).resolves.toEqual(
-      client,
-    );
+    await expect(
+      repository.findOneForUpdate('user-1', 'client-1'),
+    ).resolves.toEqual(client);
   });
 
   it('should return undefined when execute resolves an empty payload', async () => {
     const { repository } = createRepository({ rows: [] });
 
-    await expect(repository.findOneForUpdate('user-1', 'missing')).resolves.toBeUndefined();
+    await expect(
+      repository.findOneForUpdate('user-1', 'missing'),
+    ).resolves.toBeUndefined();
   });
 });

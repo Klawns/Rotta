@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- Jest mocks are intentionally partial. */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Jest mocks are intentionally partial. */
 import { Logger, ServiceUnavailableException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bullmq';
@@ -35,6 +35,8 @@ describe('BackupJobOrchestratorService', () => {
   let systemBackupSettingsServiceMock: any;
   let configValues: Record<string, unknown>;
   let loggerLogSpy: jest.SpyInstance;
+
+  const technicalDateSegment = () => new Date().toISOString().slice(0, 10);
 
   beforeAll(() => {
     loggerLogSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
@@ -87,7 +89,13 @@ describe('BackupJobOrchestratorService', () => {
       id: 'rclone_drive',
       upload: jest.fn().mockResolvedValue({
         providerId: 'rclone_drive',
-        key: 'backups/technical/manual/2026-04-17/tech-1.sql.gz',
+        key: `backups/technical/manual/${technicalDateSegment()}/tech-1.sql.gz`,
+        fileName: 'technical-backup-2026-04-17T12-00-00-000Z.sql.gz',
+        contentType: 'application/gzip',
+      }),
+      uploadStream: jest.fn().mockResolvedValue({
+        providerId: 'rclone_drive',
+        key: `backups/technical/manual/${technicalDateSegment()}/tech-1.sql.gz`,
         fileName: 'technical-backup-2026-04-17T12-00-00-000Z.sql.gz',
         contentType: 'application/gzip',
       }),
@@ -105,7 +113,14 @@ describe('BackupJobOrchestratorService', () => {
             id: 'r2',
             upload: jest.fn().mockResolvedValue({
               providerId: 'r2',
-              key: 'backups/technical/manual/2026-04-17/tech-1.r2-fallback.sql.gz',
+              key: `backups/technical/manual/${technicalDateSegment()}/tech-1.r2-fallback.sql.gz`,
+              fileName:
+                'technical-backup-r2-fallback-2026-04-17T12-00-00-000Z.sql.gz',
+              contentType: 'application/gzip',
+            }),
+            uploadStream: jest.fn().mockResolvedValue({
+              providerId: 'r2',
+              key: `backups/technical/manual/${technicalDateSegment()}/tech-1.r2-fallback.sql.gz`,
               fileName:
                 'technical-backup-r2-fallback-2026-04-17T12-00-00-000Z.sql.gz',
               contentType: 'application/gzip',
@@ -136,11 +151,16 @@ describe('BackupJobOrchestratorService', () => {
     };
 
     technicalRunnerMock = {
-      createDumpBuffer: jest.fn().mockResolvedValue({
-        dumpBuffer: Buffer.from('technical-dump'),
+      createDumpFile: jest.fn().mockResolvedValue({
+        filePath: __filename,
+        tempDirectory: 'A:/tmp/technical-backup-test',
         contentType: 'application/gzip',
         rawSizeBytes: 42,
+        compressedSizeBytes: 14,
+        sha256:
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
       }),
+      cleanupDumpFile: jest.fn().mockResolvedValue(undefined),
     };
 
     usersServiceMock = {
@@ -310,18 +330,23 @@ describe('BackupJobOrchestratorService', () => {
       }),
     );
     expect(backupStorageRegistryMock.getActiveProvider).toHaveBeenCalled();
-    expect(systemBackupProviderMock.upload).toHaveBeenCalledWith(
+    expect(systemBackupProviderMock.uploadStream).toHaveBeenCalledWith(
       expect.objectContaining({
-        buffer: Buffer.from('technical-dump'),
+        stream: expect.any(Object),
         contentType: 'application/gzip',
       }),
-      'backups/technical/manual/2026-04-17/tech-1.sql.gz',
+      `backups/technical/manual/${technicalDateSegment()}/tech-1.sql.gz`,
     );
     expect(repositoryMock.markSuccess).toHaveBeenCalledWith(
       'tech-1',
       expect.objectContaining({
-        storageKey: 'backups/technical/manual/2026-04-17/tech-1.sql.gz',
-        metadataJson: expect.stringContaining('"storageProviderId":"rclone_drive"'),
+        storageKey: `backups/technical/manual/${technicalDateSegment()}/tech-1.sql.gz`,
+        checksum:
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        sizeBytes: 14,
+        metadataJson: expect.stringContaining(
+          '"storageProviderId":"rclone_drive"',
+        ),
       }),
     );
     expect(systemBackupRetentionServiceMock.pruneBackups).toHaveBeenCalledWith({
@@ -333,7 +358,7 @@ describe('BackupJobOrchestratorService', () => {
         context: 'processTechnicalBackupJob:success',
         backupJobId: 'tech-1',
         providerId: 'rclone_drive',
-        storageKey: 'backups/technical/manual/2026-04-17/tech-1.sql.gz',
+        storageKey: `backups/technical/manual/${technicalDateSegment()}/tech-1.sql.gz`,
       }),
     );
   });
@@ -346,7 +371,7 @@ describe('BackupJobOrchestratorService', () => {
       status: 'pending',
       createdAt: new Date('2026-04-17T12:00:00.000Z'),
     });
-    technicalRunnerMock.createDumpBuffer.mockRejectedValue(
+    technicalRunnerMock.createDumpFile.mockRejectedValue(
       new Error(
         'pg_dump nao foi encontrado na runtime da API. Instale o cliente PostgreSQL, configure PG_DUMP_BINARY ou habilite PG_DUMP_EXECUTION_MODE=auto/docker_compose com PG_DUMP_DOCKER_COMPOSE_SERVICE.',
       ),
@@ -376,7 +401,7 @@ describe('BackupJobOrchestratorService', () => {
       status: 'pending',
       createdAt: new Date('2026-04-17T12:00:00.000Z'),
     });
-    systemBackupProviderMock.upload.mockRejectedValueOnce(
+    systemBackupProviderMock.uploadStream.mockRejectedValueOnce(
       new Error('Falha ao enviar dump para o Google Drive.'),
     );
 
@@ -384,19 +409,21 @@ describe('BackupJobOrchestratorService', () => {
       backupJobId: 'tech-1',
     });
 
-    expect(systemBackupProviderMock.upload).toHaveBeenCalledWith(
+    expect(systemBackupProviderMock.uploadStream).toHaveBeenCalledWith(
       expect.objectContaining({
+        stream: expect.any(Object),
         fileName: 'technical-backup-2026-04-17T12-00-00-000Z.sql.gz',
       }),
-      'backups/technical/manual/2026-04-17/tech-1.sql.gz',
+      `backups/technical/manual/${technicalDateSegment()}/tech-1.sql.gz`,
     );
     expect(backupStorageRegistryMock.getProvider).toHaveBeenCalledWith('r2');
     expect(repositoryMock.markSuccess).toHaveBeenCalledWith(
       'tech-1',
       expect.objectContaining({
-        storageKey:
-          'backups/technical/manual/2026-04-17/tech-1.r2-fallback.sql.gz',
-        metadataJson: expect.stringContaining('"requestedStorageProviderId":"rclone_drive"'),
+        storageKey: `backups/technical/manual/${technicalDateSegment()}/tech-1.r2-fallback.sql.gz`,
+        metadataJson: expect.stringContaining(
+          '"requestedStorageProviderId":"rclone_drive"',
+        ),
       }),
     );
     expect(repositoryMock.markSuccess).toHaveBeenCalledWith(
@@ -438,7 +465,7 @@ describe('BackupJobOrchestratorService', () => {
       status: 'pending',
       createdAt: new Date('2026-04-17T12:00:00.000Z'),
     });
-    technicalRunnerMock.createDumpBuffer.mockRejectedValue(
+    technicalRunnerMock.createDumpFile.mockRejectedValue(
       new Error(
         'pg_dump nao foi encontrado na runtime da API. Instale o cliente PostgreSQL, configure PG_DUMP_BINARY ou habilite PG_DUMP_EXECUTION_MODE=auto/docker_compose com PG_DUMP_DOCKER_COMPOSE_SERVICE.',
       ),
@@ -450,7 +477,9 @@ describe('BackupJobOrchestratorService', () => {
       }),
     ).rejects.toThrow('pg_dump nao foi encontrado');
 
-    expect(backupStorageRegistryMock.getProvider).not.toHaveBeenCalledWith('r2');
+    expect(backupStorageRegistryMock.getProvider).not.toHaveBeenCalledWith(
+      'r2',
+    );
   });
 
   it('should raise a service unavailable error when technical backup schema is missing during creation', async () => {

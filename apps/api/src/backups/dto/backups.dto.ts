@@ -10,7 +10,10 @@ export const executeBackupImportSchema = z.object({
 const systemBackupScheduleSchema = z
   .object({
     mode: z.enum(['disabled', 'fixed_time', 'interval']),
-    fixedTime: z.string().regex(/^\d{2}:\d{2}$/).nullable(),
+    fixedTime: z
+      .string()
+      .regex(/^\d{2}:\d{2}$/)
+      .nullable(),
     intervalMinutes: z.number().int().positive().nullable(),
   })
   .strict();

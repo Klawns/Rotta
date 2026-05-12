@@ -3,11 +3,11 @@ import type { Request } from 'express';
 import { Readable } from 'node:stream';
 import { parseBackupImportUploadRequest } from './backup-import-upload.util';
 
-function createMultipartRequest(parts: string[], boundary = '----backup-boundary') {
-  const body = Buffer.from(
-    `${parts.join('')}--${boundary}--\r\n`,
-    'utf8',
-  );
+function createMultipartRequest(
+  parts: string[],
+  boundary = '----backup-boundary',
+) {
+  const body = Buffer.from(`${parts.join('')}--${boundary}--\r\n`, 'utf8');
   const request = Readable.from([body]) as Request;
 
   request.headers = {
@@ -70,9 +70,9 @@ describe('parseBackupImportUploadRequest', () => {
       boundary,
     );
 
-    await expect(parseBackupImportUploadRequest(request)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      parseBackupImportUploadRequest(request),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('should reject a second uploaded file before returning the upload source', async () => {
@@ -85,8 +85,8 @@ describe('parseBackupImportUploadRequest', () => {
       boundary,
     );
 
-    await expect(parseBackupImportUploadRequest(request)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      parseBackupImportUploadRequest(request),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

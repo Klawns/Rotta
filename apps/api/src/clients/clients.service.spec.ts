@@ -21,6 +21,8 @@ describe('ClientsService', () => {
   let drizzleMock: any;
   let dashboardCacheMock: any;
   let cacheMock: jest.Mocked<ICacheProvider>;
+  let cacheSetMock: jest.Mock;
+  let cacheInvalidatePrefixMock: jest.Mock;
   let reconciliationServiceMock: any;
   let loggerErrorSpy: jest.SpyInstance;
 
@@ -56,10 +58,14 @@ describe('ClientsService', () => {
         .mockResolvedValue({ id: 'uuid-123', name: 'Client Test', balance: 0 }),
       findManyByIds: jest
         .fn()
-        .mockResolvedValue([{ id: 'uuid-123', name: 'Client Test', balance: 0 }]),
+        .mockResolvedValue([
+          { id: 'uuid-123', name: 'Client Test', balance: 0 },
+        ]),
       deleteManyByIds: jest
         .fn()
-        .mockResolvedValue([{ id: 'uuid-123', name: 'Client Test', balance: 0 }]),
+        .mockResolvedValue([
+          { id: 'uuid-123', name: 'Client Test', balance: 0 },
+        ]),
       delete: jest.fn().mockResolvedValue(undefined),
       deleteAll: jest.fn().mockResolvedValue(undefined),
     };
@@ -95,27 +101,27 @@ describe('ClientsService', () => {
         nextRideShortfall: 30,
         hasPartialPaymentCarryover: true,
       }),
-      reconcileClientPayments: jest
-        .fn()
-        .mockResolvedValue({
-          settledRides: 0,
-          generatedBalance: 0,
-          unappliedAmount: 30,
-          nextRideAmount: 40,
-          nextRideShortfall: 10,
-          hasPartialPaymentCarryover: true,
-        }),
+      reconcileClientPayments: jest.fn().mockResolvedValue({
+        settledRides: 0,
+        generatedBalance: 0,
+        unappliedAmount: 30,
+        nextRideAmount: 40,
+        nextRideShortfall: 10,
+        hasPartialPaymentCarryover: true,
+      }),
     };
 
     dashboardCacheMock = {
       invalidate: jest.fn().mockResolvedValue(undefined),
     };
+    cacheSetMock = jest.fn().mockResolvedValue(undefined);
+    cacheInvalidatePrefixMock = jest.fn().mockResolvedValue(undefined);
     cacheMock = {
       get: jest.fn().mockResolvedValue(null),
-      set: jest.fn().mockResolvedValue(undefined),
+      set: cacheSetMock,
       del: jest.fn().mockResolvedValue(undefined),
       getDel: jest.fn().mockResolvedValue(null),
-      invalidatePrefix: jest.fn().mockResolvedValue(undefined),
+      invalidatePrefix: cacheInvalidatePrefixMock,
     };
 
     drizzleMock = {
@@ -197,7 +203,7 @@ describe('ClientsService', () => {
       hasMore: false,
       search: 'Ali',
     });
-    expect(cacheMock.set).toHaveBeenCalledTimes(1);
+    expect(cacheSetMock).toHaveBeenCalledTimes(1);
   });
 
   it('should return cached client directory entries without reading the repository', async () => {
@@ -223,7 +229,7 @@ describe('ClientsService', () => {
       address: 'Rua A',
     });
 
-    expect(cacheMock.invalidatePrefix).toHaveBeenCalledWith(
+    expect(cacheInvalidatePrefixMock).toHaveBeenCalledWith(
       'client-directory:user-1:',
     );
   });
@@ -231,7 +237,7 @@ describe('ClientsService', () => {
   it('should invalidate cached client directory entries after updating a client', async () => {
     await service.update('user-1', 'uuid-123', { name: 'Updated Client' });
 
-    expect(cacheMock.invalidatePrefix).toHaveBeenCalledWith(
+    expect(cacheInvalidatePrefixMock).toHaveBeenCalledWith(
       'client-directory:user-1:',
     );
   });
@@ -239,7 +245,7 @@ describe('ClientsService', () => {
   it('should invalidate cached client directory entries after deleting all clients', async () => {
     await service.deleteAll('user-1');
 
-    expect(cacheMock.invalidatePrefix).toHaveBeenCalledWith(
+    expect(cacheInvalidatePrefixMock).toHaveBeenCalledWith(
       'client-directory:user-1:',
     );
   });
@@ -261,7 +267,7 @@ describe('ClientsService', () => {
       'tx',
     );
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
-    expect(cacheMock.invalidatePrefix).toHaveBeenCalledWith(
+    expect(cacheInvalidatePrefixMock).toHaveBeenCalledWith(
       'client-directory:user-1:',
     );
     expect(result).toEqual({
@@ -319,11 +325,9 @@ describe('ClientsService', () => {
 
     expect(ridesRepoMock.markAllAsPaidForClient).not.toHaveBeenCalled();
     expect(paymentsRepoMock.markAsUsed).not.toHaveBeenCalled();
-    expect(reconciliationServiceMock.reconcileClientPayments).toHaveBeenCalledWith(
-      'user-1',
-      'uuid-123',
-      'tx',
-    );
+    expect(
+      reconciliationServiceMock.reconcileClientPayments,
+    ).toHaveBeenCalledWith('user-1', 'uuid-123', 'tx');
     expect(result).toEqual({
       success: true,
       settledRides: 0,
@@ -345,11 +349,9 @@ describe('ClientsService', () => {
     const result = await service.closeDebt('user-1', 'uuid-123');
 
     expect(drizzleMock.db.transaction).toHaveBeenCalled();
-    expect(reconciliationServiceMock.reconcileClientPayments).toHaveBeenCalledWith(
-      'user-1',
-      'uuid-123',
-      'tx',
-    );
+    expect(
+      reconciliationServiceMock.reconcileClientPayments,
+    ).toHaveBeenCalledWith('user-1', 'uuid-123', 'tx');
     expect(clientsRepoMock.findOneForUpdate).toHaveBeenCalledWith(
       'user-1',
       'uuid-123',
@@ -364,15 +366,11 @@ describe('ClientsService', () => {
   });
 
   it('should invalidate dashboard cache after partial payment without debt settlement', async () => {
-    const result = await service.addPartialPayment(
-      'user-1',
-      'uuid-123',
-      {
-        amount: 30,
-        notes: 'Pagamento avulso',
-        idempotencyKey: 'payment-key-1',
-      },
-    );
+    const result = await service.addPartialPayment('user-1', 'uuid-123', {
+      amount: 30,
+      notes: 'Pagamento avulso',
+      idempotencyKey: 'payment-key-1',
+    });
 
     expect(paymentsRepoMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -385,11 +383,9 @@ describe('ClientsService', () => {
       }),
       'tx',
     );
-    expect(reconciliationServiceMock.reconcileClientPayments).toHaveBeenCalledWith(
-      'user-1',
-      'uuid-123',
-      'tx',
-    );
+    expect(
+      reconciliationServiceMock.reconcileClientPayments,
+    ).toHaveBeenCalledWith('user-1', 'uuid-123', 'tx');
     expect(dashboardCacheMock.invalidate).toHaveBeenCalledWith('user-1');
     expect(result).toEqual({
       payment: { id: 'payment-1' },
@@ -491,11 +487,9 @@ describe('ClientsService', () => {
     });
 
     expect(paymentsRepoMock.create).not.toHaveBeenCalled();
-    expect(reconciliationServiceMock.reconcileClientPayments).toHaveBeenCalledWith(
-      'user-1',
-      'uuid-123',
-      'tx',
-    );
+    expect(
+      reconciliationServiceMock.reconcileClientPayments,
+    ).toHaveBeenCalledWith('user-1', 'uuid-123', 'tx');
     expect(result).toEqual(
       expect.objectContaining({
         payment: expect.objectContaining({

@@ -1,4 +1,8 @@
-import { CanActivate, ExecutionContext, INestApplication } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  INestApplication,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
@@ -6,11 +10,22 @@ import { UploadController } from '../src/upload/upload.controller';
 import { UPLOAD_IMAGE_MAX_SIZE_BYTES } from '../src/upload/upload-image.constants';
 import { UploadService } from '../src/upload/upload.service';
 
+type UploadImageStreamRequest = {
+  completed: Promise<unknown>;
+  fieldName: string;
+  mimetype: string;
+  originalname: string;
+  stream: AsyncIterable<Buffer>;
+  cancel: (error?: Error) => void;
+};
+
 jest.mock('@nestjs/passport', () => ({
   AuthGuard: () => {
     class MockJwtAuthGuard implements CanActivate {
       canActivate(context: ExecutionContext) {
-        const req = context.switchToHttp().getRequest();
+        const req = context
+          .switchToHttp()
+          .getRequest<{ user: { id: string } }>();
         req.user = { id: 'user-1' };
         return true;
       }
@@ -29,17 +44,19 @@ describe('UploadController image upload (e2e)', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    uploadServiceMock.uploadImageStream.mockImplementation(async (upload: any) => {
-      for await (const _chunk of upload.stream as AsyncIterable<Buffer>) {
-        // Drain the upload stream to mirror the real service behavior.
-      }
+    uploadServiceMock.uploadImageStream.mockImplementation(
+      async (upload: UploadImageStreamRequest) => {
+        for await (const chunk of upload.stream) {
+          void chunk;
+        }
 
-      await upload.completed;
+        await upload.completed;
 
-      return {
-        key: 'users/user-1/rides/test.webp',
-      };
-    });
+        return {
+          key: 'users/user-1/rides/test.webp',
+        };
+      },
+    );
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [UploadController],
@@ -79,13 +96,29 @@ describe('UploadController image upload (e2e)', () => {
         fieldName: 'image',
         mimetype: 'image/png',
         originalname: 'ride.png',
-        cancel: expect.any(Function),
-        completed: expect.any(Promise),
-        stream: expect.anything(),
       }),
       'user-1',
       'rides',
     );
+
+    const uploadCalls = uploadServiceMock.uploadImageStream.mock.calls as Array<
+      [UploadImageStreamRequest, string, string?]
+    >;
+    const upload = uploadCalls[0][0] as {
+      cancel: unknown;
+      completed: Promise<unknown>;
+      fieldName: string;
+      mimetype: string;
+      originalname: string;
+      stream: unknown;
+    };
+
+    expect(upload.fieldName).toBe('image');
+    expect(upload.mimetype).toBe('image/png');
+    expect(upload.originalname).toBe('ride.png');
+    expect(typeof upload.cancel).toBe('function');
+    expect(upload.completed).toBeInstanceOf(Promise);
+    expect(upload.stream).toBeDefined();
   });
 
   it('rejects requests without an uploaded image before reaching the service', async () => {

@@ -138,7 +138,9 @@ function endOfSaoPauloDayFromParts(parts: CalendarDateParts): Date {
 }
 
 function addCalendarDays(parts: CalendarDateParts, amount: number) {
-  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + amount));
+  const date = new Date(
+    Date.UTC(parts.year, parts.month - 1, parts.day + amount),
+  );
 
   return {
     year: date.getUTCFullYear(),
@@ -154,7 +156,7 @@ export function getDatesFromPeriod(
 ): { startDate: Date; endDate: Date } {
   const today = getSaoPauloParts(new Date());
   let startParts: CalendarDateParts = today;
-  let endParts: CalendarDateParts = today;
+  const endParts: CalendarDateParts = today;
 
   if (period === 'today') {
     startParts = today;

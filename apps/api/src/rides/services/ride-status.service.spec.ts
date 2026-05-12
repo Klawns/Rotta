@@ -1,8 +1,24 @@
+import type { Ride } from '../interfaces/rides-repository.interface';
 import { RideStatusService } from './ride-status.service';
+import { RideAccountingService } from './ride-accounting.service';
 
 describe('RideStatusService', () => {
   let service: RideStatusService;
-  let rideAccountingMock: any;
+  let rideAccountingMock: jest.Mocked<
+    Pick<RideAccountingService, 'resolvePaymentSnapshot'>
+  >;
+
+  const createRide = (overrides: Partial<Ride> = {}): Ride =>
+    ({
+      id: 'ride-1',
+      clientId: 'client-1',
+      value: 10,
+      paidWithBalance: 0,
+      paymentStatus: 'PENDING',
+      status: 'PENDING',
+      debtValue: 0,
+      ...overrides,
+    }) as Ride;
 
   beforeEach(() => {
     rideAccountingMock = {
@@ -10,12 +26,10 @@ describe('RideStatusService', () => {
         ({
           value,
           paidWithBalance,
-          paymentStatus,
           paidExternally,
         }: {
           value: number;
           paidWithBalance: number;
-          paymentStatus?: 'PENDING' | 'PAID';
           paidExternally?: number;
         }) => ({
           rideTotal: Number(value),
@@ -64,13 +78,12 @@ describe('RideStatusService', () => {
 
   it('should rebuild debt when restoring a cancelled ride', () => {
     const result = service.prepareStatusUpdate(
-      {
-        id: 'ride-1',
+      createRide({
         value: 30,
         paidWithBalance: 5,
         paymentStatus: 'PENDING',
         status: 'CANCELLED',
-      } as any,
+      }),
       { status: 'COMPLETED' },
     );
 
@@ -83,14 +96,12 @@ describe('RideStatusService', () => {
 
   it('should calculate refund when ride value is reduced', () => {
     const result = service.prepareRideUpdate(
-      {
-        id: 'ride-1',
-        clientId: 'client-1',
+      createRide({
         value: 40,
         paidWithBalance: 10,
         debtValue: 30,
         paymentStatus: 'PENDING',
-      } as any,
+      }),
       { value: 6, paymentStatus: 'PENDING' },
     );
 
@@ -108,13 +119,11 @@ describe('RideStatusService', () => {
 
   it('should force pending when changing the client removes applied balance', () => {
     const result = service.prepareRideUpdate(
-      {
-        id: 'ride-1',
-        clientId: 'client-1',
+      createRide({
         value: 10,
         paidWithBalance: 10,
         paymentStatus: 'PAID',
-      } as any,
+      }),
       { clientId: 'client-2' },
     );
 
@@ -127,19 +136,17 @@ describe('RideStatusService', () => {
         paidExternally: 0,
         paymentStatus: 'PENDING',
         debtValue: 10,
-        }),
+      }),
     );
   });
 
   it('should force pending when increasing a paid ride leaves value open', () => {
     const result = service.prepareRideUpdate(
-      {
-        id: 'ride-1',
-        clientId: 'client-1',
+      createRide({
         value: 10,
         paidWithBalance: 10,
         paymentStatus: 'PAID',
-      } as any,
+      }),
       { value: 15, paymentStatus: 'PAID' },
     );
 
@@ -157,14 +164,12 @@ describe('RideStatusService', () => {
 
   it('should preserve paid status when the previous external payment still covers the edited ride', () => {
     const result = service.prepareRideUpdate(
-      {
-        id: 'ride-1',
-        clientId: 'client-1',
+      createRide({
         value: 40,
         paidWithBalance: 10,
         debtValue: 0,
         paymentStatus: 'PAID',
-      } as any,
+      }),
       { value: 25 },
     );
 

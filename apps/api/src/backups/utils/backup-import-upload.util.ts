@@ -64,13 +64,11 @@ export async function parseBackupImportUploadRequest(
     let failed = false;
     let outerResolved = false;
     let fileSeen = false;
-    let fileMetadata:
-      | {
-          fieldName: string;
-          mimetype: string;
-          originalname: string;
-        }
-      | null = null;
+    let fileMetadata: {
+      fieldName: string;
+      mimetype: string;
+      originalname: string;
+    } | null = null;
     let temporaryReadStream: Readable | null = null;
     let fileWritePromise: Promise<void> | null = null;
     let cleanupPromise: Promise<void> | null = null;
@@ -188,7 +186,11 @@ export async function parseBackupImportUploadRequest(
 
       if (fileSeen) {
         file.resume();
-        fail(new BadRequestException('Apenas um arquivo .zip e aceito por requisicao.'));
+        fail(
+          new BadRequestException(
+            'Apenas um arquivo .zip e aceito por requisicao.',
+          ),
+        );
         return;
       }
 
@@ -197,7 +199,11 @@ export async function parseBackupImportUploadRequest(
 
       if (fieldName !== BACKUP_IMPORT_FILE_FIELD_NAME) {
         file.resume();
-        fail(new BadRequestException('Campo de upload invalido. Use o campo file.'));
+        fail(
+          new BadRequestException(
+            'Campo de upload invalido. Use o campo file.',
+          ),
+        );
         return;
       }
 
@@ -206,7 +212,11 @@ export async function parseBackupImportUploadRequest(
 
       if (!isZipUpload(originalname, mimetype)) {
         file.resume();
-        fail(new BadRequestException('Apenas arquivos .zip sao aceitos para importacao.'));
+        fail(
+          new BadRequestException(
+            'Apenas arquivos .zip sao aceitos para importacao.',
+          ),
+        );
         return;
       }
 
@@ -246,7 +256,11 @@ export async function parseBackupImportUploadRequest(
     });
 
     parser.once('filesLimit', () => {
-      fail(new BadRequestException('Apenas um arquivo .zip e aceito por requisicao.'));
+      fail(
+        new BadRequestException(
+          'Apenas um arquivo .zip e aceito por requisicao.',
+        ),
+      );
     });
 
     parser.once('fieldsLimit', () => {
@@ -258,7 +272,9 @@ export async function parseBackupImportUploadRequest(
     });
 
     parser.once('partsLimit', () => {
-      fail(new BadRequestException('A requisicao multipart contem partes demais.'));
+      fail(
+        new BadRequestException('A requisicao multipart contem partes demais.'),
+      );
     });
 
     parser.once('error', (error) => {

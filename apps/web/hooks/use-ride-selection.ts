@@ -1,23 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 interface RideSelectionItem {
   id: string;
-}
-
-function areSetsEqual(left: Set<string>, right: Set<string>) {
-  if (left.size !== right.size) {
-    return false;
-  }
-
-  for (const value of left) {
-    if (!right.has(value)) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 export function toggleSelectedRideId(
@@ -65,12 +51,10 @@ export function getRideSelectionSummary(
 
 interface UseRideSelectionParams<T extends RideSelectionItem> {
   items: T[];
-  scopeKey?: string | number | null;
 }
 
 export function useRideSelection<T extends RideSelectionItem>({
   items,
-  scopeKey,
 }: UseRideSelectionParams<T>) {
   const visibleItemIds = useMemo(
     () => Array.from(new Set(items.map((item) => item.id).filter(Boolean))),
@@ -78,6 +62,10 @@ export function useRideSelection<T extends RideSelectionItem>({
   );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const sanitizedSelectedIds = useMemo(
+    () => pruneSelectedRideIds(selectedIds, visibleItemIds),
+    [selectedIds, visibleItemIds],
+  );
 
   const clearSelection = useCallback(() => {
     setSelectedIds(new Set());
@@ -87,30 +75,6 @@ export function useRideSelection<T extends RideSelectionItem>({
     setIsSelectionMode(false);
     setSelectedIds(new Set());
   }, []);
-
-  useEffect(() => {
-    setIsSelectionMode(false);
-    setSelectedIds(new Set());
-  }, [scopeKey]);
-
-  useEffect(() => {
-    setSelectedIds((currentSelection) => {
-      const nextSelection = pruneSelectedRideIds(
-        currentSelection,
-        visibleItemIds,
-      );
-
-      return areSetsEqual(currentSelection, nextSelection)
-        ? currentSelection
-        : nextSelection;
-    });
-  }, [visibleItemIds]);
-
-  useEffect(() => {
-    if (visibleItemIds.length === 0) {
-      setIsSelectionMode(false);
-    }
-  }, [visibleItemIds.length]);
 
   const enterSelectionMode = useCallback((itemId?: string) => {
     setIsSelectionMode(true);
@@ -140,16 +104,16 @@ export function useRideSelection<T extends RideSelectionItem>({
   );
 
   const summary = useMemo(
-    () => getRideSelectionSummary(visibleItemIds, selectedIds),
-    [selectedIds, visibleItemIds],
+    () => getRideSelectionSummary(visibleItemIds, sanitizedSelectedIds),
+    [sanitizedSelectedIds, visibleItemIds],
   );
 
   return {
-    isSelectionMode,
-    selectedIds,
+    isSelectionMode: isSelectionMode && visibleItemIds.length > 0,
+    selectedIds: sanitizedSelectedIds,
     selectedCount: summary.selectedCount,
     totalVisible: summary.totalVisible,
-    isSelected: (itemId: string) => selectedIds.has(itemId),
+    isSelected: (itemId: string) => sanitizedSelectedIds.has(itemId),
     hasSelection: summary.selectedCount > 0,
     isAllVisibleSelected: summary.isAllVisibleSelected,
     isIndeterminate: summary.isIndeterminate,

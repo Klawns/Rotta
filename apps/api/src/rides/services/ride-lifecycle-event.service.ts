@@ -22,7 +22,11 @@ export class RideLifecycleEventService {
     private readonly rideLifecycleEventsRepository: IRideLifecycleEventsRepository,
   ) {}
 
-  async recordCreated(actorUserId: string, ride: RideIdentity, executor?: unknown) {
+  async recordCreated(
+    actorUserId: string,
+    ride: RideIdentity,
+    executor?: unknown,
+  ) {
     await this.rideLifecycleEventsRepository.create(
       this.buildBaseEvent({
         rideId: ride.id,
@@ -55,7 +59,11 @@ export class RideLifecycleEventService {
     );
   }
 
-  async recordRestored(actorUserId: string, rides: RideIdentity[], executor?: unknown) {
+  async recordRestored(
+    actorUserId: string,
+    rides: RideIdentity[],
+    executor?: unknown,
+  ) {
     await this.rideLifecycleEventsRepository.createMany(
       rides.map((ride) =>
         this.buildBaseEvent({
@@ -108,7 +116,10 @@ export class RideLifecycleEventService {
   }
 
   private buildBaseEvent(
-    input: Omit<CreateRideLifecycleEventDto, 'id' | 'createdAt' | 'metadataJson'> & {
+    input: Omit<
+      CreateRideLifecycleEventDto,
+      'id' | 'createdAt' | 'metadataJson'
+    > & {
       metadataJson?: Record<string, unknown> | null;
     },
   ): CreateRideLifecycleEventDto {

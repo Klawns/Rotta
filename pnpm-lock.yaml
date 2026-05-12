@@ -11,14 +11,13 @@ overrides:
 importers:
 
   .:
-    dependencies:
+    devDependencies:
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@25.3.5)(typescript@5.9.3)
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
-    devDependencies:
       prettier:
         specifier: latest
         version: 3.8.1
@@ -335,9 +334,6 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.94.5
         version: 5.94.5(react@19.2.4)
-      '@tanstack/react-query-devtools':
-        specifier: ^5.94.5
-        version: 5.94.5(@tanstack/react-query@5.94.5(react@19.2.4))(react@19.2.4)
       '@tanstack/react-virtual':
         specifier: ^3.13.23
         version: 3.13.23(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -426,6 +422,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4.2.0
         version: 4.2.0
+      '@tanstack/react-query-devtools':
+        specifier: ^5.94.5
+        version: 5.94.5(@tanstack/react-query@5.94.5(react@19.2.4))(react@19.2.4)
       '@types/node':
         specifier: ^22
         version: 22.19.11

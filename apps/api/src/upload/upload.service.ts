@@ -317,7 +317,7 @@ export class UploadService {
       throw error;
     }
 
-    this.logger.log(
+    this.logger.debug(
       `Recebendo solicitação de upload por stream: ${upload.originalname} para pasta ${normalizedFolder}`,
     );
 
@@ -408,14 +408,14 @@ export class UploadService {
       await upload.completed;
       const uploadResult = await uploadToStorage;
 
-      this.logger.log(
+      this.logger.debug(
         `Sharp processing time: ${Date.now() - start}ms. Tamanho final: ${processedImageSizeBytes ?? 'desconhecido'} bytes`,
       );
 
       const { key } = uploadResult;
       const url = 'url' in uploadResult ? uploadResult.url : undefined;
 
-      this.logger.log(`Disparando evento image.uploaded para ${key}`);
+      this.logger.debug(`Disparando evento image.uploaded para ${key}`);
       this.eventEmitter.emit('image.uploaded', {
         url,
         key,
@@ -466,7 +466,7 @@ export class UploadService {
     const releaseProcessingSlot = this.acquireUploadProcessingSlot(file);
 
     try {
-      this.logger.log(
+      this.logger.debug(
         `Recebendo solicitação de upload: ${file.originalname} (Tamanho original: ${file.size} bytes) para pasta ${normalizedFolder}`,
       );
 
@@ -511,7 +511,7 @@ export class UploadService {
                   },
                 );
 
-                this.logger.log(
+                this.logger.debug(
                   `Sharp processing time: ${Date.now() - start}ms. Tamanho final: ${processedImageSizeBytes ?? 'desconhecido'} bytes`,
                 );
 
@@ -530,7 +530,7 @@ export class UploadService {
                   try {
                     const processedBuffer = await processedImage.toBuffer();
 
-                    this.logger.log(
+                    this.logger.debug(
                       `Sharp processing time: ${Date.now() - start}ms. Tamanho final: ${processedBuffer.length} bytes`,
                     );
 
@@ -559,7 +559,7 @@ export class UploadService {
       const { key } = uploadResult;
 
       // 5. Emitir evento
-      this.logger.log(`Disparando evento image.uploaded para ${key}`);
+      this.logger.debug(`Disparando evento image.uploaded para ${key}`);
       this.eventEmitter.emit('image.uploaded', {
         url,
         key,

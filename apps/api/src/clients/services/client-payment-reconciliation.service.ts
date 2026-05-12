@@ -58,7 +58,10 @@ export class ClientPaymentReconciliationService {
     return Number(payment.amount ?? 0);
   }
 
-  private resolvePaymentStatus(amount: number, remainingAmount: number): PaymentUsageStatus {
+  private resolvePaymentStatus(
+    amount: number,
+    remainingAmount: number,
+  ): PaymentUsageStatus {
     if (remainingAmount <= 0) {
       return 'USED';
     }
@@ -82,7 +85,10 @@ export class ClientPaymentReconciliationService {
         continue;
       }
 
-      const consumedAmount = Math.min(payment.nextRemainingAmount, remainingToConsume);
+      const consumedAmount = Math.min(
+        payment.nextRemainingAmount,
+        remainingToConsume,
+      );
       payment.nextRemainingAmount -= consumedAmount;
       remainingToConsume -= consumedAmount;
     }
@@ -204,7 +210,10 @@ export class ClientPaymentReconciliationService {
       const debtValue = this.resolveRideDebt(ride);
 
       if (debtValue <= 0) {
-        if (ride.paymentStatus !== 'PAID' || Number(ride.debtValue ?? 0) !== 0) {
+        if (
+          ride.paymentStatus !== 'PAID' ||
+          Number(ride.debtValue ?? 0) !== 0
+        ) {
           await this.ridesRepository.updateFinancialSnapshot(
             userId,
             ride.id,
@@ -220,7 +229,10 @@ export class ClientPaymentReconciliationService {
       }
 
       if (availableAmount >= debtValue) {
-        if (ride.paymentStatus !== 'PAID' || Number(ride.debtValue ?? 0) !== 0) {
+        if (
+          ride.paymentStatus !== 'PAID' ||
+          Number(ride.debtValue ?? 0) !== 0
+        ) {
           settledRides += 1;
           await this.ridesRepository.updateFinancialSnapshot(
             userId,
@@ -292,7 +304,8 @@ export class ClientPaymentReconciliationService {
           amount: generatedBalance,
           type: 'CREDIT',
           origin: 'PAYMENT_OVERFLOW',
-          description: 'Crédito gerado por pagamento excedente ao quitar dívida.',
+          description:
+            'Crédito gerado por pagamento excedente ao quitar dívida.',
         },
         executor,
       );

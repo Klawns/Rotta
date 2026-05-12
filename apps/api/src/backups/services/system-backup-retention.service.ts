@@ -54,7 +54,9 @@ export class SystemBackupRetentionService {
     return createdAt.getTime() < threshold;
   }
 
-  private getStorageReference(job: BackupJobRecord): BackupStorageReference | null {
+  private getStorageReference(
+    job: BackupJobRecord,
+  ): BackupStorageReference | null {
     if (!job.storageKey) {
       return null;
     }
@@ -67,7 +69,7 @@ export class SystemBackupRetentionService {
     const fileName =
       typeof metadata?.storageFileName === 'string'
         ? metadata.storageFileName
-        : job.storageKey.split('/').pop() ?? `${job.id}.sql.gz`;
+        : (job.storageKey.split('/').pop() ?? `${job.id}.sql.gz`);
     const contentType =
       typeof metadata?.storageContentType === 'string'
         ? metadata.storageContentType

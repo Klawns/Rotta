@@ -127,10 +127,11 @@ function shouldSkipSensitiveThrottle(context: ExecutionContext) {
         if (typeof redisConfig === 'string') {
           try {
             const url = new URL(redisConfig);
+            const defaultPort = url.protocol === 'rediss:' ? 6380 : 6379;
             return {
               connection: {
                 host: url.hostname,
-                port: parseInt(url.port, 10),
+                port: url.port ? parseInt(url.port, 10) : defaultPort,
                 username: url.username || undefined,
                 password: url.password || undefined,
                 tls: url.protocol === 'rediss:' ? {} : undefined,
@@ -142,13 +143,9 @@ function shouldSkipSensitiveThrottle(context: ExecutionContext) {
               'Falha ao parsear URL do Redis para BullMQ',
               error instanceof Error ? error.stack : undefined,
             );
-            return {
-              connection: {
-                host: 'localhost',
-                port: 6379,
-                maxRetriesPerRequest: null,
-              },
-            };
+            throw new Error(
+              'REDIS_URL invalida para BullMQ. Corrija a configuracao antes de iniciar a API.',
+            );
           }
         }
 

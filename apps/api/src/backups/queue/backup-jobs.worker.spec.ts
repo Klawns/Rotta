@@ -1,11 +1,16 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- Jest jobs are intentionally partial. */
 import { Test, TestingModule } from '@nestjs/testing';
 import { BackupJobsWorker } from './backup-jobs.worker';
 import { BackupJobOrchestratorService } from '../services/backup-job-orchestrator.service';
 
+type BackupJobPayload = {
+  backupJobId: string;
+};
+
 describe('BackupJobsWorker', () => {
   let worker: BackupJobsWorker;
-  let backupJobOrchestratorServiceMock: any;
+  let backupJobOrchestratorServiceMock: {
+    processQueueJob: jest.Mock;
+  };
 
   beforeEach(async () => {
     backupJobOrchestratorServiceMock = {
@@ -29,16 +34,17 @@ describe('BackupJobsWorker', () => {
     await worker.process({
       id: 'bull-job-1',
       name: 'generate-functional-backup',
-      data: {
-        backupJobId: 'backup-job-1',
-      },
-    } as any);
+      data: { backupJobId: 'backup-job-1' } satisfies BackupJobPayload,
+    } as {
+      id: string;
+      name: string;
+      data: BackupJobPayload;
+    });
 
     expect(
       backupJobOrchestratorServiceMock.processQueueJob,
-    ).toHaveBeenCalledWith(
-      'generate-functional-backup',
-      { backupJobId: 'backup-job-1' },
-    );
+    ).toHaveBeenCalledWith('generate-functional-backup', {
+      backupJobId: 'backup-job-1',
+    } satisfies BackupJobPayload);
   });
 });

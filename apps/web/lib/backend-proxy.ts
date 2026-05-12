@@ -37,16 +37,15 @@ export async function proxyToBackend(
   targetUrl.search = request.nextUrl.search;
 
   try {
+    const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
     const upstreamResponse = await fetch(targetUrl, {
       method: request.method,
       headers: buildProxyHeaders(request),
-      body:
-        request.method === 'GET' || request.method === 'HEAD'
-          ? undefined
-          : await request.arrayBuffer(),
+      body: hasBody ? request.body : undefined,
+      duplex: hasBody ? 'half' : undefined,
       redirect: 'manual',
       cache: 'no-store',
-    });
+    } as RequestInit & { duplex?: 'half' });
 
     return new Response(upstreamResponse.body, {
       status: upstreamResponse.status,

@@ -1,8 +1,5 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Drizzle is consumed through a runtime boundary in this repository. */
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { eq } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.provider';
@@ -33,21 +30,20 @@ type SystemBackupSettingKey =
   | 'SYSTEM_BACKUP_RETENTION_COUNT'
   | 'SYSTEM_BACKUP_RETENTION_MAX_AGE_DAYS';
 
-const SYSTEM_BACKUP_SETTING_DESCRIPTIONS: Record<SystemBackupSettingKey, string> =
-  {
-    SYSTEM_BACKUP_SCHEDULE_MODE:
-      'Modo de agendamento do backup sistêmico por pg_dump.',
-    SYSTEM_BACKUP_FIXED_TIME:
-      'Horario fixo HH:mm do backup sistêmico.',
-    SYSTEM_BACKUP_INTERVAL_MINUTES:
-      'Intervalo em minutos do backup sistêmico.',
-    SYSTEM_BACKUP_RETENTION_MODE:
-      'Modo de retencao do backup sistêmico.',
-    SYSTEM_BACKUP_RETENTION_COUNT:
-      'Quantidade maxima de dumps sistêmicos mantidos.',
-    SYSTEM_BACKUP_RETENTION_MAX_AGE_DAYS:
-      'Idade maxima em dias dos dumps sistêmicos.',
-  };
+const SYSTEM_BACKUP_SETTING_DESCRIPTIONS: Record<
+  SystemBackupSettingKey,
+  string
+> = {
+  SYSTEM_BACKUP_SCHEDULE_MODE:
+    'Modo de agendamento do backup sistemico por pg_dump.',
+  SYSTEM_BACKUP_FIXED_TIME: 'Horario fixo HH:mm do backup sistemico.',
+  SYSTEM_BACKUP_INTERVAL_MINUTES: 'Intervalo em minutos do backup sistemico.',
+  SYSTEM_BACKUP_RETENTION_MODE: 'Modo de retencao do backup sistemico.',
+  SYSTEM_BACKUP_RETENTION_COUNT:
+    'Quantidade maxima de dumps sistemicos mantidos.',
+  SYSTEM_BACKUP_RETENTION_MAX_AGE_DAYS:
+    'Idade maxima em dias dos dumps sistemicos.',
+};
 
 @Injectable()
 export class SystemBackupSettingsService {
@@ -60,14 +56,19 @@ export class SystemBackupSettingsService {
   async getSettings(): Promise<SystemBackupSettings> {
     const configs = await this.getConfigMap();
     const defaultFixedTime = this.getDefaultFixedTime();
-    const scheduleMode = this.parseScheduleMode(configs.SYSTEM_BACKUP_SCHEDULE_MODE);
-    const parsedFixedTime = this.parseFixedTime(configs.SYSTEM_BACKUP_FIXED_TIME);
+    const scheduleMode = this.parseScheduleMode(
+      configs.SYSTEM_BACKUP_SCHEDULE_MODE,
+    );
+    const parsedFixedTime = this.parseFixedTime(
+      configs.SYSTEM_BACKUP_FIXED_TIME,
+    );
 
     return {
       schedule: {
         mode: scheduleMode,
         fixedTime:
-          parsedFixedTime ?? (scheduleMode === 'fixed_time' ? defaultFixedTime : null),
+          parsedFixedTime ??
+          (scheduleMode === 'fixed_time' ? defaultFixedTime : null),
         intervalMinutes: this.parseNullablePositiveInt(
           configs.SYSTEM_BACKUP_INTERVAL_MINUTES,
         ),
@@ -75,7 +76,9 @@ export class SystemBackupSettingsService {
       retention: {
         mode: this.parseRetentionMode(configs.SYSTEM_BACKUP_RETENTION_MODE),
         maxCount:
-          this.parseNullablePositiveInt(configs.SYSTEM_BACKUP_RETENTION_COUNT) ??
+          this.parseNullablePositiveInt(
+            configs.SYSTEM_BACKUP_RETENTION_COUNT,
+          ) ??
           this.configService.get<number>('TECHNICAL_BACKUP_RETENTION_COUNT', 7),
         maxAgeDays: this.parseNullablePositiveInt(
           configs.SYSTEM_BACKUP_RETENTION_MAX_AGE_DAYS,
@@ -84,13 +87,12 @@ export class SystemBackupSettingsService {
     };
   }
 
-  async updateSettings(input: SystemBackupSettings): Promise<SystemBackupSettings> {
+  async updateSettings(
+    input: SystemBackupSettings,
+  ): Promise<SystemBackupSettings> {
     this.validateSettings(input);
 
-    await this.upsertConfig(
-      'SYSTEM_BACKUP_SCHEDULE_MODE',
-      input.schedule.mode,
-    );
+    await this.upsertConfig('SYSTEM_BACKUP_SCHEDULE_MODE', input.schedule.mode);
     await this.upsertConfig(
       'SYSTEM_BACKUP_FIXED_TIME',
       input.schedule.fixedTime ?? '',
@@ -221,7 +223,9 @@ export class SystemBackupSettingsService {
       return null;
     }
 
-    const [hour, minute] = trimmed.split(':').map((part) => Number.parseInt(part, 10));
+    const [hour, minute] = trimmed
+      .split(':')
+      .map((part) => Number.parseInt(part, 10));
 
     if (
       !Number.isInteger(hour) ||
@@ -238,9 +242,12 @@ export class SystemBackupSettingsService {
   }
 
   private validateSettings(settings: SystemBackupSettings) {
-    if (settings.schedule.mode === 'fixed_time' && !settings.schedule.fixedTime) {
+    if (
+      settings.schedule.mode === 'fixed_time' &&
+      !settings.schedule.fixedTime
+    ) {
       throw new BadRequestException(
-        'Horario fixo obrigatorio para backup sistêmico.',
+        'Horario fixo obrigatorio para backup sistemico.',
       );
     }
 
@@ -249,7 +256,7 @@ export class SystemBackupSettingsService {
       !settings.schedule.intervalMinutes
     ) {
       throw new BadRequestException(
-        'Intervalo obrigatorio para backup sistêmico.',
+        'Intervalo obrigatorio para backup sistemico.',
       );
     }
 
@@ -259,7 +266,10 @@ export class SystemBackupSettingsService {
       );
     }
 
-    if (settings.retention.mode === 'max_age' && !settings.retention.maxAgeDays) {
+    if (
+      settings.retention.mode === 'max_age' &&
+      !settings.retention.maxAgeDays
+    ) {
       throw new BadRequestException(
         'Idade maxima obrigatoria para retencao por tempo.',
       );

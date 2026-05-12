@@ -49,4 +49,13 @@ export class DebugController {
 
     return this.sanitizeUser(user);
   }
+
+  @Get('memory')
+  getMemory() {
+    return {
+      memoryUsage: process.memoryUsage(),
+      resourceUsage: process.resourceUsage(),
+      uptimeSeconds: process.uptime(),
+    };
+  }
 }

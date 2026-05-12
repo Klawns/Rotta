@@ -1,4 +1,8 @@
-import { CanActivate, ExecutionContext, INestApplication } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  INestApplication,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
@@ -6,11 +10,21 @@ import { BackupsController } from '../src/backups/backups.controller';
 import { DEFAULT_BACKUP_IMPORT_FILE_SIZE_LIMIT_BYTES } from '../src/backups/backups.constants';
 import { BackupsService } from '../src/backups/backups.service';
 
+type BackupsImportUpload = {
+  completed: Promise<unknown>;
+  fieldName: string;
+  mimetype: string;
+  originalname: string;
+  stream: AsyncIterable<Buffer>;
+};
+
 jest.mock('@nestjs/passport', () => ({
   AuthGuard: () => {
     class MockJwtAuthGuard implements CanActivate {
       canActivate(context: ExecutionContext) {
-        const request = context.switchToHttp().getRequest();
+        const request = context
+          .switchToHttp()
+          .getRequest<{ user: { id: string } }>();
         request.user = { id: 'user-1' };
         return true;
       }
@@ -35,9 +49,9 @@ describe('BackupsController import preview (e2e)', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     backupsServiceMock.previewFunctionalImport.mockImplementation(
-      async (userId: string, upload: any) => {
-        for await (const _chunk of upload.stream as AsyncIterable<Buffer>) {
-          // Drain the request stream to mirror the real import service flow.
+      async (userId: string, upload: BackupsImportUpload) => {
+        for await (const chunk of upload.stream) {
+          void chunk;
         }
 
         await upload.completed;
@@ -69,10 +83,10 @@ describe('BackupsController import preview (e2e)', () => {
 
   it('accepts a valid multipart zip upload and forwards the parsed stream', async () => {
     backupsServiceMock.previewFunctionalImport.mockImplementationOnce(
-      async (userId: string, upload: any) => {
+      async (userId: string, upload: BackupsImportUpload) => {
         const chunks: Buffer[] = [];
 
-        for await (const chunk of upload.stream as AsyncIterable<Buffer>) {
+        for await (const chunk of upload.stream) {
           chunks.push(Buffer.from(chunk));
         }
 
@@ -109,8 +123,9 @@ describe('BackupsController import preview (e2e)', () => {
       .field('note', 'unexpected')
       .attach('file', Buffer.from('zip-content'), 'backup.zip')
       .expect(400);
+    const responseBody = response.body as { message: string };
 
-    expect(response.body.message).toBe(
+    expect(responseBody.message).toBe(
       'Campos adicionais nao sao permitidos neste endpoint.',
     );
     expect(backupsServiceMock.previewFunctionalImport).not.toHaveBeenCalled();
@@ -122,8 +137,9 @@ describe('BackupsController import preview (e2e)', () => {
       .attach('file', Buffer.from('zip-content-1'), 'backup.zip')
       .attach('file', Buffer.from('zip-content-2'), 'backup-2.zip')
       .expect(400);
+    const responseBody = response.body as { message: string };
 
-    expect(response.body.message).toBe(
+    expect(responseBody.message).toBe(
       'Apenas um arquivo .zip e aceito por requisicao.',
     );
     expect(backupsServiceMock.previewFunctionalImport).not.toHaveBeenCalled();
@@ -138,8 +154,9 @@ describe('BackupsController import preview (e2e)', () => {
         'backup.zip',
       )
       .expect(400);
+    const responseBody = response.body as { message: string };
 
-    expect(response.body.message).toBe(
+    expect(responseBody.message).toBe(
       `Arquivo de backup excede o limite de ${DEFAULT_BACKUP_IMPORT_FILE_SIZE_LIMIT_BYTES} bytes.`,
     );
     expect(backupsServiceMock.previewFunctionalImport).not.toHaveBeenCalled();

@@ -4,10 +4,15 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { createWriteStream, existsSync } from 'node:fs';
+import { mkdtemp, rm, stat } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { gzipSync } from 'node:zlib';
+import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import { createGzip, gzipSync } from 'node:zlib';
 
 type PgDumpExecutionMode = 'binary' | 'docker_compose' | 'auto';
 type DumpCommandKind = 'binary' | 'docker_compose';
@@ -42,6 +47,16 @@ class DumpCommandExecutionError extends Error {
   }
 }
 
+export interface TechnicalDumpFile {
+  filePath: string;
+  tempDirectory: string;
+  contentType: string;
+  fileExtension: 'sql.gz';
+  rawSizeBytes: number;
+  compressedSizeBytes: number;
+  sha256: string;
+}
+
 @Injectable()
 export class TechnicalBackupRunnerService {
   private readonly logger = new Logger(TechnicalBackupRunnerService.name);
@@ -63,11 +78,7 @@ export class TechnicalBackupRunnerService {
     const mode =
       this.configService.get<string>('PG_DUMP_EXECUTION_MODE') ?? 'binary';
 
-    if (
-      mode === 'binary' ||
-      mode === 'docker_compose' ||
-      mode === 'auto'
-    ) {
+    if (mode === 'binary' || mode === 'docker_compose' || mode === 'auto') {
       return mode;
     }
 
@@ -121,8 +132,9 @@ export class TechnicalBackupRunnerService {
   }
 
   private buildDockerComposeCommand(connectionString: string) {
-    const service =
-      this.configService.get<string>('PG_DUMP_DOCKER_COMPOSE_SERVICE');
+    const service = this.configService.get<string>(
+      'PG_DUMP_DOCKER_COMPOSE_SERVICE',
+    );
 
     if (!service) {
       throw new InternalServerErrorException(
@@ -137,7 +149,13 @@ export class TechnicalBackupRunnerService {
       args.push('-f', composeFile);
     }
 
-    args.push('exec', '-T', service, 'pg_dump', ...this.getDumpArguments(connectionString));
+    args.push(
+      'exec',
+      '-T',
+      service,
+      'pg_dump',
+      ...this.getDumpArguments(connectionString),
+    );
 
     return {
       kind: 'docker_compose' as const,
@@ -160,12 +178,15 @@ export class TechnicalBackupRunnerService {
     };
   }
 
-  private async runDumpCommand(input: {
-    kind: DumpCommandKind;
-    binary: string;
-    command: string;
-    args: string[];
-  }, executionMode: PgDumpExecutionMode) {
+  private async runDumpCommand(
+    input: {
+      kind: DumpCommandKind;
+      binary: string;
+      command: string;
+      args: string[];
+    },
+    executionMode: PgDumpExecutionMode,
+  ) {
     return new Promise<Buffer>((resolve, reject) => {
       const stdoutChunks: Buffer[] = [];
       const stderrChunks: Buffer[] = [];
@@ -243,6 +264,154 @@ export class TechnicalBackupRunnerService {
     });
   }
 
+  private createByteCounter(onChunk: (length: number) => void) {
+    return new Transform({
+      transform(chunk: Buffer | Uint8Array, _encoding, callback) {
+        onChunk(chunk.length);
+        callback(null, chunk);
+      },
+    });
+  }
+
+  private async createTempDumpFilePath() {
+    const tempDirectory = await mkdtemp(join(tmpdir(), 'technical-backup-'));
+
+    return {
+      tempDirectory,
+      filePath: join(tempDirectory, 'dump.sql.gz'),
+    };
+  }
+
+  async cleanupDumpFile(result: TechnicalDumpFile) {
+    await rm(result.tempDirectory, { recursive: true, force: true });
+  }
+
+  private async runDumpCommandToFile(
+    input: {
+      kind: DumpCommandKind;
+      binary: string;
+      command: string;
+      args: string[];
+    },
+    executionMode: PgDumpExecutionMode,
+  ): Promise<TechnicalDumpFile> {
+    const { tempDirectory, filePath } = await this.createTempDumpFilePath();
+    let rawSizeBytes = 0;
+    const sha256 = createHash('sha256');
+    const stderrChunks: Buffer[] = [];
+    const child = spawn(input.command, input.args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: process.env,
+    });
+
+    const closePromise = new Promise<void>((resolve, reject) => {
+      child.on('error', (error) => {
+        const startupError = error as NodeJS.ErrnoException;
+        this.logger.error(
+          {
+            context: 'technicalBackupRunner.createDumpFile:error',
+            binary: input.binary,
+            command: input.command,
+            executionMode,
+            message: error.message,
+          },
+          error.stack,
+        );
+        reject(
+          new DumpCommandExecutionError(
+            this.getStartupErrorMessage(input.kind, startupError),
+            input.kind,
+            {
+              command: input.command,
+              args: input.args,
+              binary: input.binary,
+              executionMode,
+              causeCode: startupError.code,
+            },
+            { cause: error },
+          ),
+        );
+      });
+
+      child.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+          return;
+        }
+
+        const stderr = Buffer.concat(stderrChunks).toString('utf8').trim();
+        this.logger.error({
+          context: 'technicalBackupRunner.createDumpFile:failed',
+          binary: input.binary,
+          command: input.command,
+          executionMode,
+          exitCode: code ?? 'desconhecido',
+          stderr,
+        });
+        reject(
+          new DumpCommandExecutionError(
+            `pg_dump falhou: ${stderr || `codigo ${code}`}`,
+            input.kind,
+            {
+              command: input.command,
+              args: input.args,
+              binary: input.binary,
+              executionMode,
+              exitCode: code,
+              stderr,
+            },
+          ),
+        );
+      });
+    });
+
+    child.stderr?.on('data', (chunk: Buffer | Uint8Array) => {
+      stderrChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+
+    if (!child.stdout) {
+      await rm(tempDirectory, { recursive: true, force: true });
+      throw new InternalServerErrorException(
+        'pg_dump iniciou sem stdout disponivel.',
+      );
+    }
+
+    try {
+      await Promise.all([
+        pipeline(
+          child.stdout,
+          this.createByteCounter((length) => {
+            rawSizeBytes += length;
+          }),
+          createGzip(),
+          new Transform({
+            transform(chunk: Buffer | Uint8Array, _encoding, callback) {
+              sha256.update(chunk);
+              callback(null, chunk);
+            },
+          }),
+          createWriteStream(filePath),
+        ),
+        closePromise,
+      ]);
+
+      const fileStat = await stat(filePath);
+
+      return {
+        filePath,
+        tempDirectory,
+        contentType: 'application/gzip',
+        fileExtension: 'sql.gz',
+        rawSizeBytes,
+        compressedSizeBytes: fileStat.size,
+        sha256: sha256.digest('hex'),
+      };
+    } catch (error) {
+      await rm(tempDirectory, { recursive: true, force: true });
+      throw error;
+    }
+  }
+
   private getStartupErrorMessage(
     kind: DumpCommandKind,
     error: NodeJS.ErrnoException,
@@ -278,7 +447,10 @@ export class TechnicalBackupRunnerService {
     });
 
     try {
-      const dumpBuffer = await this.executeDump(connectionString, executionMode);
+      const dumpBuffer = await this.executeDump(
+        connectionString,
+        executionMode,
+      );
       const compressedDumpBuffer = gzipSync(dumpBuffer);
 
       this.logger.log({
@@ -307,6 +479,63 @@ export class TechnicalBackupRunnerService {
       this.logger.error(
         {
           context: 'technicalBackupRunner.createDumpBuffer:error',
+          binary,
+          executionMode,
+          message: error instanceof Error ? error.message : 'Erro desconhecido',
+        },
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      throw error;
+    }
+  }
+
+  async createDumpFile() {
+    const connectionString = this.getConnectionString();
+
+    if (!connectionString) {
+      throw new InternalServerErrorException(
+        'DATABASE_URL/POSTGRES_DATABASE_URL nao configurada para backup tecnico.',
+      );
+    }
+
+    const executionMode = this.getExecutionMode();
+    const binary = this.getBinary();
+
+    this.logger.log({
+      context: 'technicalBackupRunner.createDumpFile:start',
+      binary,
+      executionMode,
+      connectionConfigured: true,
+    });
+
+    try {
+      const dumpFile = await this.executeDumpToFile(
+        connectionString,
+        executionMode,
+      );
+
+      this.logger.log({
+        context: 'technicalBackupRunner.createDumpFile:success',
+        binary,
+        executionMode,
+        rawSizeBytes: dumpFile.rawSizeBytes,
+        compressedSizeBytes: dumpFile.compressedSizeBytes,
+      });
+
+      return dumpFile;
+    } catch (error) {
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+
+      if (error instanceof DumpCommandExecutionError) {
+        throw new InternalServerErrorException(error.publicMessage);
+      }
+
+      this.logger.error(
+        {
+          context: 'technicalBackupRunner.createDumpFile:error',
           binary,
           executionMode,
           message: error instanceof Error ? error.message : 'Erro desconhecido',
@@ -355,6 +584,49 @@ export class TechnicalBackupRunnerService {
         });
 
         return this.runDumpCommand(dockerCommand, executionMode);
+      }
+
+      throw error;
+    }
+  }
+
+  private async executeDumpToFile(
+    connectionString: string,
+    executionMode: PgDumpExecutionMode,
+  ) {
+    const binaryCommand = this.buildBinaryCommand(connectionString);
+
+    if (executionMode === 'docker_compose') {
+      return this.runDumpCommandToFile(
+        this.buildDockerComposeCommand(connectionString),
+        executionMode,
+      );
+    }
+
+    try {
+      return await this.runDumpCommandToFile(binaryCommand, executionMode);
+    } catch (error) {
+      if (
+        executionMode === 'auto' &&
+        error instanceof DumpCommandExecutionError &&
+        error.kind === 'binary' &&
+        error.isMissingExecutable &&
+        this.configService.get<string>('PG_DUMP_DOCKER_COMPOSE_SERVICE')
+      ) {
+        const dockerCommand = this.buildDockerComposeCommand(connectionString);
+
+        this.logger.warn({
+          context: 'technicalBackupRunner.createDumpFile:fallback',
+          from: 'binary',
+          to: 'docker_compose',
+          binary: binaryCommand.binary,
+          composeFile: this.resolveDockerComposeFile() ?? null,
+          service: this.configService.get<string>(
+            'PG_DUMP_DOCKER_COMPOSE_SERVICE',
+          ),
+        });
+
+        return this.runDumpCommandToFile(dockerCommand, executionMode);
       }
 
       throw error;

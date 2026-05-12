@@ -6,6 +6,12 @@ export interface BackupStorageUploadFile {
   fileName: string;
 }
 
+export interface BackupStorageUploadStream {
+  stream: Readable;
+  contentType: string;
+  fileName: string;
+}
+
 export interface BackupStorageReference {
   providerId: string;
   key: string;
@@ -17,6 +23,10 @@ export interface BackupStorageProvider {
   id: string;
   upload(
     file: BackupStorageUploadFile,
+    path: string,
+  ): Promise<BackupStorageReference>;
+  uploadStream(
+    file: BackupStorageUploadStream,
     path: string,
   ): Promise<BackupStorageReference>;
   download(reference: BackupStorageReference): Promise<Readable>;

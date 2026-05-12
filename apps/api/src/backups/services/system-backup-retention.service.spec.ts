@@ -1,26 +1,31 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BackupsRepository } from '../backups.repository';
+import type { BackupStorageProvider } from '../interfaces/backup-storage-provider.interface';
 import { BackupStorageRegistryService } from './backup-storage-registry.service';
 import { SystemBackupRetentionService } from './system-backup-retention.service';
 
 describe('SystemBackupRetentionService', () => {
   let service: SystemBackupRetentionService;
-  let repositoryMock: any;
-  let registryMock: any;
-  let rcloneProviderMock: any;
-  let r2ProviderMock: any;
+  let repositoryMock: jest.Mocked<
+    Pick<BackupsRepository, 'listSuccessfulTechnicalJobs' | 'delete'>
+  >;
+  let registryMock: jest.Mocked<
+    Pick<BackupStorageRegistryService, 'getProvider'>
+  >;
+  let rcloneProviderMock: jest.Mocked<BackupStorageProvider>;
+  let r2ProviderMock: jest.Mocked<BackupStorageProvider>;
+  let rcloneDeleteMock: jest.Mock;
+  let r2DeleteMock: jest.Mock;
 
   beforeEach(async () => {
     repositoryMock = {
       listSuccessfulTechnicalJobs: jest.fn().mockResolvedValue([]),
       delete: jest.fn().mockResolvedValue(undefined),
     };
-    rcloneProviderMock = {
-      delete: jest.fn().mockResolvedValue(undefined),
-    };
-    r2ProviderMock = {
-      delete: jest.fn().mockResolvedValue(undefined),
-    };
+    rcloneDeleteMock = jest.fn().mockResolvedValue(undefined);
+    r2DeleteMock = jest.fn().mockResolvedValue(undefined);
+    rcloneProviderMock = createProviderMock('rclone_drive', rcloneDeleteMock);
+    r2ProviderMock = createProviderMock('r2', r2DeleteMock);
     registryMock = {
       getProvider: jest.fn((providerId: string) => {
         if (providerId === 'rclone_drive') {
@@ -68,7 +73,7 @@ describe('SystemBackupRetentionService', () => {
     await service.pruneBackups({ mode: 'count', maxCount: 1 });
 
     expect(registryMock.getProvider).toHaveBeenCalledWith('rclone_drive');
-    expect(rcloneProviderMock.delete).toHaveBeenCalledWith(
+    expect(rcloneDeleteMock).toHaveBeenCalledWith(
       expect.objectContaining({
         providerId: 'rclone_drive',
         key: 'backups/technical/manual/2026-04-16/tech-2.sql.gz',
@@ -96,7 +101,7 @@ describe('SystemBackupRetentionService', () => {
     await service.pruneBackups({ mode: 'count', maxCount: 1 });
 
     expect(registryMock.getProvider).toHaveBeenCalledWith('r2');
-    expect(r2ProviderMock.delete).toHaveBeenCalledWith(
+    expect(r2DeleteMock).toHaveBeenCalledWith(
       expect.objectContaining({
         providerId: 'r2',
         key: 'backups/technical/manual/2026-04-16/tech-legacy-2.sql.gz',
@@ -105,3 +110,16 @@ describe('SystemBackupRetentionService', () => {
     expect(repositoryMock.delete).toHaveBeenCalledWith('tech-legacy-2');
   });
 });
+
+function createProviderMock(
+  id: string,
+  deleteMock: jest.Mock,
+): jest.Mocked<BackupStorageProvider> {
+  return {
+    id,
+    upload: jest.fn(),
+    uploadStream: jest.fn(),
+    download: jest.fn(),
+    delete: deleteMock,
+  };
+}

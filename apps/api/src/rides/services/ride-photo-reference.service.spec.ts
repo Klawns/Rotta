@@ -1,13 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
+import type { IStorageProvider } from '../../storage/interfaces/storage-provider.interface';
 import { RidePhotoReferenceService } from './ride-photo-reference.service';
 
 describe('RidePhotoReferenceService', () => {
   let service: RidePhotoReferenceService;
-  let storageProviderMock: {
-    exists: jest.Mock;
-    getSignedUrl: jest.Mock;
-    delete: jest.Mock;
-  };
+  let storageProviderMock: jest.Mocked<
+    Pick<IStorageProvider, 'exists' | 'getSignedUrl' | 'delete'>
+  >;
 
   beforeEach(() => {
     storageProviderMock = {
@@ -18,7 +17,7 @@ describe('RidePhotoReferenceService', () => {
       delete: jest.fn().mockResolvedValue(undefined),
     };
 
-    service = new RidePhotoReferenceService(storageProviderMock as any);
+    service = new RidePhotoReferenceService(storageProviderMock);
   });
 
   it('accepts a rides upload key for the same user', async () => {

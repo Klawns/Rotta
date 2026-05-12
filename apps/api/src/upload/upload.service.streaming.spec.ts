@@ -61,20 +61,34 @@ describe('UploadService uploadImageStream', () => {
         url: 'https://cdn.example.com/avatars/123e4567-e89b-42d3-a456-426614174000.webp',
         key: 'avatars/123e4567-e89b-42d3-a456-426614174000.webp',
       }),
-      uploadStream: jest.fn().mockImplementation(async (file, path) => {
-        await readStream(file.stream as AsyncIterable<Buffer | Uint8Array>);
-        return {
-          url: `https://cdn.example.com/${path}`,
-          key: path,
-        };
-      }),
+      uploadStream: jest
+        .fn()
+        .mockImplementation(
+          async (
+            file: { stream: AsyncIterable<Buffer | Uint8Array> },
+            path: string,
+          ) => {
+            await readStream(file.stream);
+            return {
+              url: `https://cdn.example.com/${path}`,
+              key: path,
+            };
+          },
+        ),
       uploadPrivate: jest.fn().mockResolvedValue({
         key: 'users/user-1/rides/123e4567-e89b-42d3-a456-426614174000.webp',
       }),
-      uploadPrivateStream: jest.fn().mockImplementation(async (file, path) => {
-        await readStream(file.stream as AsyncIterable<Buffer | Uint8Array>);
-        return { key: path };
-      }),
+      uploadPrivateStream: jest
+        .fn()
+        .mockImplementation(
+          async (
+            file: { stream: AsyncIterable<Buffer | Uint8Array> },
+            path: string,
+          ) => {
+            await readStream(file.stream);
+            return { key: path };
+          },
+        ),
       delete: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -90,14 +104,17 @@ describe('UploadService uploadImageStream', () => {
 
   function createUpload(
     overrides: Partial<UploadImageStreamFile> = {},
-  ): UploadImageStreamFile {
+  ): UploadImageStreamFile & { cancelMock: jest.Mock } {
+    const cancelMock = jest.fn();
+
     return {
       completed: Promise.resolve(),
       fieldName: 'image',
       mimetype: 'image/png',
       originalname: 'ride.png',
       stream: Readable.from([TINY_PNG_BUFFER]),
-      cancel: jest.fn(),
+      cancel: cancelMock,
+      cancelMock,
       ...overrides,
     };
   }
@@ -213,7 +230,7 @@ describe('UploadService uploadImageStream', () => {
         'Arquivo inválido. A imagem excede o limite de pixels permitido.',
       ),
     );
-    expect(upload.cancel).toHaveBeenCalled();
+    expect(upload.cancelMock).toHaveBeenCalled();
     expect(storageProviderMock.uploadPrivateStream).not.toHaveBeenCalled();
   });
 
@@ -262,7 +279,7 @@ describe('UploadService uploadImageStream', () => {
 
     storageProviderMock.uploadPrivateStream.mockImplementationOnce(
       async (file, path) => {
-        await readStream(file.stream as AsyncIterable<Buffer | Uint8Array>);
+        await readStream(file.stream);
         storageUploadFinished.resolve();
         return { key: path };
       },
@@ -300,7 +317,7 @@ describe('UploadService uploadImageStream', () => {
     storageProviderMock.uploadPrivateStream.mockImplementation(
       async (file, path) => {
         await releaseStorage.promise;
-        await readStream(file.stream as AsyncIterable<Buffer | Uint8Array>);
+        await readStream(file.stream);
         return { key: path };
       },
     );
@@ -327,7 +344,7 @@ describe('UploadService uploadImageStream', () => {
         'Muitos uploads de imagem estão em processamento no momento. Tente novamente em instantes.',
       ),
     );
-    expect(rejectedUpload.cancel).toHaveBeenCalled();
+    expect(rejectedUpload.cancelMock).toHaveBeenCalled();
 
     releaseStorage.resolve();
 

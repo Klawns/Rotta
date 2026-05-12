@@ -28,7 +28,9 @@ function decodeMultilineValue(
   return Buffer.from(base64Value, 'base64').toString('utf8');
 }
 
-function resolvePostgresHostFromEnv(env: NodeJS.ProcessEnv): string | undefined {
+function resolvePostgresHostFromEnv(
+  env: NodeJS.ProcessEnv,
+): string | undefined {
   const explicitHost = env.PGHOST;
 
   if (explicitHost) {
@@ -55,7 +57,10 @@ export function buildPostgresSslConfigFromEnv(
   const host = resolvePostgresHostFromEnv(env);
   const shouldDefaultToSsl =
     isProduction && !host?.endsWith('.railway.internal');
-  const sslEnabled = parseBooleanFlag(env.POSTGRES_SSL_ENABLED, shouldDefaultToSsl);
+  const sslEnabled = parseBooleanFlag(
+    env.POSTGRES_SSL_ENABLED,
+    shouldDefaultToSsl,
+  );
 
   if (!sslEnabled) {
     return false;
@@ -116,8 +121,9 @@ export class PostgresStrategy implements DatabaseStrategy {
   connect(): Promise<any> {
     const env: NodeJS.ProcessEnv = {};
     env.NODE_ENV = this.configService.get<string>('NODE_ENV');
-    env.POSTGRES_DATABASE_URL =
-      this.configService.get<string>('POSTGRES_DATABASE_URL');
+    env.POSTGRES_DATABASE_URL = this.configService.get<string>(
+      'POSTGRES_DATABASE_URL',
+    );
     env.DATABASE_URL = this.configService.get<string>('DATABASE_URL');
     env.POSTGRES_USER = this.configService.get<string>('POSTGRES_USER');
     env.PGUSER = this.configService.get<string>('PGUSER');
@@ -127,8 +133,9 @@ export class PostgresStrategy implements DatabaseStrategy {
     env.PGPORT = this.configService.get<string>('PGPORT');
     env.POSTGRES_DB = this.configService.get<string>('POSTGRES_DB');
     env.PGDATABASE = this.configService.get<string>('PGDATABASE');
-    env.POSTGRES_SSL_ENABLED =
-      this.configService.get<string>('POSTGRES_SSL_ENABLED');
+    env.POSTGRES_SSL_ENABLED = this.configService.get<string>(
+      'POSTGRES_SSL_ENABLED',
+    );
     env.POSTGRES_SSL_REJECT_UNAUTHORIZED = this.configService.get<string>(
       'POSTGRES_SSL_REJECT_UNAUTHORIZED',
     );

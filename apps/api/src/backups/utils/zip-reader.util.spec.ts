@@ -105,7 +105,7 @@ describe('readZipArchive', () => {
       maxEntries: 2,
       maxEntryBytes: 1024,
       maxTotalUncompressedBytes: 2048,
-      onEntry: async (entry) => {
+      onEntry: (entry) => {
         processedEntries.push({
           name: entry.name,
           content: entry.content.toString('utf8'),

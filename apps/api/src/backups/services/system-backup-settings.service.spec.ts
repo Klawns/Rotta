@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- Drizzle mocks are intentionally dynamic in these unit tests. */
 import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DRIZZLE } from '../../database/database.provider';
+import type { DrizzleClient } from '../../database/database.provider';
 import { SystemBackupSettingsService } from './system-backup-settings.service';
 
 describe('SystemBackupSettingsService', () => {
@@ -44,7 +43,7 @@ describe('SystemBackupSettingsService', () => {
     };
 
     const service = new SystemBackupSettingsService(
-      drizzle as any,
+      drizzle as unknown as DrizzleClient,
       {
         get: jest.fn((key: string, fallback?: unknown) => {
           if (key === 'TECHNICAL_BACKUP_CRON') {

@@ -206,7 +206,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
       return [];
     }
 
-    return this.getExecutor(executor)
+    const result = await this.getExecutor(executor)
       .select()
       .from(this.schema.rides)
       .where(
@@ -216,6 +216,8 @@ export class DrizzleRidesRepository implements IRidesRepository {
           isNull(this.schema.rides.archivedAt),
         ),
       );
+
+    return result;
   }
 
   async findArchivedManyByIds(
@@ -227,7 +229,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
       return [];
     }
 
-    return this.getExecutor(executor)
+    const result = await this.getExecutor(executor)
       .select()
       .from(this.schema.rides)
       .where(
@@ -237,6 +239,8 @@ export class DrizzleRidesRepository implements IRidesRepository {
           sql`${this.schema.rides.archivedAt} is not null`,
         ),
       );
+
+    return result;
   }
 
   async archiveManyByIds(
@@ -249,7 +253,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
       return [];
     }
 
-    return this.getExecutor(executor)
+    const result = await this.getExecutor(executor)
       .update(this.schema.rides)
       .set(data as any)
       .where(
@@ -260,6 +264,8 @@ export class DrizzleRidesRepository implements IRidesRepository {
         ),
       )
       .returning();
+
+    return result;
   }
 
   async findByClient(
@@ -422,7 +428,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
       return [];
     }
 
-    return this.getExecutor(executor)
+    const result = await this.getExecutor(executor)
       .update(this.schema.rides)
       .set({
         archivedAt: null,
@@ -437,5 +443,7 @@ export class DrizzleRidesRepository implements IRidesRepository {
         ),
       )
       .returning();
+
+    return result;
   }
 }

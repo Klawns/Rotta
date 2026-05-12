@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { spawn } from 'node:child_process';
-import type { Readable } from 'node:stream';
+import { Readable } from 'node:stream';
 
 @Injectable()
 export class RcloneProcessService {
@@ -14,12 +14,16 @@ export class RcloneProcessService {
   constructor(private readonly configService: ConfigService) {}
 
   async uploadBuffer(buffer: Buffer, remotePath: string) {
+    await this.uploadStream(Readable.from(buffer), remotePath, buffer.length);
+  }
+
+  async uploadStream(stream: Readable, remotePath: string, sizeBytes?: number) {
     const remoteTarget = this.buildRemoteTarget(remotePath);
     this.logger.log({
       context: 'rcloneProcess.execute:start',
       command: 'rcat',
       remoteTarget,
-      sizeBytes: buffer.length,
+      sizeBytes,
     });
 
     const child = this.spawnRclone('rcat', remoteTarget, 'pipe', 'ignore');
@@ -30,7 +34,10 @@ export class RcloneProcessService {
       );
     }
 
-    child.stdin.end(buffer);
+    stream.pipe(child.stdin);
+    stream.on('error', (error) => {
+      child.stdin?.destroy(error);
+    });
 
     await this.waitForProcess(child, 'rcat', remoteTarget);
   }
@@ -91,7 +98,7 @@ export class RcloneProcessService {
       );
     }
 
-    return child.stdout;
+    return await Promise.resolve(child.stdout);
   }
 
   async deleteFile(remotePath: string) {
@@ -149,7 +156,9 @@ export class RcloneProcessService {
     }
 
     const prefix = this.configService.get<string>('SYSTEM_BACKUP_REMOTE_PATH');
-    const normalizedRemote = remote.endsWith(':') ? remote.slice(0, -1) : remote;
+    const normalizedRemote = remote.endsWith(':')
+      ? remote.slice(0, -1)
+      : remote;
     const normalizedPrefix = prefix?.replace(/^\/+|\/+$/g, '') ?? '';
     const normalizedPath = remotePath.replace(/^\/+/, '');
     const suffix = normalizedPrefix

@@ -5,6 +5,7 @@ import type {
   BackupStorageProvider,
   BackupStorageReference,
   BackupStorageUploadFile,
+  BackupStorageUploadStream,
 } from '../interfaces/backup-storage-provider.interface';
 
 @Injectable()
@@ -23,6 +24,27 @@ export class R2BackupStorageProvider implements BackupStorageProvider {
     await this.provider.uploadPrivate(
       {
         buffer: file.buffer,
+        mimetype: file.contentType,
+        originalname: file.fileName,
+      },
+      path,
+    );
+
+    return {
+      providerId: this.id,
+      key: path,
+      fileName: file.fileName,
+      contentType: file.contentType,
+    };
+  }
+
+  async uploadStream(
+    file: BackupStorageUploadStream,
+    path: string,
+  ): Promise<BackupStorageReference> {
+    await this.provider.uploadPrivateStream(
+      {
+        stream: file.stream,
         mimetype: file.contentType,
         originalname: file.fileName,
       },

@@ -1,7 +1,8 @@
 import { rideLifecycleEvents } from '@mdc/database';
 
 export type RideLifecycleEvent = typeof rideLifecycleEvents.$inferSelect;
-export type CreateRideLifecycleEventDto = typeof rideLifecycleEvents.$inferInsert;
+export type CreateRideLifecycleEventDto =
+  typeof rideLifecycleEvents.$inferInsert;
 
 export const IRideLifecycleEventsRepository = Symbol(
   'IRideLifecycleEventsRepository',

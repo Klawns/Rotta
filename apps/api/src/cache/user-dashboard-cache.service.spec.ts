@@ -7,27 +7,30 @@ function createMemoryCache() {
   const store = new Map<string, string>();
 
   return {
-    get: jest.fn(async <T>(key: string) => {
+    get: jest.fn(<T>(key: string) => {
       const value = store.get(key);
-      return value ? (JSON.parse(value) as T) : null;
+      return Promise.resolve(value ? (JSON.parse(value) as T) : null);
     }),
-    set: jest.fn(async (key: string, value: unknown) => {
+    set: jest.fn((key: string, value: unknown) => {
       store.set(key, JSON.stringify(value));
+      return Promise.resolve();
     }),
-    del: jest.fn(async (key: string) => {
+    del: jest.fn((key: string) => {
       store.delete(key);
+      return Promise.resolve();
     }),
-    getDel: jest.fn(async <T>(key: string) => {
+    getDel: jest.fn(<T>(key: string) => {
       const value = store.get(key);
       store.delete(key);
-      return value ? (JSON.parse(value) as T) : null;
+      return Promise.resolve(value ? (JSON.parse(value) as T) : null);
     }),
-    invalidatePrefix: jest.fn(async (prefix: string) => {
+    invalidatePrefix: jest.fn((prefix: string) => {
       for (const key of Array.from(store.keys())) {
         if (key.startsWith(prefix)) {
           store.delete(key);
         }
       }
+      return Promise.resolve();
     }),
   };
 }
@@ -97,14 +100,20 @@ describe('UserDashboardCacheService', () => {
 
     await cache.set('stats:user-1:today', { count: 1 });
     await cache.set('stats:user-1:rolling-30d', { count: 2 });
-    await cache.set('finance-dashboard:user-1:month:all:2026-04-01:2026-04-30', {
-      count: 9,
-    });
+    await cache.set(
+      'finance-dashboard:user-1:month:all:2026-04-01:2026-04-30',
+      {
+        count: 9,
+      },
+    );
     await cache.set('frequent-clients:user-1', [{ id: 'client-1' }]);
     await cache.set('stats:user-2:today', { count: 3 });
-    await cache.set('finance-dashboard:user-2:month:all:2026-04-01:2026-04-30', {
-      count: 4,
-    });
+    await cache.set(
+      'finance-dashboard:user-2:month:all:2026-04-01:2026-04-30',
+      {
+        count: 4,
+      },
+    );
 
     await service.invalidate('user-1');
 

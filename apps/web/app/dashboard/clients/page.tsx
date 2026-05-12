@@ -38,8 +38,8 @@ export default function ClientsPage() {
 
   const selection = useRideSelection({
     items: clients,
-    scopeKey: "clients-page",
   });
+  const { exitSelectionMode, isSelectionMode } = selection;
 
   const state = useClientsPageState(clients);
 
@@ -81,23 +81,17 @@ export default function ClientsPage() {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        selection.exitSelectionMode();
+        exitSelectionMode();
       }
     }
 
-    if (!selection.isSelectionMode) {
+    if (!isSelectionMode) {
       return;
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selection.exitSelectionMode, selection.isSelectionMode]);
-
-  useEffect(() => {
-    if (!selection.isSelectionMode) {
-      setIsBulkDeleteConfirmOpen(false);
-    }
-  }, [selection.isSelectionMode]);
+  }, [exitSelectionMode, isSelectionMode]);
 
   const handlePinClient = async (client: Client) => {
     await togglePin(client);
@@ -243,6 +237,7 @@ export default function ClientsPage() {
       </div>
 
       <ClientDetailsDrawer
+        key={state.selectedClient?.id ?? "no-client"}
         client={state.selectedClient}
         rides={rides}
         balance={balance}
@@ -294,7 +289,7 @@ export default function ClientsPage() {
       />
 
       <ConfirmModal
-        isOpen={isBulkDeleteConfirmOpen}
+        isOpen={isBulkDeleteConfirmOpen && selection.isSelectionMode}
         onClose={() => setIsBulkDeleteConfirmOpen(false)}
         onConfirm={onConfirmDeleteClients}
         title="Excluir clientes selecionados"

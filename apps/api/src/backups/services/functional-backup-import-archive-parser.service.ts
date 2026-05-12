@@ -59,7 +59,7 @@ export class FunctionalBackupImportArchiveParserService {
             await onChunk(chunk);
           }
         },
-        onEntry: async (entry) => {
+        onEntry: (entry) => {
           this.assignParsedEntry(parsedEntries, entry.name, entry.content);
         },
       });
@@ -139,7 +139,9 @@ export class FunctionalBackupImportArchiveParserService {
           );
         return;
       default:
-        throw new BadRequestException(`Arquivo inesperado no ZIP: ${entryName}.`);
+        throw new BadRequestException(
+          `Arquivo inesperado no ZIP: ${entryName}.`,
+        );
     }
   }
 
@@ -222,7 +224,9 @@ export class FunctionalBackupImportArchiveParserService {
 
     const manifest = parsed as FunctionalBackupManifest;
 
-    if (!SUPPORTED_BACKUP_MANIFEST_VERSIONS.includes(manifest.version as 1 | 2)) {
+    if (
+      !SUPPORTED_BACKUP_MANIFEST_VERSIONS.includes(manifest.version as 1 | 2)
+    ) {
       throw new BadRequestException(
         `Versao de backup nao suportada: ${manifest.version}.`,
       );

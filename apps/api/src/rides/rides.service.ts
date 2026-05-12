@@ -483,7 +483,7 @@ export class RidesService {
       data.photo,
     );
     timings.photoValidationMs = Date.now() - photoValidationStartedAt;
-    this.logger.log(
+    this.logger.debug(
       `[RidesService] Criando corrida para usuário ${userId}`,
       'RidesService',
     );
@@ -597,7 +597,7 @@ export class RidesService {
     const invalidateStartedAt = Date.now();
     await this.invalidateRideMutations(userId);
     timings.invalidateMs = Date.now() - invalidateStartedAt;
-    this.logger.log(
+    this.logger.debug(
       `[RidesService] Corrida ${result.id} criada com sucesso`,
       'RidesService',
     );
@@ -611,7 +611,10 @@ export class RidesService {
     id: string,
     data: UpdateRideDto,
   ): Promise<RideWithClient> {
-    this.logger.log(`[RidesService] Atualizando corrida ${id}`, 'RidesService');
+    this.logger.debug(
+      `[RidesService] Atualizando corrida ${id}`,
+      'RidesService',
+    );
 
     const existingRide = await this.getRideWithClientOrThrow(userId, id);
     const nextPhoto = await this.ridePhotoReferenceService.validateForUpdate(
@@ -681,7 +684,7 @@ export class RidesService {
       userId,
     });
     await this.invalidateRideMutations(userId);
-    this.logger.log(
+    this.logger.debug(
       `[RidesService] Corrida ${id} atualizada com sucesso`,
       'RidesService',
     );
@@ -689,7 +692,10 @@ export class RidesService {
   }
 
   async delete(userId: string, id: string): Promise<void> {
-    this.logger.log(`[RidesService] Arquivando corrida ${id}`, 'RidesService');
+    this.logger.debug(
+      `[RidesService] Arquivando corrida ${id}`,
+      'RidesService',
+    );
     const startedAt = Date.now();
     const timings = {
       lookupMs: 0,
@@ -745,7 +751,7 @@ export class RidesService {
     const invalidateStartedAt = Date.now();
     await this.invalidateRideMutations(userId);
     timings.invalidateMs = Date.now() - invalidateStartedAt;
-    this.logger.log(
+    this.logger.debug(
       `[RidesService] Corrida ${id} arquivada com sucesso`,
       'RidesService',
     );
@@ -758,7 +764,7 @@ export class RidesService {
     userId: string,
     data: BulkDeleteRidesDto,
   ): Promise<{ requestedCount: number; deletedCount: number }> {
-    this.logger.log(
+    this.logger.debug(
       `[RidesService] Arquivando ${data.ids.length} corridas em lote para o usuario ${userId}`,
       'RidesService',
     );
@@ -830,7 +836,7 @@ export class RidesService {
   }
 
   async deleteAll(userId: string): Promise<{ success: true }> {
-    this.logger.log(
+    this.logger.debug(
       `[RidesService] Arquivando TODAS as corridas do usuário ${userId}`,
       'RidesService',
     );
@@ -899,7 +905,7 @@ export class RidesService {
     });
 
     await this.invalidateRideMutations(userId);
-    this.logger.log(
+    this.logger.debug(
       `[RidesService] Todas as corridas do usuário ${userId} arquivadas com sucesso`,
       'RidesService',
     );
@@ -907,7 +913,10 @@ export class RidesService {
   }
 
   async restore(userId: string, id: string): Promise<RideWithClient> {
-    this.logger.log(`[RidesService] Restaurando corrida ${id}`, 'RidesService');
+    this.logger.debug(
+      `[RidesService] Restaurando corrida ${id}`,
+      'RidesService',
+    );
 
     await (this.drizzle.db as TransactionRunner).transaction(async (tx) => {
       const archivedRide = await this.getArchivedRideOrThrow(userId, id, tx);
@@ -924,7 +933,7 @@ export class RidesService {
     userId: string,
     data: RestoreBulkRidesDto,
   ): Promise<{ requestedCount: number; restoredCount: number }> {
-    this.logger.log(
+    this.logger.debug(
       `[RidesService] Restaurando ${data.ids.length} corridas em lote para o usuario ${userId}`,
       'RidesService',
     );

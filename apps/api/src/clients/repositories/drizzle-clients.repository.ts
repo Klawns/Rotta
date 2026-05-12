@@ -1,6 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument -- Drizzle is consumed through a dialect-agnostic runtime boundary in this repository. */
-import { Injectable, Inject, Logger } from '@nestjs/common';
-import { eq, and, or, ilike, sql, desc, lt, gt, count, inArray } from 'drizzle-orm';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  lt,
+  or,
+  sql,
+} from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
 import { DRIZZLE } from '../../database/database.provider';
@@ -177,21 +188,22 @@ export class DrizzleClientsRepository implements IClientsRepository {
       conditions.push(ilike(this.schema.clients.name, `%${normalizedSearch}%`));
     }
 
-    const results: Array<Pick<ClientDirectoryEntry, 'id' | 'name' | 'isPinned'>> =
-      await this.db
-        .select({
-          id: this.schema.clients.id,
-          name: this.schema.clients.name,
-          isPinned: this.schema.clients.isPinned,
-        })
-        .from(this.schema.clients)
-        .where(and(...conditions))
-        .orderBy(
-          desc(this.schema.clients.isPinned),
-          sql`lower(${this.schema.clients.name}) asc`,
-          this.schema.clients.id,
-        )
-        .limit(limit + 1);
+    const results: Array<
+      Pick<ClientDirectoryEntry, 'id' | 'name' | 'isPinned'>
+    > = await this.db
+      .select({
+        id: this.schema.clients.id,
+        name: this.schema.clients.name,
+        isPinned: this.schema.clients.isPinned,
+      })
+      .from(this.schema.clients)
+      .where(and(...conditions))
+      .orderBy(
+        desc(this.schema.clients.isPinned),
+        sql`lower(${this.schema.clients.name}) asc`,
+        this.schema.clients.id,
+      )
+      .limit(limit + 1);
     const hasMore = results.length > limit;
     const clients = hasMore ? results.slice(0, limit) : results;
 
@@ -311,7 +323,7 @@ export class DrizzleClientsRepository implements IClientsRepository {
       return [];
     }
 
-    return this.getExecutor(executor)
+    const results = await this.getExecutor(executor)
       .select()
       .from(this.schema.clients)
       .where(
@@ -320,6 +332,8 @@ export class DrizzleClientsRepository implements IClientsRepository {
           inArray(this.schema.clients.id, ids),
         ),
       );
+
+    return results;
   }
 
   async deleteManyByIds(
@@ -331,7 +345,7 @@ export class DrizzleClientsRepository implements IClientsRepository {
       return [];
     }
 
-    return this.getExecutor(executor)
+    const results = await this.getExecutor(executor)
       .delete(this.schema.clients)
       .where(
         and(
@@ -340,6 +354,8 @@ export class DrizzleClientsRepository implements IClientsRepository {
         ),
       )
       .returning();
+
+    return results;
   }
 
   async deleteAll(userId: string): Promise<void> {

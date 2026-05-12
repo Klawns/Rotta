@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ClientExportController } from "@/app/dashboard/clients/_hooks/use-client-export";
 import { ConfirmModal } from "@/components/confirm-modal";
@@ -61,18 +61,25 @@ export function ClientDetailsDrawer({
 }: ClientDetailsDrawerProps) {
   const drawerScrollContainerRef = useRef<HTMLDivElement>(null);
   const drawerPanelRef = useRef<HTMLDivElement>(null);
+  const [drawerPortalContainer, setDrawerPortalContainer] =
+    useState<HTMLDivElement | null>(null);
   const isMobile = useIsMobile();
   const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = React.useState(false);
   const selection = useRideSelection({
     items: rides,
-    scopeKey: client?.id ?? null,
   });
+  const { exitSelectionMode, isSelectionMode } = selection;
   const selectedRides = React.useMemo(
     () => rides.filter((ride) => selection.selectedIds.has(ride.id)),
     [rides, selection.selectedIds],
   );
 
   useBodyScrollLock(!!client);
+
+  const handleDrawerPanelRef = useCallback((node: HTMLDivElement | null) => {
+    drawerPanelRef.current = node;
+    setDrawerPortalContainer(node);
+  }, []);
 
   React.useEffect(() => {
     if (!client) {
@@ -89,17 +96,17 @@ export function ClientDetailsDrawer({
   React.useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        selection.exitSelectionMode();
+        exitSelectionMode();
       }
     }
 
-    if (!selection.isSelectionMode) {
+    if (!isSelectionMode) {
       return;
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selection.exitSelectionMode, selection.isSelectionMode]);
+  }, [exitSelectionMode, isSelectionMode]);
 
   const handleConfirmBulkDelete = async () => {
     if (selectedRides.length === 0) {
@@ -134,7 +141,7 @@ export function ClientDetailsDrawer({
             />
 
             <motion.div
-              ref={drawerPanelRef}
+              ref={handleDrawerPanelRef}
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
@@ -161,7 +168,7 @@ export function ClientDetailsDrawer({
                       onAddPayment={onAddPayment}
                       onCloseDebt={onCloseDebt}
                       clientExport={clientExport}
-                      drawerPortalContainer={drawerPanelRef.current}
+                      drawerPortalContainer={drawerPortalContainer}
                     />
                   </div>
 
@@ -193,7 +200,7 @@ export function ClientDetailsDrawer({
               </div>
 
               <AnimatePresence initial={false}>
-                {isMobile && selection.isSelectionMode ? (
+                {isMobile && isSelectionMode ? (
                   <motion.div
                     key="drawer-selection-mobile-actions"
                     initial={{ opacity: 0, y: 8 }}

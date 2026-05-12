@@ -9,7 +9,7 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
-import { createHash } from 'node:crypto';
+import { createReadStream } from 'node:fs';
 import { UsersService } from '../../users/users.service';
 import { STORAGE_PROVIDER } from '../../storage/interfaces/storage-provider.interface';
 import type { IStorageProvider } from '../../storage/interfaces/storage-provider.interface';
@@ -35,7 +35,10 @@ import { BackupStorageRegistryService } from './backup-storage-registry.service'
 import { FunctionalBackupArchiveService } from './functional-backup-archive.service';
 import { SystemBackupRetentionService } from './system-backup-retention.service';
 import { SystemBackupSettingsService } from './system-backup-settings.service';
-import { TechnicalBackupRunnerService } from './technical-backup-runner.service';
+import {
+  TechnicalBackupRunnerService,
+  type TechnicalDumpFile,
+} from './technical-backup-runner.service';
 
 interface TechnicalBackupUploadOutcome {
   requestedProviderId: string;
@@ -58,6 +61,7 @@ export class BackupJobOrchestratorService {
   private readonly technicalRetentionCount: number;
   private readonly storagePrefix: string;
   private readonly queueEnqueueTimeoutMs: number;
+  private readonly functionalBackupWarnSizeBytes?: number;
 
   constructor(
     private readonly backupsRepository: BackupsRepository,
@@ -88,6 +92,9 @@ export class BackupJobOrchestratorService {
     this.queueEnqueueTimeoutMs = this.configService.get<number>(
       'BACKUP_QUEUE_ENQUEUE_TIMEOUT_MS',
       DEFAULT_BACKUP_QUEUE_ENQUEUE_TIMEOUT_MS,
+    );
+    this.functionalBackupWarnSizeBytes = this.configService.get<number>(
+      'FUNCTIONAL_BACKUP_WARN_SIZE_BYTES',
     );
   }
 
@@ -401,9 +408,34 @@ export class BackupJobOrchestratorService {
     await this.backupsRepository.markRunning(backupJobId);
 
     try {
+      const startedAt = Date.now();
       const archive = await this.functionalBackupArchiveService.buildArchive(
         existingJob.scopeUserId,
       );
+      const durationMs = Date.now() - startedAt;
+
+      this.logger.log({
+        context: 'processFunctionalBackupJob:archiveBuilt',
+        backupJobId,
+        scopeUserId: existingJob.scopeUserId,
+        sizeBytes: archive.sizeBytes,
+        durationMs,
+        counts: archive.manifest.counts,
+        modules: archive.manifest.modules,
+      });
+      if (
+        this.functionalBackupWarnSizeBytes &&
+        archive.sizeBytes > this.functionalBackupWarnSizeBytes
+      ) {
+        this.logger.warn({
+          context: 'processFunctionalBackupJob:archiveSizeWarning',
+          backupJobId,
+          scopeUserId: existingJob.scopeUserId,
+          sizeBytes: archive.sizeBytes,
+          warnSizeBytes: this.functionalBackupWarnSizeBytes,
+        });
+      }
+
       const storageKey = this.buildFunctionalStorageKey(
         existingJob.scopeUserId,
         existingJob.trigger,
@@ -454,11 +486,7 @@ export class BackupJobOrchestratorService {
 
   private async uploadTechnicalBackup(
     existingJob: BackupJobRecord,
-    technicalDump: {
-      dumpBuffer: Buffer;
-      contentType: string;
-      rawSizeBytes: number;
-    },
+    technicalDump: TechnicalDumpFile,
   ): Promise<TechnicalBackupUploadOutcome> {
     const primaryProvider = this.backupStorageRegistry.getActiveProvider();
     const primaryStorageKey = this.buildTechnicalStorageKey(
@@ -481,9 +509,9 @@ export class BackupJobOrchestratorService {
     });
 
     try {
-      const upload = await primaryProvider.upload(
+      const upload = await primaryProvider.uploadStream(
         {
-          buffer: technicalDump.dumpBuffer,
+          stream: createReadStream(technicalDump.filePath),
           contentType: technicalDump.contentType,
           fileName: primaryFileName,
         },
@@ -514,7 +542,9 @@ export class BackupJobOrchestratorService {
         error instanceof Error ? error.stack : undefined,
       );
 
-      if (!this.shouldAttemptTechnicalUploadFallback(primaryProvider.id, error)) {
+      if (
+        !this.shouldAttemptTechnicalUploadFallback(primaryProvider.id, error)
+      ) {
         throw error;
       }
 
@@ -554,9 +584,9 @@ export class BackupJobOrchestratorService {
       });
 
       try {
-        const fallbackUpload = await fallbackProvider.upload(
+        const fallbackUpload = await fallbackProvider.uploadStream(
           {
-            buffer: technicalDump.dumpBuffer,
+            stream: createReadStream(technicalDump.filePath),
             contentType: technicalDump.contentType,
             fileName: fallbackFileName,
           },
@@ -620,51 +650,61 @@ export class BackupJobOrchestratorService {
         trigger: existingJob.trigger,
       });
       const technicalDump =
-        await this.technicalBackupRunnerService.createDumpBuffer();
-      const upload = await this.uploadTechnicalBackup(existingJob, technicalDump);
+        await this.technicalBackupRunnerService.createDumpFile();
 
-      await this.backupsRepository.markSuccess(backupJobId, {
-        storageKey: upload.reference.key,
-        checksum: this.getSha256(technicalDump.dumpBuffer),
-        sizeBytes: technicalDump.dumpBuffer.length,
-        metadataJson: JSON.stringify({
-          compression: 'gzip',
-          rawSizeBytes: technicalDump.rawSizeBytes,
-          requestedStorageProviderId: upload.requestedProviderId,
-          storageProviderId: upload.providerId,
-          storageFileName: upload.reference.fileName,
-          displayFileName: upload.reference.fileName,
-          storageContentType: upload.reference.contentType,
+      try {
+        const upload = await this.uploadTechnicalBackup(
+          existingJob,
+          technicalDump,
+        );
+
+        await this.backupsRepository.markSuccess(backupJobId, {
+          storageKey: upload.reference.key,
+          checksum: technicalDump.sha256,
+          sizeBytes: technicalDump.compressedSizeBytes,
+          metadataJson: JSON.stringify({
+            compression: 'gzip',
+            rawSizeBytes: technicalDump.rawSizeBytes,
+            compressedSizeBytes: technicalDump.compressedSizeBytes,
+            requestedStorageProviderId: upload.requestedProviderId,
+            storageProviderId: upload.providerId,
+            storageFileName: upload.reference.fileName,
+            displayFileName: upload.reference.fileName,
+            storageContentType: upload.reference.contentType,
+            fallbackUsed: upload.fallbackUsed,
+            fallbackFromProviderId: upload.fallbackFromProviderId,
+            fallbackReason: upload.fallbackReason,
+            uploadAttemptCount: upload.uploadAttemptCount,
+          }),
+        });
+
+        const settings = await this.systemBackupSettingsService.getSettings();
+        await this.systemBackupRetentionService.pruneBackups(
+          settings.retention.mode === 'count'
+            ? {
+                mode: 'count',
+                maxCount:
+                  settings.retention.maxCount ?? this.technicalRetentionCount,
+              }
+            : {
+                mode: 'max_age',
+                maxAgeDays: settings.retention.maxAgeDays ?? 30,
+              },
+        );
+
+        this.logger.log({
+          context: 'processTechnicalBackupJob:success',
+          backupJobId,
+          requestedProviderId: upload.requestedProviderId,
+          providerId: upload.providerId,
           fallbackUsed: upload.fallbackUsed,
-          fallbackFromProviderId: upload.fallbackFromProviderId,
-          fallbackReason: upload.fallbackReason,
-          uploadAttemptCount: upload.uploadAttemptCount,
-        }),
-      });
-
-      const settings = await this.systemBackupSettingsService.getSettings();
-      await this.systemBackupRetentionService.pruneBackups(
-        settings.retention.mode === 'count'
-          ? {
-              mode: 'count',
-              maxCount: settings.retention.maxCount ?? this.technicalRetentionCount,
-            }
-          : {
-              mode: 'max_age',
-              maxAgeDays: settings.retention.maxAgeDays ?? 30,
-            },
-      );
-
-      this.logger.log({
-        context: 'processTechnicalBackupJob:success',
-        backupJobId,
-        requestedProviderId: upload.requestedProviderId,
-        providerId: upload.providerId,
-        fallbackUsed: upload.fallbackUsed,
-        storageKey: upload.reference.key,
-        storageFileName: upload.reference.fileName,
-        sizeBytes: technicalDump.dumpBuffer.length,
-      });
+          storageKey: upload.reference.key,
+          storageFileName: upload.reference.fileName,
+          sizeBytes: technicalDump.compressedSizeBytes,
+        });
+      } finally {
+        await this.technicalBackupRunnerService.cleanupDumpFile(technicalDump);
+      }
     } catch (error) {
       this.logOperationalError('processTechnicalBackupJob', error, {
         backupJobId,
@@ -675,10 +715,6 @@ export class BackupJobOrchestratorService {
       );
       throw error;
     }
-  }
-
-  private getSha256(buffer: Buffer) {
-    return createHash('sha256').update(buffer).digest('hex');
   }
 
   private async enqueueScheduledFunctionalBackups() {

@@ -133,7 +133,10 @@ class ZipLocalFileMetadataReader {
         return;
       }
 
-      if ((generalPurposeFlags & ZIP_GENERAL_PURPOSE_DATA_DESCRIPTOR_FLAG) !== 0) {
+      if (
+        (generalPurposeFlags & ZIP_GENERAL_PURPOSE_DATA_DESCRIPTOR_FLAG) !==
+        0
+      ) {
         throw toArchiveError(
           'Arquivo ZIP usa data descriptor e nao pode ter a integridade verificada com seguranca.',
         );
@@ -177,9 +180,9 @@ function isUnsafeEntryName(name: string) {
 function hasNestedZipSignature(chunk: Buffer) {
   return (
     chunk.length >= ZIP_LOCAL_FILE_SIGNATURE.length &&
-    chunk.subarray(0, ZIP_LOCAL_FILE_SIGNATURE.length).equals(
-      ZIP_LOCAL_FILE_SIGNATURE,
-    )
+    chunk
+      .subarray(0, ZIP_LOCAL_FILE_SIGNATURE.length)
+      .equals(ZIP_LOCAL_FILE_SIGNATURE)
   );
 }
 
@@ -262,7 +265,11 @@ export async function readZipArchiveFromSource(
   options: ZipArchiveReadOptions = {},
 ): Promise<ZipArchiveEntry[]> {
   const allowedEntryNames = options.allowedEntryNames
-    ? new Set(options.allowedEntryNames.map((entryName) => normalizeEntryName(entryName)))
+    ? new Set(
+        options.allowedEntryNames.map((entryName) =>
+          normalizeEntryName(entryName),
+        ),
+      )
     : null;
   const maxTotalUncompressedBytes =
     options.maxTotalUncompressedBytes ??
@@ -272,8 +279,7 @@ export async function readZipArchiveFromSource(
   const maxEntryBytes =
     options.maxEntryBytes ?? DEFAULT_BACKUP_IMPORT_MAX_ENTRY_BYTES;
   const maxCompressionRatio =
-    options.maxCompressionRatio ??
-    DEFAULT_BACKUP_IMPORT_MAX_COMPRESSION_RATIO;
+    options.maxCompressionRatio ?? DEFAULT_BACKUP_IMPORT_MAX_COMPRESSION_RATIO;
   const shouldBlockNestedZip = options.blockNestedZip ?? true;
   const extractedEntries = options.onEntry ? null : new Map<string, Buffer>();
   const activeFiles = new Set<UnzipFile>();
@@ -311,7 +317,9 @@ export async function readZipArchiveFromSource(
 
     if (entryCount > maxEntries) {
       throw abortArchive(
-        toArchiveError(`Arquivo ZIP excede o limite de ${maxEntries} arquivos.`),
+        toArchiveError(
+          `Arquivo ZIP excede o limite de ${maxEntries} arquivos.`,
+        ),
       );
     }
 
@@ -378,11 +386,7 @@ export async function readZipArchiveFromSource(
     }
 
     if (
-      exceedsCompressionRatio(
-        file.size,
-        file.originalSize,
-        maxCompressionRatio,
-      )
+      exceedsCompressionRatio(file.size, file.originalSize, maxCompressionRatio)
     ) {
       throw abortArchive(
         toArchiveError(
@@ -403,7 +407,8 @@ export async function readZipArchiveFromSource(
     let expectedCrc32 = 0;
 
     try {
-      expectedCrc32 = metadataReader.consumeEntryMetadata(entryName).expectedCrc32;
+      expectedCrc32 =
+        metadataReader.consumeEntryMetadata(entryName).expectedCrc32;
     } catch (error) {
       throw abortArchive(
         error instanceof Error
@@ -573,10 +578,13 @@ export async function readZipArchiveFromSource(
   }
 
   if (archiveError) {
-    throw archiveError;
+    const finalArchiveError: Error = archiveError;
+    throw finalArchiveError;
   }
 
-  return Array.from((extractedEntries ?? new Map<string, Buffer>()).entries()).map(([name, content]) => ({
+  return Array.from(
+    (extractedEntries ?? new Map<string, Buffer>()).entries(),
+  ).map(([name, content]) => ({
     name,
     content,
   }));
@@ -589,7 +597,11 @@ export async function readZipArchive(
   const chunkSizeBytes = options.chunkSizeBytes ?? DEFAULT_CHUNK_SIZE_BYTES;
   const source = Readable.from(
     (function* chunkBuffer() {
-      for (let offset = 0; offset < archiveBuffer.length; offset += chunkSizeBytes) {
+      for (
+        let offset = 0;
+        offset < archiveBuffer.length;
+        offset += chunkSizeBytes
+      ) {
         const end = Math.min(offset + chunkSizeBytes, archiveBuffer.length);
         yield archiveBuffer.subarray(offset, end);
       }

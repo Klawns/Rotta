@@ -22,7 +22,8 @@ async function runMigrations() {
 }
 
 void runMigrations().catch((error: unknown) => {
-  const message = error instanceof Error ? error.stack ?? error.message : error;
+  const message =
+    error instanceof Error ? (error.stack ?? error.message) : error;
   console.error('[Migrate] Failed to run migrations', message);
   process.exit(1);
 });

@@ -64,7 +64,6 @@ export function useRidesPageController() {
   const isArchivedScope = rides.filterState.scope === 'archived';
   const selection = useRideSelection({
     items: rides.rides,
-    scopeKey: rides.filterState.scope,
   });
   const { exitSelectionMode, isSelectionMode } = selection;
   const [isBulkActionConfirmOpen, setIsBulkActionConfirmOpen] = useState(false);

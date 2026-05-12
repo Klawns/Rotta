@@ -188,5 +188,4 @@ describe('FunctionalBackupsService', () => {
     );
     expect(result.url).toBe('https://signed.example.com/job-1');
   });
-
 });

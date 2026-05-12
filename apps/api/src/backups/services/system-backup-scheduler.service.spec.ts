@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
+import type { Queue } from 'bullmq';
 import {
   BACKUPS_QUEUE,
   RUN_TECHNICAL_BACKUP_SCHEDULE_JOB,
@@ -12,8 +13,12 @@ import { SystemBackupSettingsService } from './system-backup-settings.service';
 
 describe('SystemBackupSchedulerService', () => {
   let service: SystemBackupSchedulerService;
-  let queueMock: any;
-  let settingsServiceMock: any;
+  let queueMock: jest.Mocked<
+    Pick<Queue, 'upsertJobScheduler' | 'removeJobScheduler'>
+  >;
+  let settingsServiceMock: jest.Mocked<
+    Pick<SystemBackupSettingsService, 'getSettings'>
+  >;
   let configValues: Record<string, string>;
   let loggerLogSpy: jest.SpyInstance;
   let loggerErrorSpy: jest.SpyInstance;
@@ -34,7 +39,7 @@ describe('SystemBackupSchedulerService', () => {
     queueMock = {
       upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
       removeJobScheduler: jest.fn().mockResolvedValue(undefined),
-    };
+    } as jest.Mocked<Pick<Queue, 'upsertJobScheduler' | 'removeJobScheduler'>>;
     settingsServiceMock = {
       getSettings: jest.fn().mockResolvedValue({
         schedule: {

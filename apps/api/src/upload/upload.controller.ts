@@ -59,7 +59,7 @@ export class UploadController {
   ) {
     const normalizedFolder = resolveRequestedUploadFolder(folder);
     const upload = await parseUploadImageRequest(req);
-    this.logger.log(`UPLOAD ENDPOINT HIT - File: ${upload.originalname}`);
+    this.logger.debug(`UPLOAD ENDPOINT HIT - File: ${upload.originalname}`);
 
     return this.uploadService.uploadImageStream(
       upload,

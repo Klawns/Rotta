@@ -4,11 +4,16 @@ import { RcloneDriveBackupStorageProvider } from './rclone-drive-backup-storage.
 
 describe('RcloneDriveBackupStorageProvider', () => {
   let processServiceMock: jest.Mocked<RcloneProcessService>;
+  let uploadBufferMock: jest.MockedFunction<
+    RcloneProcessService['uploadBuffer']
+  >;
   let provider: RcloneDriveBackupStorageProvider;
 
   beforeEach(() => {
+    uploadBufferMock = jest.fn().mockResolvedValue(undefined);
+
     processServiceMock = {
-      uploadBuffer: jest.fn().mockResolvedValue(undefined),
+      uploadBuffer: uploadBufferMock,
       download: jest.fn().mockResolvedValue(new PassThrough()),
       deleteFile: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<RcloneProcessService>;
@@ -26,7 +31,7 @@ describe('RcloneDriveBackupStorageProvider', () => {
       'technical/manual/2026-04-17/job-1.sql.gz',
     );
 
-    expect(processServiceMock.uploadBuffer).toHaveBeenCalledWith(
+    expect(uploadBufferMock).toHaveBeenCalledWith(
       Buffer.from('dump-content'),
       'technical/manual/2026-04-17/job-1.sql.gz',
     );

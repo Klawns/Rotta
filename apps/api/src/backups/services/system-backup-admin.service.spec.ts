@@ -5,10 +5,53 @@ import { BackupStorageRegistryService } from './backup-storage-registry.service'
 import { SystemBackupAdminService } from './system-backup-admin.service';
 import { SystemBackupRetentionService } from './system-backup-retention.service';
 import { SystemBackupSchedulerService } from './system-backup-scheduler.service';
-import { SystemBackupSettingsService } from './system-backup-settings.service';
+import {
+  type SystemBackupSettings,
+  SystemBackupSettingsService,
+} from './system-backup-settings.service';
+
+type SettingsServiceMock = jest.Mocked<
+  Pick<SystemBackupSettingsService, 'getSettings' | 'updateSettings'>
+>;
+type SchedulerServiceMock = jest.Mocked<
+  Pick<SystemBackupSchedulerService, 'getStatus' | 'syncSchedule'>
+>;
+type RetentionServiceMock = jest.Mocked<
+  Pick<SystemBackupRetentionService, 'pruneBackups'>
+>;
+type StorageRegistryMock = jest.Mocked<
+  Pick<BackupStorageRegistryService, 'getActiveProvider'>
+>;
+type BackupsRepositoryMock = jest.Mocked<
+  Pick<BackupsRepository, 'listSuccessfulTechnicalJobs'>
+>;
 
 describe('SystemBackupAdminService', () => {
   let loggerLogSpy: jest.SpyInstance;
+  const persistedSettings: SystemBackupSettings = {
+    schedule: {
+      mode: 'fixed_time',
+      fixedTime: '04:00',
+      intervalMinutes: null,
+    },
+    retention: {
+      mode: 'count',
+      maxCount: 7,
+      maxAgeDays: null,
+    },
+  };
+  const updatedSettings: SystemBackupSettings = {
+    schedule: {
+      mode: 'interval',
+      fixedTime: null,
+      intervalMinutes: 120,
+    },
+    retention: {
+      mode: 'max_age',
+      maxCount: null,
+      maxAgeDays: 15,
+    },
+  };
 
   beforeAll(() => {
     loggerLogSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
@@ -19,44 +62,28 @@ describe('SystemBackupAdminService', () => {
   });
 
   const createService = () => {
-    const settingsService = {
-      getSettings: jest.fn().mockResolvedValue({
-        schedule: {
-          mode: 'fixed_time',
-          fixedTime: '04:00',
-          intervalMinutes: null,
-        },
-        retention: {
-          mode: 'count',
-          maxCount: 7,
-          maxAgeDays: null,
-        },
-      }),
-      updateSettings: jest.fn().mockResolvedValue({
-        schedule: {
-          mode: 'interval',
-          fixedTime: null,
-          intervalMinutes: 120,
-        },
-        retention: {
-          mode: 'max_age',
-          maxCount: null,
-          maxAgeDays: 15,
-        },
-      }),
+    const settingsService: SettingsServiceMock = {
+      getSettings: jest.fn().mockResolvedValue(persistedSettings),
+      updateSettings: jest.fn().mockResolvedValue(updatedSettings),
     };
-    const schedulerService = {
+    const schedulerService: SchedulerServiceMock = {
       getStatus: jest.fn().mockReturnValue({
         health: 'registered',
         lastSyncedAt: '2026-04-17T12:00:00.000Z',
       }),
       syncSchedule: jest.fn().mockResolvedValue(undefined),
     };
-    const retentionService = {
+    const retentionService: RetentionServiceMock = {
       pruneBackups: jest.fn().mockResolvedValue(undefined),
     };
-    const storageRegistry = {
-      getActiveProvider: jest.fn().mockReturnValue({ id: 'rclone_drive' }),
+    const storageRegistry: StorageRegistryMock = {
+      getActiveProvider: jest.fn().mockReturnValue({
+        id: 'rclone_drive',
+        upload: jest.fn(),
+        uploadStream: jest.fn(),
+        download: jest.fn(),
+        delete: jest.fn(),
+      }),
     };
     const configService = {
       get: jest.fn((key: string, fallback?: unknown) =>
@@ -69,7 +96,7 @@ describe('SystemBackupAdminService', () => {
               : fallback,
       ),
     };
-    const backupsRepository = {
+    const backupsRepository: BackupsRepositoryMock = {
       listSuccessfulTechnicalJobs: jest.fn().mockResolvedValue([
         {
           id: 'tech-fallback-1',
@@ -116,22 +143,16 @@ describe('SystemBackupAdminService', () => {
         enabled: true,
       }),
     );
-    expect(result).toEqual(
-      expect.objectContaining({
-        enabled: true,
-        providerId: 'rclone_drive',
-        schedule: expect.objectContaining({
-          mode: 'fixed_time',
-          fixedTime: '04:00',
-        }),
-        failover: expect.objectContaining({
-          enabled: true,
-          primaryProviderId: 'rclone_drive',
-          fallbackProviderId: 'r2',
-          lastFallbackBackupId: 'tech-fallback-1',
-          lastFallbackReason: 'Falha ao enviar dump para o Google Drive.',
-        }),
-      }),
+    expect(result.enabled).toBe(true);
+    expect(result.providerId).toBe('rclone_drive');
+    expect(result.schedule.mode).toBe('fixed_time');
+    expect(result.schedule.fixedTime).toBe('04:00');
+    expect(result.failover.enabled).toBe(true);
+    expect(result.failover.primaryProviderId).toBe('rclone_drive');
+    expect(result.failover.fallbackProviderId).toBe('r2');
+    expect(result.failover.lastFallbackBackupId).toBe('tech-fallback-1');
+    expect(result.failover.lastFallbackReason).toBe(
+      'Falha ao enviar dump para o Google Drive.',
     );
   });
 
@@ -140,7 +161,7 @@ describe('SystemBackupAdminService', () => {
       createService();
     loggerLogSpy.mockClear();
 
-    const result = await service.updateSettings({
+    await service.updateSettings({
       schedule: {
         mode: 'interval',
         fixedTime: null,

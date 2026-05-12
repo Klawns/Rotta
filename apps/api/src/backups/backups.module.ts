@@ -60,7 +60,10 @@ import { TechnicalBackupsService } from './services/technical-backups.service';
         const providers: BackupStorageProvider[] = [r2Provider];
         const rcloneRemote = configService.get<string>('RCLONE_REMOTE');
 
-        if (typeof rcloneRemote === 'string' && rcloneRemote.trim().length > 0) {
+        if (
+          typeof rcloneRemote === 'string' &&
+          rcloneRemote.trim().length > 0
+        ) {
           providers.push(rcloneDriveProvider);
         }
 

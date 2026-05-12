@@ -13,32 +13,36 @@ import { UsersService } from '../users/users.service';
 class InMemoryCacheProvider implements ICacheProvider {
   private readonly store = new Map<string, unknown>();
 
-  async get<T>(key: string): Promise<T | null> {
-    return (this.store.get(key) as T | undefined) ?? null;
+  get<T>(key: string): Promise<T | null> {
+    return Promise.resolve((this.store.get(key) as T | undefined) ?? null);
   }
 
-  async set(key: string, value: unknown): Promise<void> {
+  set(key: string, value: unknown): Promise<void> {
     this.store.set(key, value);
+    return Promise.resolve();
   }
 
-  async del(key: string): Promise<void> {
+  del(key: string): Promise<void> {
     this.store.delete(key);
+    return Promise.resolve();
   }
 
-  async getDel<T>(key: string): Promise<T | null> {
+  getDel<T>(key: string): Promise<T | null> {
     const value = (this.store.get(key) as T | undefined) ?? null;
 
     this.store.delete(key);
 
-    return value;
+    return Promise.resolve(value);
   }
 
-  async invalidatePrefix(prefix: string): Promise<void> {
+  invalidatePrefix(prefix: string): Promise<void> {
     for (const key of this.store.keys()) {
       if (key.startsWith(prefix)) {
         this.store.delete(key);
       }
     }
+
+    return Promise.resolve();
   }
 }
 
@@ -46,18 +50,32 @@ describe('AuthService cache-aside behavior', () => {
   let service: AuthService;
   let cacheProvider: InMemoryCacheProvider;
 
-  const usersById = new Map<string, any>();
-  const usersByEmail = new Map<string, any>();
+  type UserRecord = {
+    id: string;
+    email: string;
+    name: string;
+    password: string;
+    role: 'user' | 'admin';
+    taxId: string | null;
+    cellphone: string | null;
+    hasSeenTutorial: boolean;
+    createdAt: Date;
+  };
+
+  const usersById = new Map<string, UserRecord>();
+  const usersByEmail = new Map<string, UserRecord>();
 
   const usersServiceMock = {
-    findByEmail: jest.fn(async (email: string) => usersByEmail.get(email)),
-    findById: jest.fn(async (id: string) => usersById.get(id)),
+    findByEmail: jest.fn((email: string) =>
+      Promise.resolve(usersByEmail.get(email)),
+    ),
+    findById: jest.fn((id: string) => Promise.resolve(usersById.get(id))),
     create: jest.fn(),
-    update: jest.fn(async (id: string, data: Record<string, unknown>) => {
+    update: jest.fn((id: string, data: Record<string, unknown>) => {
       const existingUser = usersById.get(id);
 
       if (!existingUser) {
-        return;
+        return Promise.resolve();
       }
 
       const updatedUser = {
@@ -67,16 +85,19 @@ describe('AuthService cache-aside behavior', () => {
 
       usersById.set(id, updatedUser);
       usersByEmail.set(updatedUser.email, updatedUser);
+      return Promise.resolve();
     }),
   };
 
   const subscriptionsServiceMock = {
-    getAccessSnapshot: jest.fn(async () => ({
-      status: 'missing' as const,
-      trialEndsAt: null,
-      trialDaysRemaining: 0,
-      isTrialExpiringSoon: false,
-    })),
+    getAccessSnapshot: jest.fn(() =>
+      Promise.resolve({
+        status: 'missing' as const,
+        trialEndsAt: null,
+        trialDaysRemaining: 0,
+        isTrialExpiringSoon: false,
+      }),
+    ),
     updateOrCreate: jest.fn(),
   };
 
@@ -138,9 +159,8 @@ describe('AuthService cache-aside behavior', () => {
         cellphone: null,
       }),
     );
-    await expect(
-      cacheProvider.get('profile:user-3'),
-    ).resolves.toEqual(
+    const staleCachedProfile = await cacheProvider.get('profile:user-3');
+    expect(staleCachedProfile).toEqual(
       expect.objectContaining({
         cellphone: null,
       }),
@@ -165,9 +185,8 @@ describe('AuthService cache-aside behavior', () => {
         cellphone: '11999999999',
       }),
     );
-    await expect(
-      cacheProvider.get('profile:user-3'),
-    ).resolves.toEqual(
+    const refreshedCachedProfile = await cacheProvider.get('profile:user-3');
+    expect(refreshedCachedProfile).toEqual(
       expect.objectContaining({
         cellphone: '11999999999',
       }),

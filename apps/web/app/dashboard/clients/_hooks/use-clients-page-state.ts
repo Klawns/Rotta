@@ -2,8 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { isApiErrorStatus } from '@/lib/api-error';
+import { useCallback, useMemo, useState } from 'react';
 import { removeClientCaches } from '@/lib/client-cache';
 import { clientKeys } from '@/lib/query-keys';
 import { removeRideCachesByClient } from '@/lib/ride-cache';
@@ -38,7 +37,7 @@ export function useClientsPageState(clients: Client[] = []) {
     [clients, selectedClientIdFromUrl],
   );
 
-  const { data: selectedClient = null, error: selectedClientError } = useQuery({
+  const { data: selectedClient = null } = useQuery({
     queryKey: selectedClientIdFromUrl
       ? clientKeys.detail(selectedClientIdFromUrl)
       : [...clientKeys.all, 'detail', 'empty'],
@@ -49,7 +48,7 @@ export function useClientsPageState(clients: Client[] = []) {
     retry: false,
   });
 
-  const replaceSelectedClientInUrl = (clientId?: string) => {
+  const replaceSelectedClientInUrl = useCallback((clientId?: string) => {
     const nextSearchParams = new URLSearchParams(searchParams.toString());
 
     if (clientId) {
@@ -62,7 +61,7 @@ export function useClientsPageState(clients: Client[] = []) {
     router.replace(nextQueryString ? `${clientsPagePath}?${nextQueryString}` : clientsPagePath, {
       scroll: false,
     });
-  };
+  }, [clientsPagePath, router, searchParams]);
 
   const handleMissingSelectedClient = useCallback(
     (clientId?: string) => {
@@ -82,16 +81,14 @@ export function useClientsPageState(clients: Client[] = []) {
       setRideToDelete(null);
       replaceSelectedClientInUrl();
     },
-    [modalClient?.id, queryClient, selectedClient?.id, selectedClientIdFromUrl, searchParams],
+    [
+      modalClient?.id,
+      queryClient,
+      replaceSelectedClientInUrl,
+      selectedClient?.id,
+      selectedClientIdFromUrl,
+    ],
   );
-
-  useEffect(() => {
-    if (!selectedClientIdFromUrl || !isApiErrorStatus(selectedClientError, 404)) {
-      return;
-    }
-
-    handleMissingSelectedClient(selectedClientIdFromUrl);
-  }, [handleMissingSelectedClient, selectedClientError, selectedClientIdFromUrl]);
 
   const openNewClientModal = () => {
     setClientToEdit(null);

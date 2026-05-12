@@ -89,7 +89,7 @@ export class ClientsService {
       }
 
       const { cacheName } = invalidations[index];
-      const error = result.reason;
+      const error: unknown = result.reason;
 
       this.logger.error(
         `[ClientsService] Falha ao invalidar cache ${cacheName} apos ${context} do usuario ${userId}: ${getErrorMessage(error)}`,

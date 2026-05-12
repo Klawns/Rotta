@@ -23,9 +23,7 @@ type BackupTrigger =
   | typeof SCHEDULED_BACKUP_TRIGGER
   | typeof PRE_IMPORT_BACKUP_TRIGGER;
 
-type BackupKind =
-  | typeof FUNCTIONAL_BACKUP_KIND
-  | typeof TECHNICAL_BACKUP_KIND;
+type BackupKind = typeof FUNCTIONAL_BACKUP_KIND | typeof TECHNICAL_BACKUP_KIND;
 
 type BackupImportPhase =
   | 'validated'

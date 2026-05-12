@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/require-await -- This spec uses partial infrastructure stubs to validate import flows. */
-import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
@@ -33,14 +36,17 @@ describe('FunctionalBackupImportService', () => {
     },
   };
 
-  const buildArchiveBuffer = (dataset: {
-    clients: unknown[];
-    rides: unknown[];
-    clientPayments: unknown[];
-    balanceTransactions: unknown[];
-    ridePresets: unknown[];
-    rideLifecycleEvents?: unknown[];
-  }, options?: { version?: number }) => {
+  const buildArchiveBuffer = (
+    dataset: {
+      clients: unknown[];
+      rides: unknown[];
+      clientPayments: unknown[];
+      balanceTransactions: unknown[];
+      ridePresets: unknown[];
+      rideLifecycleEvents?: unknown[];
+    },
+    options?: { version?: number },
+  ) => {
     const manifestVersion = options?.version ?? BACKUP_MANIFEST_VERSION;
     const includeLifecycleEvents = manifestVersion >= BACKUP_MANIFEST_VERSION;
     const payloadBuffers = [
@@ -214,8 +220,8 @@ describe('FunctionalBackupImportService', () => {
     const storageProviderMock = {
       uploadPrivate: jest.fn().mockResolvedValue(undefined),
       uploadPrivateStream: jest.fn().mockImplementation(async ({ stream }) => {
-        for await (const _chunk of stream as AsyncIterable<Buffer>) {
-          // Drain the upload stream in tests to simulate the storage client.
+        for await (const chunk of stream as AsyncIterable<Buffer>) {
+          void chunk;
         }
 
         return { key: 'imports/user-1/import-job-1.zip' };
@@ -457,8 +463,8 @@ describe('FunctionalBackupImportService', () => {
 
     storageProviderMock.uploadPrivateStream.mockImplementationOnce(
       async ({ stream }: { stream: AsyncIterable<Buffer> }) => {
-        for await (const _chunk of stream) {
-          // Drain the stream before failing to mirror an upload pipeline error.
+        for await (const chunk of stream) {
+          void chunk;
         }
 
         throw new Error('storage unavailable');
@@ -639,10 +645,9 @@ describe('FunctionalBackupImportService', () => {
     );
     expect(archiveServiceMock.buildArchive).toHaveBeenCalledWith('user-1');
     expect(storageProviderMock.uploadPrivate).toHaveBeenCalled();
-    expect(backupRetentionServiceMock.prunePreImportBackups).toHaveBeenCalledWith(
-      'user-1',
-      7,
-    );
+    expect(
+      backupRetentionServiceMock.prunePreImportBackups,
+    ).toHaveBeenCalledWith('user-1', 7);
     expect(cacheServiceMock.invalidate).toHaveBeenCalledWith('user-1');
 
     expect(insertedValues.get('clients')).toEqual([
@@ -753,9 +758,9 @@ describe('FunctionalBackupImportService', () => {
       Readable.from([archiveBuffer]),
     );
 
-    await expect(service.executeImport('user-1', 'import-job-1')).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.executeImport('user-1', 'import-job-1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
 
     expect(repositoryMock.markImportFailed).toHaveBeenCalledWith(
       'import-job-1',

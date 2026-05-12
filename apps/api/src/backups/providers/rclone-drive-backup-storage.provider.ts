@@ -3,6 +3,7 @@ import type {
   BackupStorageProvider,
   BackupStorageReference,
   BackupStorageUploadFile,
+  BackupStorageUploadStream,
 } from '../interfaces/backup-storage-provider.interface';
 import { RcloneProcessService } from '../services/rclone-process.service';
 
@@ -17,6 +18,20 @@ export class RcloneDriveBackupStorageProvider implements BackupStorageProvider {
     path: string,
   ): Promise<BackupStorageReference> {
     await this.rcloneProcessService.uploadBuffer(file.buffer, path);
+
+    return {
+      providerId: this.id,
+      key: path,
+      fileName: file.fileName,
+      contentType: file.contentType,
+    };
+  }
+
+  async uploadStream(
+    file: BackupStorageUploadStream,
+    path: string,
+  ): Promise<BackupStorageReference> {
+    await this.rcloneProcessService.uploadStream(file.stream, path);
 
     return {
       providerId: this.id,

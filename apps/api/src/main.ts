@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -29,11 +30,20 @@ interface ExpressAppLike {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
     bufferLogs: true,
+    bodyParser: false,
   });
   const configService = app.get(ConfigService);
+  const bodyParserLimit =
+    configService.get<string>('BODY_PARSER_LIMIT') ?? '10mb';
+
+  app.useBodyParser('json', { limit: bodyParserLimit });
+  app.useBodyParser('urlencoded', {
+    limit: bodyParserLimit,
+    extended: true,
+  });
 
   app.use(helmet());
 

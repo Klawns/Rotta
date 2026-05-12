@@ -287,7 +287,10 @@ export class FunctionalBackupImportDatasetValidatorService {
         RIDE_PAYMENT_STATUSES,
         `status de pagamento seguinte do evento ${event.id}`,
       );
-      this.validateJsonString(event.metadataJson, `metadata do evento ${event.id}`);
+      this.validateJsonString(
+        event.metadataJson,
+        `metadata do evento ${event.id}`,
+      );
       this.normalizeDate(event.createdAt);
     }
 
