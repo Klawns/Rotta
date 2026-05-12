@@ -20,11 +20,11 @@ interface DateRangePickerProps {
   onChange: (nextRange: DateRangeValue) => void;
   onApplyPreset: (preset: 'today' | '7d' | '30d' | 'month') => void;
   onClear: () => void;
-  onConfirm: () => void;
+  onPrimaryConfirm: () => void;
+  onSecondaryConfirm: () => void;
   isLoading?: boolean;
   isConfirmDisabled?: boolean;
   errorMessage?: string | null;
-  confirmLabel?: string;
 }
 
 const DATE_RANGE_PRESETS = [
@@ -78,13 +78,14 @@ export function DateRangePicker({
   onChange,
   onApplyPreset,
   onClear,
-  onConfirm,
+  onPrimaryConfirm,
+  onSecondaryConfirm,
   isLoading = false,
   isConfirmDisabled = false,
   errorMessage,
-  confirmLabel = 'Baixar PDF',
 }: DateRangePickerProps) {
   const selectedRange = getSelectedRange(value);
+  const areActionsDisabled = isLoading || isConfirmDisabled;
 
   return (
     <div className="space-y-4 p-4">
@@ -146,30 +147,48 @@ export function DateRangePicker({
         </div>
       )}
 
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            onClick={onPrimaryConfirm}
+            disabled={areActionsDisabled}
+            className="h-11 rounded-2xl px-5"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Gerando PDF...
+              </>
+            ) : (
+              'Baixar PDF'
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onSecondaryConfirm}
+            disabled={areActionsDisabled}
+            className="h-11 rounded-2xl px-5"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Gerando PDF...
+              </>
+            ) : (
+              'Compartilhar PDF'
+            )}
+          </Button>
+        </div>
         <Button
           type="button"
           variant="ghost"
           onClick={onClear}
           disabled={isLoading}
-          className="h-11 rounded-2xl px-5"
+          className="h-11 w-full rounded-2xl px-5"
         >
           Limpar datas
-        </Button>
-        <Button
-          type="button"
-          onClick={onConfirm}
-          disabled={isConfirmDisabled}
-          className="h-11 rounded-2xl px-5"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 size={16} className="animate-spin" />
-              Gerando PDF...
-            </>
-          ) : (
-            confirmLabel
-          )}
         </Button>
       </div>
     </div>

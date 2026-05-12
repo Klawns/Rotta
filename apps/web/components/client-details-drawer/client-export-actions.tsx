@@ -42,13 +42,11 @@ export function ClientExportActions({
       onChange={controller.setDateRange}
       onApplyPreset={controller.applyPreset}
       onClear={controller.clearDateRange}
-      onConfirm={() =>
-        void controller.submitExport(isMobile ? 'share' : 'download')
-      }
+      onPrimaryConfirm={() => void controller.submitExport('download')}
+      onSecondaryConfirm={() => void controller.submitExport('share')}
       isLoading={controller.isExporting}
       isConfirmDisabled={controller.isSubmitDisabled}
       errorMessage={controller.errorMessage}
-      confirmLabel={isMobile ? 'Compartilhar PDF' : 'Baixar PDF'}
     />
   );
 
