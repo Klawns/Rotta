@@ -142,8 +142,14 @@ export function FinanceFilters({
   const paymentStatusControlOptions = financePaymentStatusOptions.map((option) => ({
     value: option.value,
     label: option.label,
-    activeClassName: 'bg-foreground/95',
-    activeTextClassName: 'text-background',
+    activeClassName:
+      option.value === 'PAID'
+        ? 'bg-emerald-500'
+        : option.value === 'PENDING'
+          ? 'bg-amber-500'
+          : 'bg-primary',
+    activeTextClassName:
+      option.value === 'PENDING' ? 'text-slate-950' : 'text-white',
   }));
 
   return (

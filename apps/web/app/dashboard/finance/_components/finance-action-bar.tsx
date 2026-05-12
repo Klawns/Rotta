@@ -61,12 +61,12 @@ export function FinanceActionBar({
           ))}
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Button
             onClick={onExport}
             disabled={isPdfDisabled}
             className={cn(
-              'h-12 w-full rounded-2xl px-5 font-bold',
+              'h-auto min-h-12 w-full whitespace-normal rounded-2xl px-4 py-3 text-center font-bold leading-tight sm:px-5',
               accent.badge,
               isPdfDisabled && 'opacity-50',
             )}
@@ -83,7 +83,7 @@ export function FinanceActionBar({
             onClick={onShare}
             disabled={isPdfDisabled}
             variant="outline"
-            className="h-12 w-full rounded-2xl border-border-subtle bg-background px-5 font-bold text-text-primary"
+            className="h-auto min-h-12 w-full whitespace-normal rounded-2xl border-border-subtle bg-background px-4 py-3 text-center font-bold leading-tight text-text-primary sm:px-5"
           >
             {isExportingPdf ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
@@ -97,7 +97,7 @@ export function FinanceActionBar({
             onClick={onExportCSV}
             disabled={isSpreadsheetDisabled}
             variant="outline"
-            className="h-12 w-full rounded-2xl border-border-subtle bg-background px-5 font-bold text-text-primary"
+            className="h-auto min-h-12 w-full whitespace-normal rounded-2xl border-border-subtle bg-background px-4 py-3 text-center font-bold leading-tight text-text-primary sm:col-span-2 sm:px-5"
           >
             <FileSpreadsheet className="mr-2 size-4 text-primary" />
             Exportar planilha
