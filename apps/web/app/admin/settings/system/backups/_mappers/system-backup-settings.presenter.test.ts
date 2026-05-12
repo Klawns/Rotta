@@ -17,7 +17,7 @@ test("summarizes fixed-time schedules for the admin panel", () => {
         intervalMinutes: null,
       },
     }).summary,
-    "Todos os dias as 04:00",
+    "Todos os dias às 04:00",
   );
 });
 
@@ -44,7 +44,7 @@ test("builds human-readable retention and health labels", () => {
         maxAgeDays: 15,
       },
     }),
-    "Arquivos com no maximo 15 dias",
+    "Arquivos com no máximo 15 dias",
   );
   assert.equal(
     getSystemBackupHealthLabel({

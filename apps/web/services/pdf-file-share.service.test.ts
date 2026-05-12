@@ -33,8 +33,8 @@ test('shares PDF files without url or text payload fields', async () => {
   assert.equal(result, 'shared');
   assert.deepEqual(sharePayload, {
     files: [file],
-    title: 'relatorio.pdf',
   });
+  assert.equal('title' in sharePayload!, false);
   assert.equal('url' in sharePayload!, false);
   assert.equal('text' in sharePayload!, false);
 });

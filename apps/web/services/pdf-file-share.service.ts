@@ -28,7 +28,7 @@ export async function sharePdfFile(
   }
 
   try {
-    await navigator.share({ files, title: file.name });
+    await navigator.share({ files });
     return 'shared';
   } catch {
     fallbackDownload(file);
