@@ -23,17 +23,17 @@ RUN turbo prune api --docker
 FROM base AS prod-deps
 WORKDIR /app
 COPY --from=pruner /repo/out/json/ .
-RUN --mount=type=cache,id=pnpm-store-api,target=/pnpm/store \
+RUN --mount=type=cache,id=s/d7d8293f-0904-4c76-8251-b1616e6e3a09-pnpm-store-api,target=/pnpm/store \
   pnpm fetch --frozen-lockfile --prod
-RUN --mount=type=cache,id=pnpm-store-api,target=/pnpm/store \
+RUN --mount=type=cache,id=s/d7d8293f-0904-4c76-8251-b1616e6e3a09-pnpm-store-api,target=/pnpm/store \
   pnpm install --frozen-lockfile --prod --offline
 
 FROM base AS builder
 WORKDIR /app
 COPY --from=pruner /repo/out/json/ .
-RUN --mount=type=cache,id=pnpm-store-api,target=/pnpm/store \
+RUN --mount=type=cache,id=s/d7d8293f-0904-4c76-8251-b1616e6e3a09-pnpm-store-api,target=/pnpm/store \
   pnpm fetch --frozen-lockfile
-RUN --mount=type=cache,id=pnpm-store-api,target=/pnpm/store \
+RUN --mount=type=cache,id=s/d7d8293f-0904-4c76-8251-b1616e6e3a09-pnpm-store-api,target=/pnpm/store \
   pnpm install --frozen-lockfile --offline
 COPY --from=pruner /repo/out/full/ .
 RUN pnpm --filter @mdc/database build

@@ -23,9 +23,9 @@ FROM base AS builder
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 COPY --from=pruner /repo/out/json/ .
-RUN --mount=type=cache,id=pnpm-store-web,target=/pnpm/store \
+RUN --mount=type=cache,id=s/76f33ea9-d427-44a2-aa6e-bbc8b59608ac-pnpm-store-web,target=/pnpm/store \
   pnpm fetch --frozen-lockfile
-RUN --mount=type=cache,id=pnpm-store-web,target=/pnpm/store \
+RUN --mount=type=cache,id=s/76f33ea9-d427-44a2-aa6e-bbc8b59608ac-pnpm-store-web,target=/pnpm/store \
   pnpm install --frozen-lockfile --offline
 COPY --from=pruner /repo/out/full/ .
 RUN pnpm --filter my-project build
