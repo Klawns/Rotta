@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import { QueryErrorState } from "@/components/query-error-state";
 import { useAuth } from "@/hooks/use-auth";
+import { parseApiError } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 import { BottomNav } from "./_components/layout/bottom-nav";
 import { MobileHeader } from "./_components/layout/mobile-header";
@@ -42,7 +43,10 @@ export default function DashboardLayout({
         <QueryErrorState
           error={authError}
           title="Não foi possível validar sua sessão"
-          description="A autenticação falhou por uma indisponibilidade operacional. Tente novamente."
+          description={parseApiError(
+            authError,
+            "A autenticação falhou por uma indisponibilidade operacional. Tente novamente.",
+          )}
           onRetry={() => {
             void verify();
           }}

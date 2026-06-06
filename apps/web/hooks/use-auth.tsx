@@ -15,6 +15,7 @@ import { authService } from "@/services/auth-service";
 import { apiClient } from "@/services/api";
 import { useCurrentUserQuery } from "@/hooks/auth/use-current-user-query";
 import { resetAuthQueryCache } from "@/hooks/auth/reset-auth-query-cache";
+import { resolveAuthSessionState } from "@/hooks/auth/session-state";
 import { syncAuthUserCache } from "@/hooks/auth/sync-auth-user-cache";
 import { useUnauthorizedRedirect } from "@/hooks/auth/use-unauthorized-redirect";
 import type { User } from "@/hooks/auth/auth.types";
@@ -49,15 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const currentUserQuery = useCurrentUserQuery({
     enabled: !isPublicAuthRoute,
   });
-  const isUnauthorized = isApiErrorStatus(currentUserQuery.error, 401);
-  const user = isUnauthorized ? null : currentUserQuery.data ?? null;
-  const authError =
-    currentUserQuery.isError && !isUnauthorized
-      ? currentUserQuery.error
-      : null;
-  const isAuthError = authError !== null;
-
-  const isLoading = currentUserQuery.isLoading;
+  const sessionState = resolveAuthSessionState({
+    data: currentUserQuery.data,
+    error: currentUserQuery.error,
+    isError: currentUserQuery.isError,
+    isLoading: currentUserQuery.isLoading,
+  });
+  const { user, isAuthError, authError, isLoading } = sessionState;
 
   const logoutMutation = useMutation({
     mutationFn: () => apiClient.post("/auth/logout"),
@@ -123,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      throw result.error;
+      return result.data ?? currentUserQuery.data ?? null;
     }
 
     return result.data ?? null;
@@ -132,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       user,
-      isAuthenticated: !!user,
+      isAuthenticated: sessionState.isAuthenticated,
       isAuthError,
       authError,
       login,
@@ -141,7 +140,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       verify,
       isLoading,
     }),
-    [user, isAuthError, authError, login, updateUser, logout, verify, isLoading],
+    [
+      user,
+      sessionState.isAuthenticated,
+      isAuthError,
+      authError,
+      login,
+      updateUser,
+      logout,
+      verify,
+      isLoading,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
