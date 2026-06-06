@@ -3,7 +3,6 @@ import { resolveApiOrigin } from './resolve-api-origin.mjs';
 
 const HOP_BY_HOP_HEADERS = [
   'connection',
-  'content-length',
   'host',
   'keep-alive',
   'proxy-authenticate',
@@ -14,15 +13,37 @@ const HOP_BY_HOP_HEADERS = [
   'upgrade',
 ] as const;
 
+const REQUEST_HEADERS_TO_REMOVE = [
+  ...HOP_BY_HOP_HEADERS,
+  'content-length',
+] as const;
+
+const RESPONSE_HEADERS_TO_REMOVE = [
+  ...HOP_BY_HOP_HEADERS,
+  'content-encoding',
+  'content-length',
+] as const;
+
 function buildProxyHeaders(request: NextRequest) {
   const headers = new Headers(request.headers);
 
-  for (const headerName of HOP_BY_HOP_HEADERS) {
+  for (const headerName of REQUEST_HEADERS_TO_REMOVE) {
     headers.delete(headerName);
   }
 
+  headers.set('accept-encoding', 'identity');
   headers.set('x-forwarded-host', request.nextUrl.host);
   headers.set('x-forwarded-proto', request.nextUrl.protocol.replace(':', ''));
+
+  return headers;
+}
+
+function buildProxyResponseHeaders(upstreamHeaders: Headers) {
+  const headers = new Headers(upstreamHeaders);
+
+  for (const headerName of RESPONSE_HEADERS_TO_REMOVE) {
+    headers.delete(headerName);
+  }
 
   return headers;
 }
@@ -50,7 +71,7 @@ export async function proxyToBackend(
     return new Response(upstreamResponse.body, {
       status: upstreamResponse.status,
       statusText: upstreamResponse.statusText,
-      headers: new Headers(upstreamResponse.headers),
+      headers: buildProxyResponseHeaders(upstreamResponse.headers),
     });
   } catch (error) {
     const message =
