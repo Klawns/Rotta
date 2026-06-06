@@ -1,5 +1,5 @@
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, VerifyCallback } from 'passport-google-oauth20';
+import { Strategy } from 'passport-google-oauth20';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { GoogleUserProfile } from './auth.types';
@@ -53,15 +53,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     accessToken: string,
     _refreshToken: string,
     profile: GooglePassportProfile,
-    done: VerifyCallback,
-  ): void {
-    const user: GoogleUserProfile = {
+  ): GoogleUserProfile {
+    return {
       email: profile.emails?.[0]?.value ?? '',
       firstName: profile.name?.givenName ?? '',
       lastName: profile.name?.familyName ?? '',
       picture: profile.photos?.[0]?.value,
       accessToken,
     };
-    done(null, user);
   }
 }

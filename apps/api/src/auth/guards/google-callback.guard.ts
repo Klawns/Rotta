@@ -67,6 +67,8 @@ export class GoogleCallbackGuard extends AuthGuard('google') {
     err: unknown,
     user: TUser,
     info?: unknown,
+    _context?: ExecutionContext,
+    _status?: unknown,
   ): TUser {
     if (err) {
       const message =
